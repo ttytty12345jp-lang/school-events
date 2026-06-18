@@ -458,6 +458,51 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   opacity: 0.8;
 }
 
+/* ── Cell Popover ── */
+.cell-active { background: #eff6ff !important; }
+
+.cell-popover {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 300;
+  background: var(--surface);
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  width: 360px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cell-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 2px;
+}
+
+.popover-existing-row,
+.popover-new-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.popover-existing-row { border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+
+.popover-input-title { flex: 1; min-width: 0; font-size: 13px; }
+.popover-input-time  { width: 90px; font-size: 13px; }
+.popover-input-note  { width: 80px; font-size: 12px; }
+
+.popover-add-btn { padding: 4px 10px; font-size: 12px; white-space: nowrap; }
+.popover-del-btn { padding: 3px 7px; font-size: 12px; }
+
 /* ── Print styles ── */
 @media print {
   .no-print, .app-header .header-tabs, .header-export-btns { display: none !important; }

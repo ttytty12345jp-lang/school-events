@@ -12,9 +12,7 @@ const LS_KEY = 'kirara_events'
 function lsLoad() {
   try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]') } catch { return [] }
 }
-function lsSave(arr) {
-  localStorage.setItem(LS_KEY, JSON.stringify(arr))
-}
+function lsSave(arr) { localStorage.setItem(LS_KEY, JSON.stringify(arr)) }
 
 export function useEvents() {
   const [events, setEvents] = useState([])
@@ -55,7 +53,14 @@ export function useEvents() {
   }, [load])
 
   const addEvent = useCallback(async (ev) => {
-    const record = { date: ev.date, title: ev.title, start_time: ev.start_time || null, end_time: ev.end_time || null, note: ev.note || null }
+    const record = {
+      date: ev.date,
+      title: ev.title,
+      start_time: ev.start_time || null,
+      end_time: ev.end_time || null,
+      note: ev.note || null,
+      category: ev.category || '学校行事',
+    }
     if (!USE_SUPABASE) {
       const newRec = { ...record, id: crypto.randomUUID(), created_at: new Date().toISOString() }
       const updated = [...lsLoad(), newRec]
