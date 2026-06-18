@@ -3,6 +3,7 @@ import EventEditModal from './EventEditModal'
 import { exportMonthlyExcel } from '../utils/exportExcel'
 
 const DAYS_JA = ['日', '月', '火', '水', '木', '金', '土']
+const CATEGORIES = ['学校行事', '教職員関係行事', 'その他']
 
 function toDateKey(y, m, d) {
   return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
@@ -14,11 +15,15 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
   const [month, setMonth] = useState(today.getMonth() + 1)
   const [selectedDate, setSelectedDate] = useState(null)
 
+  // date → category → events[]
   const eventMap = useMemo(() => {
     const m = new Map()
     for (const ev of events) {
-      if (!m.has(ev.date)) m.set(ev.date, [])
-      m.get(ev.date).push(ev)
+      if (!m.has(ev.date)) m.set(ev.date, new Map())
+      const catMap = m.get(ev.date)
+      const cat = ev.category || '学校行事'
+      if (!catMap.has(cat)) catMap.set(cat, [])
+      catMap.get(cat).push(ev)
     }
     return m
   }, [events])
@@ -32,27 +37,12 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
     else setMonth(m => m + 1)
   }
 
-  const firstDay = new Date(year, month - 1, 1).getDay()
   const daysInMonth = new Date(year, month, 0).getDate()
-
-  const cells = []
-  for (let i = 0; i < firstDay; i++) cells.push(null)
-  for (let d = 1; d <= daysInMonth; d++) cells.push(d)
-
   const todayKey = toDateKey(today.getFullYear(), today.getMonth() + 1, today.getDate())
 
-  const selectedEvents = selectedDate ? (eventMap.get(selectedDate) || []) : []
-
-  function handlePrint() {
-    window.print()
-  }
-
-  function handleExcel() {
-    exportMonthlyExcel(year, month, events.filter(e => {
-      const [y, m] = e.date.split('-').map(Number)
-      return y === year && m === month
-    }))
-  }
+  const selectedEvents = selectedDate
+    ? (events.filter(e => e.date === selectedDate))
+    : []
 
   return (
     <div>
@@ -61,37 +51,61 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
         <div className="calendar-title">{year}年{month}月</div>
         <button className="btn-nav no-print" onClick={nextMonth}>›</button>
         <div className="no-print" style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
-          <button className="btn-secondary" onClick={handleExcel}>📊 Excel出力</button>
-          <button className="btn-secondary" onClick={handlePrint}>🖨️ 印刷・PDF</button>
+          <button className="btn-secondary" onClick={() => exportMonthlyExcel(year, month, events.filter(e => {
+            const [y, m2] = e.date.split('-').map(Number)
+            return y === year && m2 === month
+          }))}>📊 Excel出力</button>
+          <button className="btn-secondary" onClick={() => window.print()}>🖨️ 印刷・PDF</button>
         </div>
       </div>
 
-      <div className="calendar-grid">
-        {DAYS_JA.map((d, i) => (
-          <div key={d} className={`calendar-day-header${i === 0 ? ' sun' : i === 6 ? ' sat' : ''}`}>{d}</div>
-        ))}
-        {cells.map((day, i) => {
-          if (!day) return <div key={`e${i}`} className="calendar-cell empty" />
-          const dateKey = toDateKey(year, month, day)
-          const dayEvents = eventMap.get(dateKey) || []
-          const dow = (firstDay + day - 1) % 7
-          const cls = [
-            'calendar-cell',
-            dateKey === todayKey ? 'today' : '',
-            dow === 0 ? 'sunday' : dow === 6 ? 'saturday' : '',
-          ].filter(Boolean).join(' ')
-          return (
-            <div key={day} className={cls} onClick={() => setSelectedDate(dateKey)}>
-              <div className="cell-date">{day}</div>
-              {dayEvents.slice(0, 3).map(ev => (
-                <div key={ev.id} className={`cell-event${ev.start_time ? ' has-time' : ''}`} title={ev.title}>
-                  {ev.start_time ? `${ev.start_time} ` : ''}{ev.title}
-                </div>
+      <div className="monthly-table-wrap">
+        <table className="monthly-table">
+          <thead>
+            <tr>
+              <th className="col-date">日付</th>
+              <th className="col-day">曜日</th>
+              {CATEGORIES.map(cat => (
+                <th key={cat} className="col-cat">{cat}</th>
               ))}
-              {dayEvents.length > 3 && <div className="cell-more">他{dayEvents.length - 3}件</div>}
-            </div>
-          )
-        })}
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: daysInMonth }, (_, i) => {
+              const day = i + 1
+              const dateKey = toDateKey(year, month, day)
+              const dow = new Date(dateKey).getDay()
+              const catMap = eventMap.get(dateKey) || new Map()
+              const isToday = dateKey === todayKey
+              const isSun = dow === 0
+              const isSat = dow === 6
+              return (
+                <tr
+                  key={day}
+                  className={`monthly-row${isToday ? ' row-today' : ''}${isSun ? ' row-sun' : isSat ? ' row-sat' : ''}`}
+                  onClick={() => setSelectedDate(dateKey)}
+                >
+                  <td className="col-date">{month}/{day}</td>
+                  <td className="col-day">{DAYS_JA[dow]}</td>
+                  {CATEGORIES.map(cat => {
+                    const catEvents = catMap.get(cat) || []
+                    return (
+                      <td key={cat} className="col-cat-cell">
+                        {catEvents.map(ev => (
+                          <div key={ev.id} className="table-event-chip">
+                            {ev.start_time && <span className="chip-time">{ev.start_time}</span>}
+                            {ev.title}
+                            {ev.note && <span className="chip-note">　{ev.note}</span>}
+                          </div>
+                        ))}
+                      </td>
+                    )
+                  })}
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
       </div>
 
       {selectedDate && (

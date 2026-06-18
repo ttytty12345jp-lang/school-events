@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 
 const DAYS_JA = ['日', '月', '火', '水', '木', '金', '土']
+const CATEGORIES = ['学校行事', '教職員関係行事', 'その他']
 
 function emptyEvent() {
-  return { _key: Math.random(), id: null, title: '', start_time: '', end_time: '', note: '' }
+  return { _key: Math.random(), id: null, title: '', start_time: '', end_time: '', note: '', category: '学校行事' }
 }
 
 export default function EventEditModal({ date, events, onClose, onAdd, onUpdate, onDelete, addToast }) {
@@ -12,13 +13,15 @@ export default function EventEditModal({ date, events, onClose, onAdd, onUpdate,
 
   const [rows, setRows] = useState(() =>
     events.length > 0
-      ? events.map(e => ({ ...e, _key: e.id }))
+      ? events.map(e => ({ ...e, _key: e.id, category: e.category || '学校行事' }))
       : [emptyEvent()]
   )
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    setRows(events.length > 0 ? events.map(e => ({ ...e, _key: e.id })) : [emptyEvent()])
+    setRows(events.length > 0
+      ? events.map(e => ({ ...e, _key: e.id, category: e.category || '学校行事' }))
+      : [emptyEvent()])
   }, [date])
 
   function setField(key, field, value) {
@@ -30,13 +33,19 @@ export default function EventEditModal({ date, events, onClose, onAdd, onUpdate,
     try {
       for (const row of rows) {
         if (!row.title.trim()) continue
+        const payload = {
+          title: row.title,
+          start_time: row.start_time || null,
+          end_time: row.end_time || null,
+          note: row.note || null,
+          category: row.category || '学校行事',
+        }
         if (row.id) {
-          await onUpdate(row.id, { title: row.title, start_time: row.start_time || null, end_time: row.end_time || null, note: row.note || null })
+          await onUpdate(row.id, payload)
         } else {
-          await onAdd({ date, title: row.title, start_time: row.start_time, end_time: row.end_time, note: row.note })
+          await onAdd({ date, ...payload })
         }
       }
-      // delete removed existing events
       const keptIds = new Set(rows.filter(r => r.id).map(r => r.id))
       for (const ev of events) {
         if (!keptIds.has(ev.id)) await onDelete(ev.id)
@@ -62,6 +71,17 @@ export default function EventEditModal({ date, events, onClose, onAdd, onUpdate,
             {rows.map(row => (
               <div key={row._key} className="event-item">
                 <div className="event-item-row">
+                  <label>種別</label>
+                  <select value={row.category} onChange={e => setField(row._key, 'category', e.target.value)} style={{ flex: 1 }}>
+                    {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                  <button
+                    className="btn-danger"
+                    style={{ padding: '4px 8px', fontSize: '12px' }}
+                    onClick={() => setRows(prev => prev.filter(r => r._key !== row._key))}
+                  >削除</button>
+                </div>
+                <div className="event-item-row">
                   <label>行事名</label>
                   <input
                     type="text"
@@ -70,11 +90,6 @@ export default function EventEditModal({ date, events, onClose, onAdd, onUpdate,
                     onChange={e => setField(row._key, 'title', e.target.value)}
                     style={{ flex: 1 }}
                   />
-                  <button
-                    className="btn-danger"
-                    style={{ padding: '4px 8px', fontSize: '12px' }}
-                    onClick={() => setRows(prev => prev.filter(r => r._key !== row._key))}
-                  >削除</button>
                 </div>
                 <div className="event-item-row">
                   <label>開始</label>
