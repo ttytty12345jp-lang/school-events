@@ -44,6 +44,8 @@ function emptyData() {
     leave: emptyLeave(),
     dutyToday: '',
     dutyTomorrow: '',
+    teamToday: '',
+    teamTomorrow: '',
     weekEventToday: '',
     weekEventTomorrow: '',
   }
@@ -185,15 +187,12 @@ export default function WhiteboardView({ events, db = {} }) {
     return (db.nursing || {})[team]?.[dow] || ''
   }
 
-  // 班選択時に当番名を自動反映
-  function selectTeam(team) {
-    db.saveCurrentTeam?.(team)
-    const next = {
-      ...data,
-      dutyToday: nursingName(team, selectedKey),
-      dutyTomorrow: nursingName(team, tomorrowKey),
-    }
-    scheduleSave(next)
+  // 班入力時に当番名を自動反映
+  function updateTeamToday(team) {
+    scheduleSave({ ...data, teamToday: team, dutyToday: nursingName(team, selectedKey) })
+  }
+  function updateTeamTomorrow(team) {
+    scheduleSave({ ...data, teamTomorrow: team, dutyTomorrow: nursingName(team, tomorrowKey) })
   }
 
   // 看護当番のドロップダウン候補（曜日別に全班の名前を集める）
@@ -456,17 +455,16 @@ export default function WhiteboardView({ events, db = {} }) {
               <span className="wb-panel-label">今日</span>
               <span className="wb-panel-date">{formatShort(selectedDate)}</span>
               <span className="wb-duty-inline">
-                <span className="wb-team-selector">
-                  {['班1','班2','班3','班4'].map(t => (
-                    <button key={t}
-                      className={`wb-team-btn${db.currentTeam === t ? ' wb-team-btn-active' : ''}`}
-                      onClick={() => selectTeam(t)}
-                    >{t[1]}班</button>
-                  ))}
-                </span>
-                <span className="wb-duty-label">看護当番</span>
+                <input
+                  className="wb-team-input"
+                  type="number" min="1" max="4"
+                  value={data.teamToday || ''}
+                  onChange={e => updateTeamToday(e.target.value)}
+                  placeholder="□"
+                />
+                <span className="wb-duty-label">班　看護当番</span>
                 <EditCell value={data.dutyToday} onChange={v => updateField('dutyToday', v)}
-                  placeholder="担当者名" className="wb-duty-input" listId="wb-duty-today-list" />
+                  placeholder="" className="wb-duty-input" listId="wb-duty-today-list" />
               </span>
             </div>
             <div className="wb-week-event">
@@ -493,9 +491,16 @@ export default function WhiteboardView({ events, db = {} }) {
               <span className="wb-panel-label">明日</span>
               <span className="wb-panel-date">{formatShort(tomorrowDate)}</span>
               <span className="wb-duty-inline">
-                <span className="wb-duty-label">看護当番</span>
+                <input
+                  className="wb-team-input"
+                  type="number" min="1" max="4"
+                  value={data.teamTomorrow || ''}
+                  onChange={e => updateTeamTomorrow(e.target.value)}
+                  placeholder="□"
+                />
+                <span className="wb-duty-label">班　看護当番</span>
                 <EditCell value={data.dutyTomorrow} onChange={v => updateField('dutyTomorrow', v)}
-                  placeholder="担当者名" className="wb-duty-input" listId="wb-duty-tomorrow-list" />
+                  placeholder="" className="wb-duty-input" listId="wb-duty-tomorrow-list" />
               </span>
             </div>
             <div className="wb-week-event">

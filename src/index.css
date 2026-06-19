@@ -1235,9 +1235,9 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .wb-panel-date  { font-size: 22px; font-weight: 600; opacity: 0.95; flex: 1; text-align: center; }
 
 .wb-duty-inline { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
-.wb-team-selector { display: flex; gap: 2px; flex-shrink: 0; }
-.wb-team-btn { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: #fff; border-radius: 4px; padding: 1px 5px; font-size: 11px; cursor: pointer; }
-.wb-team-btn-active { background: #fff; color: #1e40af; font-weight: 700; }
+.wb-team-input { width: 28px; border: 1px solid rgba(255,255,255,0.5); border-radius: 4px; background: rgba(255,255,255,0.15); color: #fff; font-size: 13px; font-weight: 700; text-align: center; padding: 0; height: 22px; outline: none; -moz-appearance: textfield; }
+.wb-team-input::-webkit-outer-spin-button, .wb-team-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+.wb-team-input::placeholder { color: rgba(255,255,255,0.5); }
 .wb-duty-label { font-size: 11px; color: rgba(255,255,255,0.8); white-space: nowrap; flex-shrink: 0; }
 .wb-duty-input { font-size: 13px !important; font-weight: 700; color: #fff !important; height: 22px !important; background: rgba(255,255,255,0.15) !important; border-radius: 3px; padding: 0 4px !important; width: 52px !important; }
 .wb-week-event { border-bottom: 1px solid rgba(0,0,0,.08); padding: 1px 4px; flex-shrink: 0; }
