@@ -67,7 +67,7 @@ function detectDow(month, day) {
 }
 
 function formatShort(d) {
-  return `${d.getMonth() + 1}/${d.getDate()}（${DAYS_JA[d.getDay()]}）`
+  return `${d.getMonth() + 1}月${d.getDate()}日（${DAYS_JA[d.getDay()]}）`
 }
 
 // ── Inline editable cell ───────────────────────────────────
@@ -320,9 +320,9 @@ export default function WhiteboardView({ events }) {
             <table className="wb-table">
               <colgroup>
                 <col style={{width:'22px'}} />
-                <col style={{width:'7.8%'}} />
-                <col style={{width:'43.9%'}} />
-                <col style={{width:'8.3%'}} />
+                <col style={{width:'8%'}} />
+                <col style={{width:'43%'}} />
+                <col style={{width:'8%'}} />
                 <col />
               </colgroup>
               <tbody>
