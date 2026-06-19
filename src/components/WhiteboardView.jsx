@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { useHeaderControls } from '../HeaderControlsContext'
+import MorningAgenda from './MorningAgenda'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -473,16 +474,7 @@ export default function WhiteboardView({ events, db = {} }) {
                 placeholder="" className="wb-week-input" />
             </div>
             <div className="wb-schedule-list">
-              {selEvents.length === 0
-                ? <div className="wb-no-events">（行事なし）</div>
-                : selEvents.map(ev => (
-                  <div key={ev.id} className={`wb-event-item${ev.color === 'red' ? ' wb-event-red' : ''}`}>
-                    {ev.start_time && <span className="wb-event-time">{ev.start_time}</span>}
-                    <span className="wb-event-title">{ev.title}</span>
-                    {ev.note && <span className="wb-event-note">{ev.note}</span>}
-                  </div>
-                ))
-              }
+              <MorningAgenda dateKey={selectedKey} calendarEvents={selEvents} />
             </div>
           </div>
 
@@ -509,16 +501,7 @@ export default function WhiteboardView({ events, db = {} }) {
                 placeholder="" className="wb-week-input" />
             </div>
             <div className="wb-schedule-list">
-              {nextEvents.length === 0
-                ? <div className="wb-no-events">（行事なし）</div>
-                : nextEvents.map(ev => (
-                  <div key={ev.id} className={`wb-event-item${ev.color === 'red' ? ' wb-event-red' : ''}`}>
-                    {ev.start_time && <span className="wb-event-time">{ev.start_time}</span>}
-                    <span className="wb-event-title">{ev.title}</span>
-                    {ev.note && <span className="wb-event-note">{ev.note}</span>}
-                  </div>
-                ))
-              }
+              <MorningAgenda dateKey={tomorrowKey} calendarEvents={nextEvents} />
             </div>
           </div>
 
