@@ -1136,12 +1136,12 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   gap: 1px;
 }
 .wb-time-input {
-  width: 36px;
+  width: 40px;
   flex-shrink: 0;
   border: none;
   outline: none;
   background: transparent;
-  font-size: 10px;
+  font-size: 12px;
   font-family: inherit;
   text-align: center;
   height: 20px;
