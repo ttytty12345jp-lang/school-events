@@ -65,103 +65,110 @@ export function parseImportExcel(file) {
     reader.onload = e => {
       try {
         const wb = XLSX.read(e.target.result, { type: 'binary' })
-        const ws = wb.Sheets[wb.SheetNames[0]]
-        const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' })
+        const pad = n => String(n).padStart(2, '0')
+        const allEvents = []
 
-        // ── ヘッダー行を探す ──
-        const headerIdx = rows.findIndex(r => {
-          const cells = r.map(c => String(c).trim())
-          return cells.includes('日付') || cells.includes('日') || cells.some(c => c === '行事名')
-        })
-        if (headerIdx === -1) { reject(new Error('ヘッダー行が見つかりません')); return }
+        // 全シートを処理
+        for (const sheetName of wb.SheetNames) {
+          const ws = wb.Sheets[sheetName]
+          const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' })
 
-        const header = rows[headerIdx].map(c => String(c).trim())
+          const headerIdx = rows.findIndex(r => {
+            const cells = r.map(c => String(c).trim())
+            return cells.includes('日付') || cells.includes('日') || cells.some(c => c === '行事名')
+          })
+          if (headerIdx === -1) continue  // このシートにはヘッダーなし → スキップ
 
-        // ── フォーマット判別 ──
-        const isFormatA = header.includes('日付') || header.includes('区分') || header.includes('行事名')
+          const header = rows[headerIdx].map(c => String(c).trim())
+          const isFormatA = header.includes('日付') || header.includes('区分') || header.includes('行事名')
 
-        if (isFormatA) {
-          // ── フォーマットA（テンプレート形式） ──
-          const ci = {
-            date:       header.findIndex(h => h === '日付'),
-            category:   header.findIndex(h => h === '区分'),
-            title:      header.findIndex(h => h === '行事名'),
-            start_time: header.findIndex(h => h.includes('開始')),
-            note:       header.findIndex(h => h === '備考'),
-            color:      header.findIndex(h => h === '色'),
+          if (isFormatA) {
+            // ── フォーマットA（テンプレート形式） ──
+            const ci = {
+              date:       header.findIndex(h => h === '日付'),
+              category:   header.findIndex(h => h === '区分'),
+              title:      header.findIndex(h => h === '行事名'),
+              start_time: header.findIndex(h => h.includes('開始')),
+              note:       header.findIndex(h => h === '備考'),
+              color:      header.findIndex(h => h === '色'),
+            }
+            for (let i = headerIdx + 1; i < rows.length; i++) {
+              const row = rows[i]
+              const title = String(row[ci.title] ?? '').trim()
+              if (!title) continue
+              let date = row[ci.date]
+              if (typeof date === 'number') date = serialToDateKey(date)
+              else date = String(date).trim()
+              if (!date.match(/^\d{4}-\d{2}-\d{2}$/)) continue
+              const category = ci.category >= 0 ? normalizeCategory(row[ci.category]) : '学校行事'
+              const start_time = ci.start_time >= 0 ? String(row[ci.start_time] ?? '').trim() || null : null
+              const note = ci.note >= 0 ? String(row[ci.note] ?? '').trim() || null : null
+              const color = ci.color >= 0 && String(row[ci.color] ?? '').includes('赤') ? 'red' : 'black'
+              allEvents.push({ date, category, title, start_time, end_time: null, note, color })
+            }
+            continue
           }
-          const events = []
+
+          // ── フォーマットB（月別シート形式: 日・曜・学校行事・現職教育…・PTA） ──
+
+          // 年をヘッダー前の行から取得（令和 or 西暦）
+          let year = new Date().getFullYear()
+          for (let i = 0; i < Math.min(headerIdx, 5); i++) {
+            const cells = rows[i]
+            // 西暦が直接入っているセルを探す（例: 2026）
+            for (const c of cells) {
+              const n = Number(c)
+              if (n >= 2020 && n <= 2100) { year = n; break }
+            }
+            // 令和表記
+            const text = toHalf(cells.join(''))
+            const reiwa = text.match(/令和\s*(\d+)/)
+            if (reiwa) year = reiwaToWestern(parseInt(reiwa[1]))
+          }
+
+          // 月をシート名から取得（全角 "４月" → 4）
+          const snMonth = toHalf(sheetName).match(/(\d+)月/)
+          if (!snMonth) continue  // 月が特定できないシートはスキップ
+          const month = parseInt(snMonth[1])
+
+          const dayColIdx = header.findIndex(h => h === '日' || h === '日付')
+          if (dayColIdx === -1) continue
+
+          // カテゴリ列を検出（日・曜 以降の非空ヘッダー列）
+          const catCols = []
+          header.forEach((h, idx) => {
+            if (idx <= 1) return
+            if (h) catCols.push({ idx, category: normalizeCategory(h) })
+          })
+
           for (let i = headerIdx + 1; i < rows.length; i++) {
             const row = rows[i]
-            const title = String(row[ci.title] ?? '').trim()
-            if (!title) continue
-            let date = row[ci.date]
-            if (typeof date === 'number') date = serialToDateKey(date)
-            else date = String(date).trim()
-            if (!date.match(/^\d{4}-\d{2}-\d{2}$/)) continue
-            const category = ci.category >= 0 ? normalizeCategory(row[ci.category]) : '学校行事'
-            const start_time = ci.start_time >= 0 ? String(row[ci.start_time] ?? '').trim() || null : null
-            const note = ci.note >= 0 ? String(row[ci.note] ?? '').trim() || null : null
-            const color = ci.color >= 0 && String(row[ci.color] ?? '').includes('赤') ? 'red' : 'black'
-            events.push({ date, category, title, start_time, end_time: null, note, color })
-          }
-          resolve(events)
-          return
-        }
+            let dayRaw = toHalf(String(row[dayColIdx] ?? '')).trim()
+            if (!isNaN(dayRaw) && dayRaw !== '' && Number(dayRaw) > 31) {
+              const parsed = XLSX.SSF.parse_date_code(Number(dayRaw))
+              dayRaw = String(parsed.d)
+            }
+            const day = parseInt(dayRaw)
+            if (!day || day < 1 || day > 31) continue
 
-        // ── フォーマットB（既存行事予定表形式: 日・曜・学校行事・現職教育…・PTA） ──
+            const dateKey = `${year}-${pad(month)}-${pad(day)}`
 
-        // 年月をヘッダー前の行から取得
-        let year = new Date().getFullYear()
-        let month = null
-        for (let i = 0; i < Math.min(headerIdx, 5); i++) {
-          const text = toHalf(rows[i].join(''))
-          const reiwa = text.match(/令和\s*(\d+)\s*年/)
-          if (reiwa) year = reiwaToWestern(parseInt(reiwa[1]))
-          const mo = text.match(/(\d+)\s*月行事/)
-          if (mo) month = parseInt(mo[1])
-        }
-        // シート名からも取得を試みる
-        const sheetName = toHalf(wb.SheetNames[0])
-        const snMonth = sheetName.match(/(\d+)月/)
-        if (!month && snMonth) month = parseInt(snMonth[1])
-        if (!month) { reject(new Error('月が特定できません。シート名を「4月」などにしてください')); return }
-
-        // カテゴリ列を検出（学校行事 / 現職教育… / PTA…）
-        const catCols = []
-        header.forEach((h, idx) => {
-          if (idx <= 1) return // 日・曜はスキップ
-          if (h) catCols.push({ idx, category: normalizeCategory(h) })
-        })
-        const dayColIdx = header.findIndex(h => h === '日' || h === '日付')
-
-        const events = []
-        const pad = n => String(n).padStart(2, '0')
-
-        for (let i = headerIdx + 1; i < rows.length; i++) {
-          const row = rows[i]
-          let dayRaw = toHalf(String(row[dayColIdx] ?? '')).trim()
-          // Excelシリアル値の場合は日を抽出
-          if (!isNaN(dayRaw) && dayRaw !== '' && Number(dayRaw) > 31) {
-            const parsed = XLSX.SSF.parse_date_code(Number(dayRaw))
-            dayRaw = String(parsed.d)
-          }
-          const day = parseInt(dayRaw)
-          if (!day || day < 1 || day > 31) continue
-
-          const dateKey = `${year}-${pad(month)}-${pad(day)}`
-
-          for (const { idx, category } of catCols) {
-            const cellText = String(row[idx] ?? '').trim()
-            if (!cellText) continue
-            // セル内を改行で分割（複数行の行事）
-            const lines = cellText.split(/\n|\\n/).map(l => l.trim()).filter(Boolean)
-            for (const title of lines) {
-              events.push({ date: dateKey, category, title, start_time: null, end_time: null, note: null, color: 'black' })
+            for (const { idx, category } of catCols) {
+              const cellText = String(row[idx] ?? '').trim()
+              if (!cellText) continue
+              const lines = cellText.split(/\r?\n/).map(l => l.trim()).filter(Boolean)
+              for (const title of lines) {
+                allEvents.push({ date: dateKey, category, title, start_time: null, end_time: null, note: null, color: 'black' })
+              }
             }
           }
         }
-        resolve(events)
+
+        if (allEvents.length === 0) {
+          reject(new Error('インポートできる行事データが見つかりませんでした'))
+          return
+        }
+        resolve(allEvents)
       } catch (err) { reject(err) }
     }
     reader.onerror = () => reject(new Error('ファイル読み込み失敗'))
