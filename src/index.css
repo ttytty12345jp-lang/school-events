@@ -1047,6 +1047,19 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .wb-left .wb-section:nth-child(1),
 .wb-left .wb-section:nth-child(2) { flex: 1; }
 .wb-left .wb-section:nth-child(3) { flex: none; }
+
+.wb-left .wb-section:nth-child(1) .wb-row,
+.wb-left .wb-section:nth-child(2) .wb-row { height: 34px; }
+.wb-left .wb-section:nth-child(1) .wb-input,
+.wb-left .wb-section:nth-child(2) .wb-input { font-size: 20px; height: 34px; line-height: 34px; }
+.wb-left .wb-section:nth-child(1) .wb-time-input,
+.wb-left .wb-section:nth-child(2) .wb-time-input { font-size: 20px; height: 30px; width: 52px; }
+.wb-left .wb-section:nth-child(1) .wb-time-range,
+.wb-left .wb-section:nth-child(2) .wb-time-range { height: 34px; }
+.wb-left .wb-section:nth-child(1) .wb-tilde,
+.wb-left .wb-section:nth-child(2) .wb-tilde { font-size: 14px; }
+.wb-left .wb-section:nth-child(1) .wb-clear-btn,
+.wb-left .wb-section:nth-child(2) .wb-clear-btn { font-size: 16px; }
 .wb-section .wb-table { flex: 1; height: 100%; }
 
 /* Tables */
@@ -1095,7 +1108,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .wb-header-row .wb-th-section { background: #374151; }
 .wb-th-clear { background: #f3f4f6; }
 
-.wb-td { vertical-align: middle; padding: 0; }
+.wb-td { vertical-align: middle; padding: 0; overflow: hidden; max-width: 0; }
 .wb-td-center input { text-align: center; }
 .wb-td-clear { width: 22px; padding: 0; text-align: center; }
 .wb-row { height: 24px; }
