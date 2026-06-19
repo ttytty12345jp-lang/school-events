@@ -18,7 +18,7 @@ export default function App() {
   return (
     <HeaderControlsContext.Provider value={{ setControls: setHeaderControls }}>
       <Header view={view} setView={setView} controls={headerControls} />
-      <main className="main-content">
+      <main className={`main-content${view === 'whiteboard' ? ' main-full-width' : ''}`}>
         {loading ? (
           <div style={{ textAlign: 'center', padding: 40, color: '#64748b' }}>読み込み中…</div>
         ) : view === 'today' ? (
