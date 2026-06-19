@@ -37,15 +37,19 @@ export function useDatabaseLists() {
   const [names, setNamesState] = useState([])
   const [nursing, setNursingState] = useState(emptyNursing())
 
+  const [currentTeam, setCurrentTeamState] = useState('')
+
   useEffect(() => {
     load('rooms').then(d => { if (d) setRoomsState(d) })
     load('names').then(d => { if (d) setNamesState(d) })
     load('nursing').then(d => { if (d) setNursingState({ ...emptyNursing(), ...d }) })
+    load('team').then(d => { if (d) setCurrentTeamState(d) })
   }, [])
 
   const saveRooms = useCallback((next) => { setRoomsState(next); save('rooms', next) }, [])
   const saveNames = useCallback((next) => { setNamesState(next); save('names', next) }, [])
   const saveNursing = useCallback((next) => { setNursingState(next); save('nursing', next) }, [])
+  const saveCurrentTeam = useCallback((next) => { setCurrentTeamState(next); save('team', next) }, [])
 
-  return { rooms, names, nursing, saveRooms, saveNames, saveNursing }
+  return { rooms, names, nursing, currentTeam, saveRooms, saveNames, saveNursing, saveCurrentTeam }
 }

@@ -176,18 +176,32 @@ export default function WhiteboardView({ events, db = {} }) {
   const selectedDate = dateFromKey(selectedKey)
   const tomorrowDate = dateFromKey(tomorrowKey)
 
-  // 看護当番のドロップダウン候補（曜日別に全班の名前を集める）
   const DAYS_JA_WEEK = ['日', '月', '火', '水', '木', '金', '土']
+
+  // 班+曜日 → 名前
+  function nursingName(team, dateKey) {
+    if (!team) return ''
+    const dow = DAYS_JA_WEEK[dateFromKey(dateKey).getDay()]
+    return (db.nursing || {})[team]?.[dow] || ''
+  }
+
+  // 班選択時に当番名を自動反映
+  function selectTeam(team) {
+    db.saveCurrentTeam?.(team)
+    const next = {
+      ...data,
+      dutyToday: nursingName(team, selectedKey),
+      dutyTomorrow: nursingName(team, tomorrowKey),
+    }
+    scheduleSave(next)
+  }
+
+  // 看護当番のドロップダウン候補（曜日別に全班の名前を集める）
   const nursingForDay = useMemo(() => {
     const nursing = db.nursing || {}
     const getNames = (dateKey) => {
       const dow = DAYS_JA_WEEK[dateFromKey(dateKey).getDay()]
-      const names = []
-      for (const team of Object.keys(nursing)) {
-        const v = nursing[team]?.[dow]
-        if (v) names.push(v)
-      }
-      return names
+      return Object.values(nursing).map(t => t[dow]).filter(Boolean)
     }
     return { today: getNames(selectedKey), tomorrow: getNames(tomorrowKey) }
   }, [db.nursing, selectedKey, tomorrowKey])
@@ -442,6 +456,14 @@ export default function WhiteboardView({ events, db = {} }) {
               <span className="wb-panel-label">今日</span>
               <span className="wb-panel-date">{formatShort(selectedDate)}</span>
               <span className="wb-duty-inline">
+                <span className="wb-team-selector">
+                  {['班1','班2','班3','班4'].map(t => (
+                    <button key={t}
+                      className={`wb-team-btn${db.currentTeam === t ? ' wb-team-btn-active' : ''}`}
+                      onClick={() => selectTeam(t)}
+                    >{t[1]}班</button>
+                  ))}
+                </span>
                 <span className="wb-duty-label">看護当番</span>
                 <EditCell value={data.dutyToday} onChange={v => updateField('dutyToday', v)}
                   placeholder="担当者名" className="wb-duty-input" listId="wb-duty-today-list" />
