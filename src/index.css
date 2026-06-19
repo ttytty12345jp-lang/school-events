@@ -1016,9 +1016,10 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 
 /* ── Whiteboard ── */
 .wb-wrap {
-  margin: -16px;
+  margin: -16px calc(-50vw + 50%);
   padding: 6px 10px;
   height: calc(100vh - 48px);
+  width: 100vw;
   box-sizing: border-box;
   overflow: hidden;
   display: flex;
