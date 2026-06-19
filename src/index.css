@@ -464,6 +464,28 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .thirds-btn:disabled { opacity: 0.3; cursor: default; }
 .thirds-val { font-size: 11px; min-width: 22px; text-align: center; }
 
+/* ── データベースタブ ── */
+.db-wrap { padding: 16px 20px; }
+.db-tabs { display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 2px solid var(--border); padding-bottom: 0; }
+.db-tab { background: none; border: none; border-bottom: 3px solid transparent; padding: 6px 16px; font-size: 14px; font-weight: 600; color: var(--text-muted); cursor: pointer; margin-bottom: -2px; }
+.db-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+.db-lists { display: flex; flex-direction: column; gap: 24px; max-width: 700px; }
+.db-section { }
+.db-section-title { font-weight: 700; font-size: 15px; margin-bottom: 8px; color: var(--text); }
+.db-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; min-height: 28px; }
+.db-tag { display: inline-flex; align-items: center; gap: 4px; background: #e0e7ff; color: #3730a3; border-radius: 4px; padding: 2px 8px; font-size: 13px; }
+.db-tag-del { background: none; border: none; cursor: pointer; color: #6366f1; font-size: 14px; padding: 0 2px; line-height: 1; }
+.db-add-row { display: flex; gap: 8px; }
+.db-add-input { border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; font-size: 13px; width: 200px; outline: none; }
+.db-add-input:focus { border-color: var(--primary); }
+.db-add-btn { background: var(--primary); color: #fff; border: none; border-radius: 6px; padding: 4px 14px; font-size: 13px; cursor: pointer; }
+.db-nursing-table { border-collapse: collapse; }
+.db-nursing-th { border: 1px solid var(--border); padding: 4px 12px; background: #f3f4f6; font-size: 13px; font-weight: 600; text-align: center; min-width: 80px; }
+.db-nursing-td-label { border: 1px solid var(--border); padding: 4px 10px; background: #f3f4f6; font-size: 13px; font-weight: 600; text-align: center; white-space: nowrap; }
+.db-nursing-td { border: 1px solid var(--border); padding: 2px 4px; }
+.db-nursing-input { border: none; outline: none; background: transparent; font-size: 13px; width: 80px; padding: 2px 4px; }
+.db-nursing-input:focus { background: var(--primary-light); border-radius: 3px; }
+
 /* ── 学校行事タブ ── */
 .jiji-wrap { padding: 20px; max-width: 900px; }
 .jiji-header-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }

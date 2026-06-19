@@ -77,7 +77,7 @@ function formatShort(d) {
 }
 
 // ── Inline editable cell ───────────────────────────────────
-function EditCell({ value, onChange, placeholder = '', className = '', align = 'left' }) {
+function EditCell({ value, onChange, placeholder = '', className = '', align = 'left', listId }) {
   const [local, setLocal] = useState(value)
   useEffect(() => { setLocal(value) }, [value])
   return (
@@ -88,6 +88,7 @@ function EditCell({ value, onChange, placeholder = '', className = '', align = '
       onBlur={() => { if (local !== value) onChange(local) }}
       placeholder={placeholder}
       style={{ textAlign: align }}
+      list={listId}
     />
   )
 }
@@ -167,13 +168,29 @@ function useNextSchoolDay(selectedKey) {
   }, [selectedKey, overrides])
 }
 
-export default function WhiteboardView({ events }) {
+export default function WhiteboardView({ events, db = {} }) {
   const todayKey = toDateKey(new Date())
   const [selectedKey, setSelectedKey] = useState(todayKey)
   const tomorrowKey = useNextSchoolDay(selectedKey)
 
   const selectedDate = dateFromKey(selectedKey)
   const tomorrowDate = dateFromKey(tomorrowKey)
+
+  // 看護当番のドロップダウン候補（曜日別に全班の名前を集める）
+  const DAYS_JA_WEEK = ['日', '月', '火', '水', '木', '金', '土']
+  const nursingForDay = useMemo(() => {
+    const nursing = db.nursing || {}
+    const getNames = (dateKey) => {
+      const dow = DAYS_JA_WEEK[dateFromKey(dateKey).getDay()]
+      const names = []
+      for (const team of Object.keys(nursing)) {
+        const v = nursing[team]?.[dow]
+        if (v) names.push(v)
+      }
+      return names
+    }
+    return { today: getNames(selectedKey), tomorrow: getNames(tomorrowKey) }
+  }, [db.nursing, selectedKey, tomorrowKey])
 
   const [data, setData] = useState(emptyData)
   const [saving, setSaving] = useState(false)
@@ -259,6 +276,18 @@ export default function WhiteboardView({ events }) {
 
   return (
     <div className="wb-wrap">
+      <datalist id="wb-rooms-list">
+        {(db.rooms || []).map(r => <option key={r} value={r} />)}
+      </datalist>
+      <datalist id="wb-names-list">
+        {(db.names || []).map(n => <option key={n} value={n} />)}
+      </datalist>
+      <datalist id="wb-duty-today-list">
+        {nursingForDay.today.map(n => <option key={n} value={n} />)}
+      </datalist>
+      <datalist id="wb-duty-tomorrow-list">
+        {nursingForDay.tomorrow.map(n => <option key={n} value={n} />)}
+      </datalist>
       <div className="wb-layout">
 
         {/* ── 左パネル ── */}
@@ -293,7 +322,7 @@ export default function WhiteboardView({ events }) {
                 {data.rooms.map((r, i) => (
                   <tr key={i} className="wb-row">
                     <td className="wb-td">
-                      <EditCell value={r.place} onChange={v => updateRoom(i, 'place', v)} />
+                      <EditCell value={r.place} onChange={v => updateRoom(i, 'place', v)} listId="wb-rooms-list" />
                     </td>
                     <td className="wb-td wb-td-center">
                       <EditCell value={r.month} onChange={v => updateRoom(i, 'month', v)} align="center" />
@@ -312,7 +341,7 @@ export default function WhiteboardView({ events }) {
                       />
                     </td>
                     <td className="wb-td">
-                      <EditCell value={r.users} onChange={v => updateRoom(i, 'users', v)} />
+                      <EditCell value={r.users} onChange={v => updateRoom(i, 'users', v)} listId="wb-names-list" />
                     </td>
                     <td className="wb-td">
                       <EditCell value={r.purpose} onChange={v => updateRoom(i, 'purpose', v)} />
@@ -349,7 +378,7 @@ export default function WhiteboardView({ events }) {
                 {data.trips.map((t, i) => (
                   <tr key={i} className="wb-row">
                     <td className="wb-td">
-                      <EditCell value={t.name} onChange={v => updateTrip(i, 'name', v)} />
+                      <EditCell value={t.name} onChange={v => updateTrip(i, 'name', v)} listId="wb-names-list" />
                     </td>
                     <td className="wb-td">
                       <EditCell value={t.destination} onChange={v => updateTrip(i, 'destination', v)} />
@@ -415,7 +444,7 @@ export default function WhiteboardView({ events }) {
               <span className="wb-duty-inline">
                 <span className="wb-duty-label">看護当番</span>
                 <EditCell value={data.dutyToday} onChange={v => updateField('dutyToday', v)}
-                  placeholder="担当者名" className="wb-duty-input" />
+                  placeholder="担当者名" className="wb-duty-input" listId="wb-duty-today-list" />
               </span>
             </div>
             <div className="wb-week-event">
@@ -444,7 +473,7 @@ export default function WhiteboardView({ events }) {
               <span className="wb-duty-inline">
                 <span className="wb-duty-label">看護当番</span>
                 <EditCell value={data.dutyTomorrow} onChange={v => updateField('dutyTomorrow', v)}
-                  placeholder="担当者名" className="wb-duty-input" />
+                  placeholder="担当者名" className="wb-duty-input" listId="wb-duty-tomorrow-list" />
               </span>
             </div>
             <div className="wb-week-event">

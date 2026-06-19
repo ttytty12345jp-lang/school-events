@@ -3,7 +3,7 @@ export default function Header({ view, setView, controls }) {
     { key: 'today', label: '📋 朝会記録簿' },
     { key: 'monthly', label: '📅 月中行事' },
     { key: 'annual', label: '📆 年間' },
-    { key: 'jiji', label: '🏫 学校行事' },
+    { key: 'jiji', label: '🗄️ データベース' },
     { key: 'whiteboard', label: '📌 ホワイトボード' },
   ]
   return (

@@ -3,10 +3,11 @@ import Header from './components/Header'
 import MonthlyCalendar from './components/MonthlyCalendar'
 import TodayTomorrowView from './components/TodayTomorrowView'
 import AnnualView from './components/AnnualView'
-import SchoolJijiView from './components/SchoolJijiView'
+import DatabaseView from './components/DatabaseView'
 import WhiteboardView from './components/WhiteboardView'
 import { ToastContainer, useToast } from './components/Toast'
 import { useEvents } from './hooks/useEvents'
+import { useDatabaseLists } from './hooks/useDatabaseLists'
 import { HeaderControlsContext } from './HeaderControlsContext'
 
 export default function App() {
@@ -14,6 +15,7 @@ export default function App() {
   const [headerControls, setHeaderControls] = useState(null)
   const { toasts, addToast } = useToast()
   const { events, loading, addEvent, updateEvent, deleteEvent } = useEvents()
+  const db = useDatabaseLists()
 
   return (
     <HeaderControlsContext.Provider value={{ setControls: setHeaderControls }}>
@@ -34,9 +36,9 @@ export default function App() {
         ) : view === 'annual' ? (
           <AnnualView events={events} />
         ) : view === 'jiji' ? (
-          <SchoolJijiView />
+          <DatabaseView {...db} />
         ) : (
-          <WhiteboardView events={events} />
+          <WhiteboardView events={events} db={db} />
         )}
       </main>
       <ToastContainer toasts={toasts} />
