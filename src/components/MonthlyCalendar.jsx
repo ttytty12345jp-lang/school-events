@@ -1,5 +1,14 @@
-import { useState, useMemo, useRef, useEffect } from 'react'
-import { exportMonthlyExcel } from '../utils/exportExcel'
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
+import { createClient } from '@supabase/supabase-js'
+import { exportMonthlyExcel, downloadMonthlyTemplate, parseImportExcel } from '../utils/exportExcel'
+import { useHeaderControls } from '../HeaderControlsContext'
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
+const USE_SUPABASE = !!(SUPABASE_URL && SUPABASE_ANON_KEY)
+const supabase = USE_SUPABASE ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null
+
+const HIGHLIGHTS_TYPE = 'row_highlights'
 
 const DAYS_JA = ['日', '月', '火', '水', '木', '金', '土']
 const CATEGORIES = ['学校行事', '教職員関係行事', 'その他']
@@ -8,16 +17,23 @@ function toDateKey(y, m, d) {
   return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
 }
 
+function sortedEvents(evs) {
+  return [...evs].sort((a, b) => {
+    const so = (a.sort_order ?? 9999) - (b.sort_order ?? 9999)
+    if (so !== 0) return so
+    return (a.created_at || '') < (b.created_at || '') ? -1 : 1
+  })
+}
+
 // ── セル内ポップオーバー ──────────────────────────────────
 function CellPopover({ date, category, events, onAdd, onUpdate, onDelete, onClose, addToast }) {
   const ref = useRef(null)
-  const [items, setItems] = useState(events.map(e => ({ ...e })))
   const [newTitle, setNewTitle] = useState('')
   const [newTime, setNewTime] = useState('')
   const [newNote, setNewNote] = useState('')
+  const [newColor, setNewColor] = useState('black')
   const [saving, setSaving] = useState(false)
 
-  // 外クリックで閉じる
   useEffect(() => {
     function handler(e) {
       if (ref.current && !ref.current.contains(e.target)) onClose()
@@ -30,26 +46,24 @@ function CellPopover({ date, category, events, onAdd, onUpdate, onDelete, onClos
     if (!newTitle.trim()) return
     setSaving(true)
     try {
-      await onAdd({ date, category, title: newTitle.trim(), start_time: newTime || null, end_time: null, note: newNote.trim() || null })
+      await onAdd({ date, category, title: newTitle.trim(), start_time: newTime || null, end_time: null, note: newNote.trim() || null, color: newColor })
       setNewTitle('')
       setNewTime('')
       setNewNote('')
+      setNewColor('black')
       addToast('追加しました', 'success')
     } catch { addToast('保存失敗', 'error') }
     setSaving(false)
   }
 
   async function handleUpdate(id, field, value) {
-    try {
-      await onUpdate(id, { [field]: value || null })
-    } catch { addToast('更新失敗', 'error') }
+    try { await onUpdate(id, { [field]: value || null }) }
+    catch { addToast('更新失敗', 'error') }
   }
 
   async function handleDelete(id) {
-    try {
-      await onDelete(id)
-      addToast('削除しました', 'info')
-    } catch { addToast('削除失敗', 'error') }
+    try { await onDelete(id); addToast('削除しました', 'info') }
+    catch { addToast('削除失敗', 'error') }
   }
 
   function handleKeyDown(e) {
@@ -58,46 +72,46 @@ function CellPopover({ date, category, events, onAdd, onUpdate, onDelete, onClos
   }
 
   return (
-    <div className="cell-popover" ref={ref}>
+    <div className="cell-popover" ref={ref} onClick={e => e.stopPropagation()}>
       <div className="cell-popover-header">
         <span>{date.slice(5).replace('-', '/')} {category}</span>
         <button className="btn-close" onClick={onClose}>×</button>
       </div>
-
-      {/* 既存行事の編集 */}
       {events.map(ev => (
         <ExistingEventRow key={ev.id} ev={ev} onUpdate={handleUpdate} onDelete={handleDelete} />
       ))}
-
-      {/* 新規追加行 */}
       <div className="popover-new-row">
-        <input
-          type="text"
-          placeholder="行事名を入力"
-          value={newTitle}
-          onChange={e => setNewTitle(e.target.value)}
-          onKeyDown={handleKeyDown}
-          autoFocus
-          className="popover-input-title"
-        />
-        <input
-          type="time"
-          value={newTime}
-          onChange={e => setNewTime(e.target.value)}
-          className="popover-input-time"
-        />
-        <input
-          type="text"
-          placeholder="備考"
-          value={newNote}
-          onChange={e => setNewNote(e.target.value)}
-          onKeyDown={handleKeyDown}
-          className="popover-input-note"
-        />
+        <ColorToggle color={newColor} onChange={setNewColor} />
+        <input type="text" placeholder="行事名を入力" value={newTitle}
+          onChange={e => setNewTitle(e.target.value)} onKeyDown={handleKeyDown}
+          autoFocus className="popover-input-title"
+          style={{ color: newColor === 'red' ? '#dc2626' : 'inherit' }} />
+        <input type="time" value={newTime}
+          onChange={e => setNewTime(e.target.value)} className="popover-input-time" />
+        <input type="text" placeholder="備考" value={newNote}
+          onChange={e => setNewNote(e.target.value)} onKeyDown={handleKeyDown}
+          className="popover-input-note" />
         <button className="btn-primary popover-add-btn" onClick={handleAdd} disabled={saving || !newTitle.trim()}>
           追加
         </button>
       </div>
+    </div>
+  )
+}
+
+function ColorToggle({ color, onChange }) {
+  return (
+    <div className="color-toggle">
+      <button
+        className={`color-btn color-black${color !== 'red' ? ' active' : ''}`}
+        onClick={() => onChange('black')}
+        title="黒"
+      >黒</button>
+      <button
+        className={`color-btn color-red${color === 'red' ? ' active' : ''}`}
+        onClick={() => onChange('red')}
+        title="赤"
+      >赤</button>
     </div>
   )
 }
@@ -107,37 +121,124 @@ function ExistingEventRow({ ev, onUpdate, onDelete }) {
   const [time, setTime] = useState(ev.start_time || '')
   const [note, setNote] = useState(ev.note || '')
 
+  useEffect(() => { setTitle(ev.title); setTime(ev.start_time || ''); setNote(ev.note || '') }, [ev])
+
   function blur(field, value) {
-    const current = field === 'title' ? ev.title : field === 'start_time' ? (ev.start_time || '') : (ev.note || '')
-    if (value !== current) onUpdate(ev.id, field, value)
+    const cur = field === 'title' ? ev.title : field === 'start_time' ? (ev.start_time || '') : (ev.note || '')
+    if (value !== cur) onUpdate(ev.id, field, value)
   }
 
   return (
     <div className="popover-existing-row">
-      <input
-        type="text"
-        value={title}
-        onChange={e => setTitle(e.target.value)}
-        onBlur={() => blur('title', title)}
-        className="popover-input-title"
-      />
-      <input
-        type="time"
-        value={time}
-        onChange={e => setTime(e.target.value)}
-        onBlur={() => blur('start_time', time)}
-        className="popover-input-time"
-      />
-      <input
-        type="text"
-        placeholder="備考"
-        value={note}
-        onChange={e => setNote(e.target.value)}
-        onBlur={() => blur('note', note)}
-        className="popover-input-note"
-      />
+      <ColorToggle color={ev.color || 'black'} onChange={c => onUpdate(ev.id, 'color', c)} />
+      <input type="text" value={title} onChange={e => setTitle(e.target.value)}
+        onBlur={() => blur('title', title)} className="popover-input-title"
+        style={{ color: ev.color === 'red' ? '#dc2626' : 'inherit' }} />
+      <span className="time-clear-wrap">
+        <input type="time" value={time} onChange={e => setTime(e.target.value)}
+          onBlur={() => blur('start_time', time)} className="popover-input-time" />
+        {time && (
+          <button className="time-clear-btn" onMouseDown={e => {
+            e.preventDefault()
+            setTime('')
+            onUpdate(ev.id, 'start_time', '')
+          }}>×</button>
+        )}
+      </span>
+      <input type="text" placeholder="備考" value={note} onChange={e => setNote(e.target.value)}
+        onBlur={() => blur('note', note)} className="popover-input-note" />
       <button className="btn-danger popover-del-btn" onClick={() => onDelete(ev.id)}>✕</button>
     </div>
+  )
+}
+
+// ── ドロップゾーン（イベント間の挿入位置） ────────────────
+function DropZone({ onDrop, isOver, setIsOver }) {
+  return (
+    <div
+      className={`drop-zone${isOver ? ' drop-zone-over' : ''}`}
+      onDragOver={e => { e.preventDefault(); e.stopPropagation(); setIsOver(true) }}
+      onDragLeave={() => setIsOver(false)}
+      onDrop={e => { e.preventDefault(); e.stopPropagation(); setIsOver(false); onDrop() }}
+    />
+  )
+}
+
+// ── ドラッグ可能なイベントチップ ──────────────────────────
+function DraggableChip({ ev, onDragStart }) {
+  return (
+    <div
+      className="table-event-chip draggable-chip"
+      draggable
+      onDragStart={e => { e.stopPropagation(); onDragStart(e, ev) }}
+      style={{ color: ev.color === 'red' ? '#dc2626' : 'inherit' }}
+    >
+      {ev.title}
+      {ev.start_time && <span className="chip-time">　{ev.start_time}{ev.end_time ? `～${ev.end_time}` : ''}</span>}
+      {ev.note && <span className="chip-note">　{ev.note}</span>}
+    </div>
+  )
+}
+
+// ── セル（ドロップターゲット） ────────────────────────────
+function DroppableCell({ dateKey, cat, cellEvents, isActive, onCellClick, onAdd, onUpdate, onDelete, addToast, dragState, onDropToCell, onDropBetween }) {
+  const [cellOver, setCellOver] = useState(false)
+  const [zoneOver, setZoneOver] = useState({}) // index → bool
+
+  function handleCellDrop(e) {
+    e.preventDefault()
+    setCellOver(false)
+    if (!dragState.current) return
+    // セル末尾にドロップ
+    onDropToCell(dateKey, cat, cellEvents.length)
+  }
+
+  const activeCellEvents = isActive ? cellEvents : []
+
+  return (
+    <td
+      className={[
+        'col-cat-cell',
+        isActive ? 'cell-active' : '',
+        cellOver && dragState.current ? 'cell-drop-over' : '',
+      ].filter(Boolean).join(' ')}
+      style={{ position: 'relative' }}
+      onClick={() => !dragState.current && onCellClick()}
+      onDragOver={e => { e.preventDefault(); setCellOver(true) }}
+      onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setCellOver(false) }}
+      onDrop={handleCellDrop}
+    >
+      {/* 先頭ドロップゾーン */}
+      <DropZone
+        isOver={!!zoneOver[-1]}
+        setIsOver={v => setZoneOver(z => ({ ...z, [-1]: v }))}
+        onDrop={() => onDropBetween(dateKey, cat, 0)}
+      />
+
+      {cellEvents.map((ev, i) => (
+        <span key={ev.id} className="chip-wrapper">
+          <DraggableChip ev={ev} onDragStart={(e, ev) => { dragState.current = { ev, sourceDateKey: dateKey, sourceCat: cat } }} />
+          <DropZone
+            isOver={!!zoneOver[i]}
+            setIsOver={v => setZoneOver(z => ({ ...z, [i]: v }))}
+            onDrop={() => onDropBetween(dateKey, cat, i + 1)}
+          />
+        </span>
+      ))}
+
+      {isActive && (
+        <CellPopover
+          date={dateKey}
+          category={cat}
+          events={activeCellEvents}
+          onAdd={onAdd}
+          onUpdate={onUpdate}
+          onDelete={onDelete}
+          onClose={() => onCellClick(true)}
+          addToast={addToast}
+        />
+      )}
+    </td>
   )
 }
 
@@ -146,7 +247,69 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
   const today = new Date()
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth() + 1)
-  const [activeCell, setActiveCell] = useState(null) // { date, category }
+  const [activeCell, setActiveCell] = useState(null)
+  const dragState = useRef(null)
+
+  // 行の塗りつぶしオーバーライド: date → 'gray' | 'none'
+  // null = auto（土日は自動グレー、平日は白）
+  const [rowOverrides, setRowOverrides] = useState({})
+  const highlightDebounce = useRef(null)
+  const monthKey = `${year}-${String(month).padStart(2, '0')}`
+
+  // 月が変わったら対応するオーバーライドをロード
+  useEffect(() => {
+    if (!USE_SUPABASE) {
+      try {
+        const saved = JSON.parse(localStorage.getItem(`row_highlights_${monthKey}`) || '{}')
+        setRowOverrides(saved)
+      } catch { setRowOverrides({}) }
+      return
+    }
+    supabase.from('school_notices').select('content')
+      .eq('date', monthKey).eq('type', HIGHLIGHTS_TYPE).maybeSingle()
+      .then(({ data }) => {
+        setRowOverrides(data?.content ? JSON.parse(data.content) : {})
+      })
+  }, [monthKey])
+
+  function saveHighlights(overrides) {
+    const json = JSON.stringify(overrides)
+    if (!USE_SUPABASE) {
+      localStorage.setItem(`row_highlights_${monthKey}`, json)
+      return
+    }
+    if (highlightDebounce.current) clearTimeout(highlightDebounce.current)
+    highlightDebounce.current = setTimeout(() => {
+      supabase.from('school_notices')
+        .upsert({ date: monthKey, type: HIGHLIGHTS_TYPE, content: json, updated_at: new Date().toISOString() }, { onConflict: 'date,type' })
+    }, 600)
+  }
+
+  function toggleRowHighlight(dateKey, isWeekend) {
+    setRowOverrides(prev => {
+      const cur = prev[dateKey]
+      let next
+      if (cur === undefined) {
+        // auto → 手動で反転
+        next = { ...prev, [dateKey]: isWeekend ? 'none' : 'gray' }
+      } else if (cur === 'gray') {
+        next = { ...prev, [dateKey]: 'none' }
+      } else {
+        // 'none' → autoに戻す（キー削除）
+        next = { ...prev }
+        delete next[dateKey]
+      }
+      saveHighlights(next)
+      return next
+    })
+  }
+
+  function isRowGray(dateKey, isWeekend) {
+    const override = rowOverrides[dateKey]
+    if (override === 'gray') return true
+    if (override === 'none') return false
+    return isWeekend
+  }
 
   const eventMap = useMemo(() => {
     const m = new Map()
@@ -155,6 +318,8 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
       if (!m.has(key)) m.set(key, [])
       m.get(key).push(ev)
     }
+    // 各セル内をソート
+    for (const [k, arr] of m) m.set(k, sortedEvents(arr))
     return m
   }, [events])
 
@@ -165,28 +330,97 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
     if (month === 12) { setYear(y => y + 1); setMonth(1) } else setMonth(m => m + 1)
   }
 
+  // insertIndex: ドロップ先のセル内での挿入位置
+  const handleDrop = useCallback(async (targetDate, targetCat, insertIndex) => {
+    const state = dragState.current
+    dragState.current = null
+    if (!state) return
+
+    const { ev, sourceDateKey, sourceCat } = state
+    const isSameCell = sourceDateKey === targetDate && sourceCat === targetCat
+
+    // ドロップ先セルの現在のイベント一覧
+    const targetKey = `${targetDate}__${targetCat}`
+    const targetEvs = (eventMap.get(targetKey) || []).filter(e => e.id !== ev.id)
+
+    // 挿入位置を確定（同一セル内なら元位置を除いたあとのインデックス）
+    const clampedIndex = Math.min(insertIndex, targetEvs.length)
+    targetEvs.splice(clampedIndex, 0, ev)
+
+    // sort_order を 0,1,2... で更新
+    const updates = targetEvs.map((e, i) => ({ id: e.id, sort_order: i }))
+
+    try {
+      const cellPatch = { date: targetDate, category: targetCat }
+      const promises = []
+      if (!isSameCell) {
+        // 元セルの sort_order を並列で整理
+        const sourceEvs = (eventMap.get(`${sourceDateKey}__${sourceCat}`) || []).filter(e => e.id !== ev.id)
+        sourceEvs.forEach((e, i) => promises.push(onUpdate(e.id, { sort_order: i })))
+      }
+      // 移動先の sort_order + 必要なら date/category を並列更新
+      updates.forEach(u => promises.push(
+        onUpdate(u.id, { sort_order: u.sort_order, ...(u.id === ev.id && !isSameCell ? cellPatch : {}) })
+      ))
+      await Promise.all(promises)
+      addToast('移動しました', 'success')
+    } catch {
+      addToast('移動に失敗しました', 'error')
+    }
+  }, [eventMap, onUpdate, addToast])
+
   const daysInMonth = new Date(year, month, 0).getDate()
   const todayKey = toDateKey(today.getFullYear(), today.getMonth() + 1, today.getDate())
+  const importRef = useRef(null)
+  const { setControls } = useHeaderControls()
+  // ref で最新の events を保持 → useEffect の依存配列から除外してヘッダー再登録を防ぐ
+  const eventsRef = useRef(events)
+  useEffect(() => { eventsRef.current = events }, [events])
 
-  const activeCellEvents = activeCell
-    ? (eventMap.get(`${activeCell.date}__${activeCell.category}`) || [])
-    : []
+  useEffect(() => {
+    setControls(
+      <div className="hc-row">
+        <button className="hc-btn-nav" onClick={prevMonth}>‹</button>
+        <span className="hc-label">{year}年{month}月</span>
+        <button className="hc-btn-nav" onClick={nextMonth}>›</button>
+        <button className="hc-btn" onClick={() => downloadMonthlyTemplate(year, month)}>📋 テンプレートDL</button>
+        <button className="hc-btn" onClick={() => importRef.current?.click()}>📥 インポート</button>
+        <input ref={importRef} type="file" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={handleImport} />
+        <button className="hc-btn" onClick={() => {
+          const [y, m] = [year, month]
+          exportMonthlyExcel(y, m, eventsRef.current.filter(e => {
+            const [ey, em] = e.date.split('-').map(Number)
+            return ey === y && em === m
+          }))
+        }}>📊 Excel出力</button>
+        <button className="hc-btn" onClick={() => window.print()}>🖨️ 印刷</button>
+      </div>
+    )
+    return () => setControls(null)
+  }, [year, month])
+
+  async function handleImport(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+    try {
+      const evs = await parseImportExcel(file)
+      if (evs.length === 0) { addToast('インポートできる行事がありませんでした', 'info'); return }
+      let count = 0
+      for (const ev of evs) {
+        try { await onAdd(ev); count++ } catch {}
+      }
+      addToast(`${count}件をインポートしました`, 'success')
+    } catch (err) {
+      addToast(`インポート失敗: ${err.message}`, 'error')
+    }
+  }
 
   return (
-    <div style={{ position: 'relative' }}>
-      <div className="calendar-header">
-        <button className="btn-nav no-print" onClick={prevMonth}>‹</button>
-        <div className="calendar-title">{year}年{month}月</div>
-        <button className="btn-nav no-print" onClick={nextMonth}>›</button>
-        <div className="no-print" style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
-          <button className="btn-secondary" onClick={() => exportMonthlyExcel(year, month, events.filter(e => {
-            const [y, m2] = e.date.split('-').map(Number)
-            return y === year && m2 === month
-          }))}>📊 Excel出力</button>
-          <button className="btn-secondary" onClick={() => window.print()}>🖨️ 印刷・PDF</button>
-        </div>
-      </div>
-
+    <div
+      style={{ position: 'relative' }}
+      onDragEnd={() => { dragState.current = null }}
+    >
       <div className="monthly-table-wrap">
         <table className="monthly-table">
           <thead>
@@ -206,45 +440,41 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
               const isToday = dateKey === todayKey
               const isSun = dow === 0
               const isSat = dow === 6
+              const isWeekend = isSun || isSat
+              const gray = isRowGray(dateKey, isWeekend)
               return (
                 <tr key={day} className={[
                   'monthly-row',
                   isToday ? 'row-today' : '',
+                  gray ? 'row-gray' : '',
                   isSun ? 'row-sun' : isSat ? 'row-sat' : '',
                 ].filter(Boolean).join(' ')}>
                   <td className="col-date">{month}/{day}</td>
-                  <td className="col-day">{DAYS_JA[dow]}</td>
+                  <td
+                    className="col-day col-day-toggle"
+                    title="クリックで塗りつぶし切り替え"
+                    onClick={() => toggleRowHighlight(dateKey, isWeekend)}
+                  >{DAYS_JA[dow]}</td>
                   {CATEGORIES.map(cat => {
                     const cellKey = `${dateKey}__${cat}`
                     const cellEvents = eventMap.get(cellKey) || []
                     const isActive = activeCell?.date === dateKey && activeCell?.category === cat
                     return (
-                      <td
+                      <DroppableCell
                         key={cat}
-                        className={`col-cat-cell${isActive ? ' cell-active' : ''}`}
-                        style={{ position: 'relative' }}
-                        onClick={() => setActiveCell({ date: dateKey, category: cat })}
-                      >
-                        {cellEvents.map(ev => (
-                          <div key={ev.id} className="table-event-chip">
-                            {ev.start_time && <span className="chip-time">{ev.start_time}</span>}
-                            {ev.title}
-                            {ev.note && <span className="chip-note">　{ev.note}</span>}
-                          </div>
-                        ))}
-                        {isActive && (
-                          <CellPopover
-                            date={dateKey}
-                            category={cat}
-                            events={activeCellEvents}
-                            onAdd={onAdd}
-                            onUpdate={onUpdate}
-                            onDelete={onDelete}
-                            onClose={() => setActiveCell(null)}
-                            addToast={addToast}
-                          />
-                        )}
-                      </td>
+                        dateKey={dateKey}
+                        cat={cat}
+                        cellEvents={cellEvents}
+                        isActive={isActive}
+                        onCellClick={(close) => setActiveCell(close ? null : { date: dateKey, category: cat })}
+                        onAdd={onAdd}
+                        onUpdate={onUpdate}
+                        onDelete={onDelete}
+                        addToast={addToast}
+                        dragState={dragState}
+                        onDropToCell={(d, c, idx) => handleDrop(d, c, idx)}
+                        onDropBetween={(d, c, idx) => handleDrop(d, c, idx)}
+                      />
                     )
                   })}
                 </tr>

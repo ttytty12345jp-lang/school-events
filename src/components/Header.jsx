@@ -1,12 +1,13 @@
-export default function Header({ view, setView }) {
+export default function Header({ view, setView, controls }) {
   const tabs = [
-    { key: 'today', label: '📌 今日・明日' },
-    { key: 'monthly', label: '📅 月間' },
+    { key: 'today', label: '📋 朝会記録簿' },
+    { key: 'monthly', label: '📅 月中行事' },
     { key: 'annual', label: '📆 年間' },
+    { key: 'jiji', label: '🏫 学校行事' },
+    { key: 'whiteboard', label: '📌 ホワイトボード' },
   ]
   return (
     <header className="app-header">
-      <h1>行事予定表</h1>
       <nav className="header-tabs no-print">
         {tabs.map(t => (
           <button
@@ -18,6 +19,7 @@ export default function Header({ view, setView }) {
           </button>
         ))}
       </nav>
+      {controls && <div className="header-controls no-print">{controls}</div>}
     </header>
   )
 }
