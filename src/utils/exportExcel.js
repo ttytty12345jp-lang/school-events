@@ -156,7 +156,7 @@ export function parseImportExcel(file) {
             for (const { idx, category } of catCols) {
               const cellText = String(row[idx] ?? '').trim()
               if (!cellText) continue
-              const lines = cellText.split(/\r?\n/).map(l => l.trim()).filter(Boolean)
+              const lines = cellText.split(/\r?\n|　/).map(l => l.trim()).filter(Boolean)
               for (const title of lines) {
                 allEvents.push({ date: dateKey, category, title, start_time: null, end_time: null, note: null, color: 'black' })
               }

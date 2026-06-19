@@ -637,7 +637,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   border-bottom: 1px solid transparent;
   border-radius: 0;
   padding: 4px 6px;
-  font-size: 14px;
+  font-size: 22px;
   background: transparent;
   outline: none;
 }

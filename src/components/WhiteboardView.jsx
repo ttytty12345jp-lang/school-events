@@ -8,6 +8,11 @@ const USE_SUPABASE = !!(SUPABASE_URL && SUPABASE_ANON_KEY)
 const supabase = USE_SUPABASE ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null
 
 const DAYS_JA = ['日', '月', '火', '水', '木', '金', '土']
+const HIGHLIGHTS_TYPE = 'row_highlights'
+
+function monthKey(y, m) {
+  return `${y}-${String(m).padStart(2, '0')}`
+}
 
 const LEAVE_TYPES_LEFT  = ['年休', '時休', '前半休', '後半休', '職免', '育児']
 const LEAVE_TYPES_RIGHT = ['特休', '病休', '休職', '産休', '育休', '介護']
@@ -115,10 +120,57 @@ function ClearBtn({ onClick }) {
   )
 }
 
+// selectedKeyの次の登校日（土日・グレー日を飛ばす）を求めるhook
+function useNextSchoolDay(selectedKey) {
+  const [overrides, setOverrides] = useState({})
+
+  useEffect(() => {
+    // 当月・翌月・翌々月のhighlightsを取得（月またぎ対応）
+    const base = dateFromKey(selectedKey)
+    const mkeys = []
+    for (let i = 0; i <= 2; i++) {
+      const d = new Date(base)
+      d.setDate(1)
+      d.setMonth(d.getMonth() + i)
+      mkeys.push(monthKey(d.getFullYear(), d.getMonth() + 1))
+    }
+    if (!USE_SUPABASE) {
+      const r = {}
+      mkeys.forEach(mk => {
+        try { r[mk] = JSON.parse(localStorage.getItem(`row_highlights_${mk}`) || '{}') } catch { r[mk] = {} }
+      })
+      setOverrides(r); return
+    }
+    supabase.from('school_notices').select('date, content')
+      .in('date', mkeys).eq('type', HIGHLIGHTS_TYPE)
+      .then(({ data }) => {
+        const r = {}
+        mkeys.forEach(mk => { r[mk] = {} })
+        ;(data || []).forEach(row => { try { r[row.date] = JSON.parse(row.content) } catch {} })
+        setOverrides(r)
+      })
+  }, [selectedKey])
+
+  return useMemo(() => {
+    for (let delta = 1; delta <= 14; delta++) {
+      const d = dateFromKey(selectedKey)
+      d.setDate(d.getDate() + delta)
+      const key = toDateKey(d)
+      const dow = d.getDay()
+      const isWeekend = dow === 0 || dow === 6
+      const mk = monthKey(d.getFullYear(), d.getMonth() + 1)
+      const override = (overrides[mk] || {})[key]
+      const isGray = override === 'gray' ? true : override === 'none' ? false : isWeekend
+      if (!isGray) return key
+    }
+    return navKey(selectedKey, 1)
+  }, [selectedKey, overrides])
+}
+
 export default function WhiteboardView({ events }) {
   const todayKey = toDateKey(new Date())
   const [selectedKey, setSelectedKey] = useState(todayKey)
-  const tomorrowKey = navKey(selectedKey, 1)
+  const tomorrowKey = useNextSchoolDay(selectedKey)
 
   const selectedDate = dateFromKey(selectedKey)
   const tomorrowDate = dateFromKey(tomorrowKey)
