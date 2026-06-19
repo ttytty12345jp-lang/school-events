@@ -39,7 +39,8 @@ function emptyData() {
     leave: emptyLeave(),
     dutyToday: '',
     dutyTomorrow: '',
-    weekEvent: '',
+    weekEventToday: '',
+    weekEventTomorrow: '',
   }
 }
 
@@ -130,7 +131,12 @@ export default function WhiteboardView({ events }) {
   useEffect(() => {
     setData(emptyData())
     loadWhiteboard(selectedKey).then(saved => {
-      if (saved) setData({ ...emptyData(), ...saved })
+      if (saved) {
+        const merged = { ...emptyData(), ...saved }
+        // migrate legacy weekEvent → weekEventToday
+        if (saved.weekEvent && !saved.weekEventToday) merged.weekEventToday = saved.weekEvent
+        setData(merged)
+      }
     })
   }, [selectedKey])
 
@@ -354,15 +360,15 @@ export default function WhiteboardView({ events }) {
             <div className="wb-panel-title">
               <span className="wb-panel-label">今日</span>
               <span className="wb-panel-date">{formatShort(selectedDate)}</span>
-            </div>
-            <div className="wb-duty-row">
-              <span className="wb-duty-label">看護当番</span>
-              <EditCell value={data.dutyToday} onChange={v => updateField('dutyToday', v)}
-                placeholder="担当者名" className="wb-duty-input" />
+              <span className="wb-duty-inline">
+                <span className="wb-duty-label">看護当番</span>
+                <EditCell value={data.dutyToday} onChange={v => updateField('dutyToday', v)}
+                  placeholder="担当者名" className="wb-duty-input" />
+              </span>
             </div>
             <div className="wb-week-event">
-              <EditCell value={data.weekEvent} onChange={v => updateField('weekEvent', v)}
-                placeholder="週間取り組みなど" className="wb-week-input" />
+              <EditCell value={data.weekEventToday} onChange={v => updateField('weekEventToday', v)}
+                placeholder="" className="wb-week-input" />
             </div>
             <div className="wb-schedule-list">
               {selEvents.length === 0
@@ -383,11 +389,15 @@ export default function WhiteboardView({ events }) {
             <div className="wb-panel-title">
               <span className="wb-panel-label">明日</span>
               <span className="wb-panel-date">{formatShort(tomorrowDate)}</span>
+              <span className="wb-duty-inline">
+                <span className="wb-duty-label">看護当番</span>
+                <EditCell value={data.dutyTomorrow} onChange={v => updateField('dutyTomorrow', v)}
+                  placeholder="担当者名" className="wb-duty-input" />
+              </span>
             </div>
-            <div className="wb-duty-row">
-              <span className="wb-duty-label">看護当番</span>
-              <EditCell value={data.dutyTomorrow} onChange={v => updateField('dutyTomorrow', v)}
-                placeholder="担当者名" className="wb-duty-input" />
+            <div className="wb-week-event">
+              <EditCell value={data.weekEventTomorrow} onChange={v => updateField('weekEventTomorrow', v)}
+                placeholder="" className="wb-week-input" />
             </div>
             <div className="wb-schedule-list">
               {nextEvents.length === 0
