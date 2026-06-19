@@ -27,10 +27,19 @@ function formatDateLong(d) {
 
 // 左上：朝会アジェンダ（月中行事 + 自由追記が同一リスト）
 function TodaySection({ date, events, dateKey }) {
+  const { content: weekEvent, handleChange: setWeekEvent } = useNotice(dateKey, 'week_event')
   return (
     <div className="ttv-panel">
       <div className="ttv-header ttv-header-today">
         <span className="ttv-header-date-large">{formatDateLong(date)}</span>
+      </div>
+      <div className="ttv-week-event-row">
+        <input
+          className="ttv-week-event-input"
+          value={weekEvent}
+          onChange={e => setWeekEvent(e.target.value)}
+          placeholder=""
+        />
       </div>
       <MorningAgenda dateKey={dateKey} calendarEvents={events} />
     </div>

@@ -41,6 +41,7 @@ async function saveJijiMaster(list) {
 function newEntry() {
   return {
     id: crypto.randomUUID(),
+    date: '',
     title: '',
     grades: Object.fromEntries(GRADES.map(g => [g, 0])),
   }
@@ -76,6 +77,20 @@ export default function SchoolJijiView() {
       await saveJijiMaster(next)
       setSaving(false)
     }, 800)
+  }
+
+  function sortedByDate(arr) {
+    return [...arr].sort((a, b) => {
+      if (!a.date && !b.date) return 0
+      if (!a.date) return 1
+      if (!b.date) return -1
+      return a.date < b.date ? -1 : a.date > b.date ? 1 : 0
+    })
+  }
+
+  function updateDate(id, date) {
+    const next = sortedByDate(list.map(e => e.id === id ? { ...e, date } : e))
+    setList(next); save(next)
   }
 
   function updateTitle(id, title) {
@@ -121,6 +136,7 @@ export default function SchoolJijiView() {
         <table className="jiji-table">
           <thead>
             <tr>
+              <th className="jiji-th-date">日付</th>
               <th className="jiji-th-title">行事名</th>
               {GRADES.map(g => <th key={g} className="jiji-th-grade">{g}</th>)}
               <th className="jiji-th-del"></th>
@@ -129,6 +145,14 @@ export default function SchoolJijiView() {
           <tbody>
             {list.map(entry => (
               <tr key={entry.id} className="jiji-row">
+                <td className="jiji-td-date">
+                  <input
+                    type="date"
+                    className="jiji-input-date"
+                    value={entry.date || ''}
+                    onChange={e => updateDate(entry.id, e.target.value)}
+                  />
+                </td>
                 <td className="jiji-td-title">
                   <input
                     type="text"

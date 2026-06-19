@@ -430,6 +430,8 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 }
 
 .ttv-header-today    { background: var(--primary); }
+.ttv-week-event-row { padding: 2px 6px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.ttv-week-event-input { width: 100%; border: none; background: transparent; font-size: 14px; color: #7c3aed; outline: none; height: 26px; font-family: inherit; }
 .ttv-header-notice   { background: #475569; }
 .ttv-header-dist     { background: #0891b2; }
 .ttv-header-hours    { background: #7c3aed; }
@@ -471,6 +473,10 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .jiji-table-wrap { overflow-x: auto; }
 .jiji-table { border-collapse: collapse; width: 100%; }
 .jiji-table th, .jiji-table td { border: 1px solid var(--border); padding: 4px 6px; }
+.jiji-th-date { text-align: center; font-weight: 600; white-space: nowrap; width: 130px; }
+.jiji-td-date { white-space: nowrap; }
+.jiji-input-date { border: none; background: transparent; font-size: 13px; outline: none; width: 130px; }
+.jiji-input-date:focus { background: var(--surface); border-radius: 4px; }
 .jiji-th-title { text-align: left; min-width: 160px; font-weight: 600; }
 .jiji-th-grade { text-align: center; font-weight: 600; min-width: 80px; }
 .jiji-th-del { width: 32px; }
