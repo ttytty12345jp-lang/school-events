@@ -180,11 +180,12 @@ export default function WhiteboardView({ events, db = {} }) {
 
   const DAYS_JA_WEEK = ['日', '月', '火', '水', '木', '金', '土']
 
-  // 班+曜日 → 名前
+  // 班+曜日 → 名前（入力値 "1"〜"4" を "班1"〜"班4" に変換）
   function nursingName(team, dateKey) {
     if (!team) return ''
+    const key = team.startsWith('班') ? team : `班${team}`
     const dow = DAYS_JA_WEEK[dateFromKey(dateKey).getDay()]
-    return (db.nursing || {})[team]?.[dow] || ''
+    return (db.nursing || {})[key]?.[dow] || ''
   }
 
   // 班入力時に当番名を自動反映
