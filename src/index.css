@@ -544,10 +544,12 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 }
 
 .ttv-upcoming-body {
-  padding: 6px 12px;
+  padding: 4px 12px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 0;
+  flex: 1;
+  overflow: hidden;
 }
 
 /* 後方互換 */
@@ -588,11 +590,14 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 /* ── Upcoming days ── */
 .upcoming-day {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 8px;
-  padding: 4px 0;
+  padding: 0 0;
   border-bottom: 1px solid var(--border);
   font-size: 13px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 .upcoming-day:last-child { border-bottom: none; }
 

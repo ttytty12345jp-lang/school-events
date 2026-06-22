@@ -96,7 +96,7 @@ function monthKey(y, m) {
 function UpcomingSection({ todayDate, events }) {
   const days = useMemo(() => {
     const arr = []
-    for (let i = 1; i <= 5; i++) {
+    for (let i = 1; i <= 7; i++) {
       const d = new Date(todayDate)
       d.setDate(d.getDate() + i)
       const key = toDateKey(d)
