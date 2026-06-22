@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react'
 import { createClient } from '@supabase/supabase-js'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
@@ -19,11 +19,17 @@ function newItem(title = '') {
 
 const FONT_MAX = 22
 const FONT_MIN = 11
-function autoScale(el) {
-  if (!el) return
-  el.style.fontSize = FONT_MAX + 'px'
-  while (el.scrollWidth > el.clientWidth && parseFloat(el.style.fontSize) > FONT_MIN) {
-    el.style.fontSize = (parseFloat(el.style.fontSize) - 1) + 'px'
+function autoScaleContainer(container) {
+  if (!container) return
+  const inputs = container.querySelectorAll('.agenda-title-input')
+  if (!inputs.length) return
+  // リセット
+  inputs.forEach(el => { el.style.fontSize = FONT_MAX + 'px' })
+  // コンテナの高さに収まるまで縮小
+  let size = FONT_MAX
+  while (container.scrollHeight > container.clientHeight && size > FONT_MIN) {
+    size -= 1
+    inputs.forEach(el => { el.style.fontSize = size + 'px' })
   }
 }
 
@@ -48,6 +54,9 @@ export default function MorningAgenda({ dateKey, calendarEvents }) {
   const debounceRef = useRef(null)
   const inputRefs = useRef({})
   const dragIdRef = useRef(null)
+  const bodyRef = useRef(null)
+
+  useLayoutEffect(() => { autoScaleContainer(bodyRef.current) }, [items])
 
   useEffect(() => {
     setItems(null)
@@ -141,7 +150,7 @@ export default function MorningAgenda({ dateKey, calendarEvents }) {
   if (items === null) return <div className="ttv-body" style={{ color: 'var(--text-muted)', padding: 16 }}>読み込み中…</div>
 
   return (
-    <div className="agenda-body">
+    <div className="agenda-body" ref={bodyRef}>
       {saving && <div className="agenda-saving">保存中…</div>}
       {items.map((item, i) => (
         <div
@@ -159,10 +168,10 @@ export default function MorningAgenda({ dateKey, calendarEvents }) {
         >
           <span className="agenda-drag-handle" title="ドラッグで並び替え">⠿</span>
           <input
-            ref={el => { inputRefs.current[item.id] = el; autoScale(el) }}
+            ref={el => { inputRefs.current[item.id] = el }}
             className="agenda-title-input"
             value={item.title}
-            onChange={e => { setTitle(item.id, e.target.value); autoScale(e.target) }}
+            onChange={e => setTitle(item.id, e.target.value)}
             onKeyDown={e => handleKeyDown(e, item.id, i)}
             placeholder="行事・連絡を入力"
           />
