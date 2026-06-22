@@ -486,9 +486,9 @@ export default function WhiteboardView({ events, db = {} }) {
             <div className="wb-week-event">
               <EditCell value={data.weekEventToday} onChange={v => updateField('weekEventToday', v)}
                 placeholder="" className="wb-week-input" />
+              <button className="wb-sync-btn" onClick={() => syncAgenda(selectedKey, setAgendaResetToday)} title="月中行事と同期">↺ 同期</button>
             </div>
             <div className="wb-schedule-list">
-              <button className="wb-sync-btn" onClick={() => syncAgenda(selectedKey, setAgendaResetToday)} title="月中行事と同期">↺ 同期</button>
               <MorningAgenda key={`today-${selectedKey}-${agendaResetToday}`} dateKey={selectedKey} calendarEvents={selEvents} />
             </div>
           </div>
@@ -514,9 +514,9 @@ export default function WhiteboardView({ events, db = {} }) {
             <div className="wb-week-event">
               <EditCell value={data.weekEventTomorrow} onChange={v => updateField('weekEventTomorrow', v)}
                 placeholder="" className="wb-week-input" />
+              <button className="wb-sync-btn" onClick={() => syncAgenda(tomorrowKey, setAgendaResetTomorrow)} title="月中行事と同期">↺ 同期</button>
             </div>
             <div className="wb-schedule-list">
-              <button className="wb-sync-btn" onClick={() => syncAgenda(tomorrowKey, setAgendaResetTomorrow)} title="月中行事と同期">↺ 同期</button>
               <MorningAgenda key={`tomorrow-${tomorrowKey}-${agendaResetTomorrow}`} dateKey={tomorrowKey} calendarEvents={nextEvents} />
             </div>
           </div>
