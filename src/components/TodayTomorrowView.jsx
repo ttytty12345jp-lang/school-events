@@ -179,13 +179,20 @@ function UpcomingSection({ todayDate, events }) {
     if (!el) return
     const rows = el.querySelectorAll('.upcoming-day')
     if (!rows.length) return
+    // 行の高さに収まるフォントサイズを計算
+    // overflow:hidden のflexでは scrollHeight が使えないため、コンテンツの自然な高さで判定
     const MAX = 14, MIN = 8
-    // リセット
-    rows.forEach(r => { r.style.fontSize = MAX + 'px' })
     let size = MAX
+    rows.forEach(r => { r.style.fontSize = MAX + 'px' })
+    // 各行の内側コンテンツの高さが行高さを超えないか確認
     while (size > MIN) {
-      const overflow = [...rows].some(r => r.scrollHeight > r.clientHeight)
-      if (!overflow) break
+      let overflows = false
+      rows.forEach(r => {
+        const inner = r.querySelector('.upcoming-day-events')
+        if (inner && inner.offsetHeight > r.clientHeight) overflows = true
+        if (r.querySelector('.upcoming-day-label')?.offsetHeight > r.clientHeight) overflows = true
+      })
+      if (!overflows) break
       size -= 1
       rows.forEach(r => { r.style.fontSize = size + 'px' })
     }
@@ -300,8 +307,19 @@ async function findLastCumulative(dateKey) {
   } catch { return emptyThirds() }
 }
 
-async function saveHoursRecord(date, kinou, kyou, setSaving) {
-  const record = { kinou, kyou }
+// kyouのみ自動保存（kinou は手動変更時のみ保存）
+async function saveKyouRecord(date, kyou) {
+  const existing = await loadHoursRecord(date)
+  const record = { ...(existing || {}), kyou }
+  const json = JSON.stringify(record)
+  if (!USE_SUPABASE) { localStorage.setItem(`school_hours_${date}`, json); return }
+  await supabase.from('school_notices')
+    .upsert({ date, type: 'school_hours', content: json, updated_at: new Date().toISOString() }, { onConflict: 'date,type' })
+}
+
+async function saveKinouRecord(date, kinou, kyou, setSaving) {
+  // kinouManual=true を付けて手動変更を記録
+  const record = { kinou, kyou, kinouManual: true }
   const json = JSON.stringify(record)
   if (!USE_SUPABASE) { localStorage.setItem(`school_hours_${date}`, json); return }
   if (setSaving) setSaving(true)
@@ -315,33 +333,29 @@ function SchoolHoursSection({ date, calendarEvents }) {
   const [kyou, setKyou] = useState(emptyThirds())
   const [saving, setSaving] = useState(false)
   const debounceRef = useRef(null)
-  const kinouRef = useRef(emptyThirds())
+  const kyouRef = useRef(emptyThirds())
 
   useEffect(() => {
     Promise.all([loadHoursRecord(date), findLastCumulative(date), loadJijiMaster()])
       .then(([today, lastCum, master]) => {
-        // 今日のレコードがあればその kinou を使い、なければ直近の累計を使う
-        const resolvedKinou = today ? (today.kinou || emptyThirds()) : lastCum
+        // kinouManual=true のときだけ保存値を使う。それ以外は直近累計から計算
+        const resolvedKinou = (today?.kinouManual) ? (today.kinou || lastCum) : lastCum
         const resolvedKyou = computeKyou(calendarEvents, master, date)
-        kinouRef.current = resolvedKinou
+        kyouRef.current = resolvedKyou
         setKinou(resolvedKinou)
         setKyou(resolvedKyou)
-        saveHoursRecord(date, resolvedKinou, resolvedKyou, null)
+        // kyou のみ自動保存
+        saveKyouRecord(date, resolvedKyou)
       })
   }, [date, calendarEvents])
-
-  function saveKinou(nextKinou) {
-    kinouRef.current = nextKinou
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => {
-      saveHoursRecord(date, nextKinou, kyou, setSaving)
-    }, 800)
-  }
 
   function stepKinou(grade, delta) {
     setKinou(prev => {
       const next = { ...prev, [grade]: Math.max(0, (prev[grade] || 0) + delta) }
-      saveKinou(next)
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+      debounceRef.current = setTimeout(() => {
+        saveKinouRecord(date, next, kyouRef.current, setSaving)
+      }, 800)
       return next
     })
   }
