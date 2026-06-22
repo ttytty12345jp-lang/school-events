@@ -79,13 +79,31 @@ function formatShort(d) {
   return `${d.getMonth() + 1}月${d.getDate()}日（${DAYS_JA[d.getDay()]}）`
 }
 
+// 幅に収まるよう font-size を自動縮小（テキスト入力用）
+const CELL_FONT_MAX = 20
+const CELL_FONT_MIN = 10
+function autoScaleWidth(el) {
+  if (!el) return
+  el.style.fontSize = ''
+  const base = parseFloat(getComputedStyle(el).fontSize) || CELL_FONT_MAX
+  let size = Math.min(base, CELL_FONT_MAX)
+  el.style.fontSize = size + 'px'
+  while (el.scrollWidth > el.clientWidth && size > CELL_FONT_MIN) {
+    size -= 1
+    el.style.fontSize = size + 'px'
+  }
+}
+
 // ── Inline editable cell ───────────────────────────────────
 // live=true のとき onChange で即時保存（曜日自動入力のトリガー用）
 function EditCell({ value, onChange, placeholder = '', className = '', align, listId, live = false }) {
   const [local, setLocal] = useState(value)
+  const ref = useRef(null)
   useEffect(() => { setLocal(value) }, [value])
+  useEffect(() => { autoScaleWidth(ref.current) }, [local])
   return (
     <input
+      ref={ref}
       className={`wb-input ${className}`}
       value={local}
       onChange={e => { setLocal(e.target.value); if (live) onChange(e.target.value) }}
@@ -97,47 +115,19 @@ function EditCell({ value, onChange, placeholder = '', className = '', align, li
   )
 }
 
-const HOURS = Array.from({ length: 13 }, (_, i) => i + 7)   // 7〜19
-const MINS  = ['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55']
-
-function parseTime(val) {
-  if (!val) return { h: '', m: '' }
-  const [h, m] = val.split(':')
-  return { h: h || '', m: m || '' }
-}
-function formatTime(h, m) {
-  if (!h && !m) return ''
-  return `${h || ''}:${m || '00'}`
-}
-
-// ── Time picker: 時・分 別select ──────────────────────────
-function TimePicker({ val, onChange }) {
-  const { h, m } = parseTime(val)
-  return (
-    <span className="wb-time-picker">
-      <select className="wb-time-sel" value={h}
-        onChange={e => onChange(formatTime(e.target.value, m))}>
-        <option value="">—</option>
-        {HOURS.map(n => <option key={n} value={n}>{n}</option>)}
-      </select>
-      <span className="wb-time-colon">時</span>
-      <select className="wb-time-sel" value={m}
-        onChange={e => onChange(formatTime(h, e.target.value))}>
-        <option value="">—</option>
-        {MINS.map(n => <option key={n} value={n}>{n}</option>)}
-      </select>
-      <span className="wb-time-colon">分</span>
-    </span>
-  )
-}
-
-// ── Time range: 開始〜終了 ────────────────────────────────
+// ── Time range: type="time" で自由入力＋ピッカー ──────────
 function TimeRange({ startVal, endVal, onStartChange, onEndChange }) {
+  const [ls, setLs] = useState(startVal)
+  const [le, setLe] = useState(endVal)
+  useEffect(() => { setLs(startVal) }, [startVal])
+  useEffect(() => { setLe(endVal) }, [endVal])
   return (
     <div className="wb-time-range">
-      <TimePicker val={startVal} onChange={onStartChange} />
+      <input type="time" className="wb-time-input" value={ls}
+        onChange={e => { setLs(e.target.value); onStartChange(e.target.value) }} />
       <span className="wb-tilde">～</span>
-      <TimePicker val={endVal} onChange={onEndChange} />
+      <input type="time" className="wb-time-input" value={le}
+        onChange={e => { setLe(e.target.value); onEndChange(e.target.value) }} />
     </div>
   )
 }
@@ -352,12 +342,12 @@ export default function WhiteboardView({ events, db = {} }) {
             <table className="wb-table">
               <colgroup>
                 <col style={{width:'22px'}} />
-                <col style={{width:'14%'}} />
-                <col style={{width:'6%'}} />
-                <col style={{width:'6%'}} />
-                <col style={{width:'6%'}} />
-                <col style={{width:'21%'}} />
-                <col style={{width:'18%'}} />
+                <col style={{width:'15%'}} />
+                <col style={{width:'4.5%'}} />
+                <col style={{width:'4.5%'}} />
+                <col style={{width:'4.5%'}} />
+                <col style={{width:'22%'}} />
+                <col style={{width:'19%'}} />
                 <col />
                 <col style={{width:'22px'}} />
               </colgroup>
