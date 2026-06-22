@@ -352,12 +352,12 @@ export default function WhiteboardView({ events, db = {} }) {
             <table className="wb-table">
               <colgroup>
                 <col style={{width:'22px'}} />
-                <col style={{width:'15.5%'}} />
-                <col style={{width:'4.2%'}} />
-                <col style={{width:'4.2%'}} />
-                <col style={{width:'4.2%'}} />
-                <col style={{width:'21.6%'}} />
-                <col style={{width:'20.4%'}} />
+                <col style={{width:'14%'}} />
+                <col style={{width:'6%'}} />
+                <col style={{width:'6%'}} />
+                <col style={{width:'6%'}} />
+                <col style={{width:'21%'}} />
+                <col style={{width:'18%'}} />
                 <col />
                 <col style={{width:'22px'}} />
               </colgroup>
