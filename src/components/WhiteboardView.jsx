@@ -79,6 +79,16 @@ function formatShort(d) {
   return `${d.getMonth() + 1}月${d.getDate()}日（${DAYS_JA[d.getDay()]}）`
 }
 
+const WB_FONT_MAX = 20
+const WB_FONT_MIN = 10
+function autoScaleWb(el) {
+  if (!el) return
+  el.style.fontSize = ''
+  while (el.scrollWidth > el.clientWidth && (parseFloat(getComputedStyle(el).fontSize) || WB_FONT_MAX) > WB_FONT_MIN) {
+    el.style.fontSize = (parseFloat(el.style.fontSize || getComputedStyle(el).fontSize) - 1) + 'px'
+  }
+}
+
 // ── Inline editable cell ───────────────────────────────────
 function EditCell({ value, onChange, placeholder = '', className = '', align = 'left', listId }) {
   const [local, setLocal] = useState(value)
@@ -87,7 +97,8 @@ function EditCell({ value, onChange, placeholder = '', className = '', align = '
     <input
       className={`wb-input ${className}`}
       value={local}
-      onChange={e => setLocal(e.target.value)}
+      ref={el => autoScaleWb(el)}
+      onChange={e => { setLocal(e.target.value); autoScaleWb(e.target) }}
       onBlur={() => { if (local !== value) onChange(local) }}
       placeholder={placeholder}
       style={{ textAlign: align }}
