@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useRef } from 'react'
+import { useMemo, useState, useEffect, useLayoutEffect, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { useNotice } from '../hooks/useNotice'
 import MorningAgenda from './MorningAgenda'
@@ -173,12 +173,30 @@ function UpcomingSection({ todayDate, events }) {
     return isWeekend
   }
 
+  const bodyRef = useRef(null)
+  useLayoutEffect(() => {
+    const el = bodyRef.current
+    if (!el) return
+    const rows = el.querySelectorAll('.upcoming-day')
+    if (!rows.length) return
+    const MAX = 14, MIN = 8
+    // リセット
+    rows.forEach(r => { r.style.fontSize = MAX + 'px' })
+    let size = MAX
+    while (size > MIN) {
+      const overflow = [...rows].some(r => r.scrollHeight > r.clientHeight)
+      if (!overflow) break
+      size -= 1
+      rows.forEach(r => { r.style.fontSize = size + 'px' })
+    }
+  }, [days])
+
   return (
     <div className="ttv-panel">
       <div className="ttv-header ttv-header-upcoming">
         <span>明日以降の予定</span>
       </div>
-      <div className="ttv-body ttv-upcoming-body">
+      <div className="ttv-body ttv-upcoming-body" ref={bodyRef}>
         {days.map(({ date, key, events: dayEvs, dow }) => {
           const isWeekend = dow === 0 || dow === 6
           const gray = isDayGray(date, key, isWeekend)
