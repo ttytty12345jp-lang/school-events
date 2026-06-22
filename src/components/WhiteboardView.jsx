@@ -289,6 +289,20 @@ export default function WhiteboardView({ events, db = {} }) {
     events.filter(e => e.date === tomorrowKey).sort((a, b) => (a.start_time || '99:99') > (b.start_time || '99:99') ? 1 : -1),
     [events, tomorrowKey])
 
+  // 月中行事と同期（保存データを消して再マウント）
+  const [agendaResetToday, setAgendaResetToday] = useState(0)
+  const [agendaResetTomorrow, setAgendaResetTomorrow] = useState(0)
+
+  async function syncAgenda(dateKey, setReset) {
+    if (USE_SUPABASE) {
+      await supabase.from('school_notices').delete()
+        .eq('date', dateKey).eq('type', 'morning_agenda')
+    } else {
+      localStorage.removeItem(`agenda_${dateKey}`)
+    }
+    setReset(n => n + 1)
+  }
+
   return (
     <div className="wb-wrap">
       <datalist id="wb-rooms-list">
@@ -474,7 +488,8 @@ export default function WhiteboardView({ events, db = {} }) {
                 placeholder="" className="wb-week-input" />
             </div>
             <div className="wb-schedule-list">
-              <MorningAgenda dateKey={selectedKey} calendarEvents={selEvents} />
+              <button className="wb-sync-btn" onClick={() => syncAgenda(selectedKey, setAgendaResetToday)} title="月中行事と同期">↺ 同期</button>
+              <MorningAgenda key={`today-${selectedKey}-${agendaResetToday}`} dateKey={selectedKey} calendarEvents={selEvents} />
             </div>
           </div>
 
@@ -501,7 +516,8 @@ export default function WhiteboardView({ events, db = {} }) {
                 placeholder="" className="wb-week-input" />
             </div>
             <div className="wb-schedule-list">
-              <MorningAgenda dateKey={tomorrowKey} calendarEvents={nextEvents} />
+              <button className="wb-sync-btn" onClick={() => syncAgenda(tomorrowKey, setAgendaResetTomorrow)} title="月中行事と同期">↺ 同期</button>
+              <MorningAgenda key={`tomorrow-${tomorrowKey}-${agendaResetTomorrow}`} dateKey={tomorrowKey} calendarEvents={nextEvents} />
             </div>
           </div>
 
