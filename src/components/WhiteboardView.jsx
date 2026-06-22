@@ -80,15 +80,16 @@ function formatShort(d) {
 }
 
 // ── Inline editable cell ───────────────────────────────────
-function EditCell({ value, onChange, placeholder = '', className = '', align, listId }) {
+// live=true のとき onChange で即時保存（曜日自動入力のトリガー用）
+function EditCell({ value, onChange, placeholder = '', className = '', align, listId, live = false }) {
   const [local, setLocal] = useState(value)
   useEffect(() => { setLocal(value) }, [value])
   return (
     <input
       className={`wb-input ${className}`}
       value={local}
-      onChange={e => setLocal(e.target.value)}
-      onBlur={() => { if (local !== value) onChange(local) }}
+      onChange={e => { setLocal(e.target.value); if (live) onChange(e.target.value) }}
+      onBlur={() => { if (!live && local !== value) onChange(local) }}
       placeholder={placeholder}
       style={align ? { textAlign: align } : undefined}
       list={listId}
@@ -96,7 +97,15 @@ function EditCell({ value, onChange, placeholder = '', className = '', align, li
   )
 }
 
-// ── Time range: two HH:MM inputs with ～ between ──────────
+// 30分刻みの時刻リスト（7:30〜18:30）
+const TIME_OPTIONS = Array.from({ length: 23 }, (_, i) => {
+  const totalMin = 7 * 60 + 30 + i * 30
+  const h = String(Math.floor(totalMin / 60)).padStart(2, '0')
+  const m = String(totalMin % 60).padStart(2, '0')
+  return `${h}:${m}`
+})
+
+// ── Time range: two inputs with datalist ──────────────────
 function TimeRange({ startVal, endVal, onStartChange, onEndChange }) {
   const [ls, setLs] = useState(startVal)
   const [le, setLe] = useState(endVal)
@@ -104,15 +113,16 @@ function TimeRange({ startVal, endVal, onStartChange, onEndChange }) {
   useEffect(() => { setLe(endVal) }, [endVal])
   return (
     <div className="wb-time-range">
-      <input className="wb-time-input" value={ls}
-        onChange={e => setLs(e.target.value)}
-        onBlur={() => { if (ls !== startVal) onStartChange(ls) }}
-        placeholder="--:--" maxLength={5} />
+      <datalist id="wb-time-list">
+        {TIME_OPTIONS.map(t => <option key={t} value={t} />)}
+      </datalist>
+      <input className="wb-time-input" value={ls} list="wb-time-list"
+        onChange={e => { setLs(e.target.value); onStartChange(e.target.value) }}
+        placeholder="--:--" />
       <span className="wb-tilde">～</span>
-      <input className="wb-time-input" value={le}
-        onChange={e => setLe(e.target.value)}
-        onBlur={() => { if (le !== endVal) onEndChange(le) }}
-        placeholder="--:--" maxLength={5} />
+      <input className="wb-time-input" value={le} list="wb-time-list"
+        onChange={e => { setLe(e.target.value); onEndChange(e.target.value) }}
+        placeholder="--:--" />
     </div>
   )
 }
@@ -354,10 +364,10 @@ export default function WhiteboardView({ events, db = {} }) {
                       <EditCell value={r.place} onChange={v => updateRoom(i, 'place', v)} listId="wb-rooms-list" />
                     </td>
                     <td className="wb-td wb-td-center">
-                      <EditCell value={r.month} onChange={v => updateRoom(i, 'month', v)} align="center" />
+                      <EditCell value={r.month} onChange={v => updateRoom(i, 'month', v)} align="center" live />
                     </td>
                     <td className="wb-td wb-td-center">
-                      <EditCell value={r.day} onChange={v => updateRoom(i, 'day', v)} align="center" />
+                      <EditCell value={r.day} onChange={v => updateRoom(i, 'day', v)} align="center" live />
                     </td>
                     <td className="wb-td wb-td-center">
                       <EditCell value={r.dow} onChange={v => updateRoom(i, 'dow', v)} align="center" />
