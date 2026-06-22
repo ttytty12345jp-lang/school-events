@@ -246,39 +246,48 @@ function computeKyou(calendarEvents, jijiMaster, dateKey) {
   return result
 }
 
+async function saveHoursRecord(date, kinou, kyou, setSaving) {
+  const record = { kinou, kyou }
+  const json = JSON.stringify(record)
+  if (!USE_SUPABASE) { localStorage.setItem(`school_hours_${date}`, json); return }
+  if (setSaving) setSaving(true)
+  await supabase.from('school_notices')
+    .upsert({ date, type: 'school_hours', content: json, updated_at: new Date().toISOString() }, { onConflict: 'date,type' })
+  if (setSaving) setSaving(false)
+}
+
 function SchoolHoursSection({ date, calendarEvents }) {
   const [kinou, setKinou] = useState(emptyThirds())
   const [kyou, setKyou] = useState(emptyThirds())
   const [saving, setSaving] = useState(false)
   const debounceRef = useRef(null)
+  const kinouRef = useRef(emptyThirds())
 
   useEffect(() => {
     const prev = prevDateKey(date)
     Promise.all([loadHoursRecord(date), loadHoursRecord(prev), loadJijiMaster()])
       .then(([today, yesterday, master]) => {
-        // 昨日までの値を決定
         const autoKinou = emptyThirds()
         if (yesterday) {
           GRADES.forEach(g => {
             autoKinou[g] = (yesterday.kinou?.[g] || 0) + (yesterday.kyou?.[g] || 0)
           })
         }
-        setKinou(today ? (today.kinou || emptyThirds()) : autoKinou)
-        // 「今日」はマスターと当日行事から自動計上
-        setKyou(computeKyou(calendarEvents, master, date))
+        const resolvedKinou = today ? (today.kinou || emptyThirds()) : autoKinou
+        const resolvedKyou = computeKyou(calendarEvents, master, date)
+        kinouRef.current = resolvedKinou
+        setKinou(resolvedKinou)
+        setKyou(resolvedKyou)
+        // kyou が確定したら自動保存（翌日の「昨日まで」に引き継ぐため）
+        saveHoursRecord(date, resolvedKinou, resolvedKyou, null)
       })
   }, [date, calendarEvents])
 
   function saveKinou(nextKinou) {
-    const record = { kinou: nextKinou, kyou }
+    kinouRef.current = nextKinou
     if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(async () => {
-      const json = JSON.stringify(record)
-      if (!USE_SUPABASE) { localStorage.setItem(`school_hours_${date}`, json); return }
-      setSaving(true)
-      await supabase.from('school_notices')
-        .upsert({ date, type: 'school_hours', content: json, updated_at: new Date().toISOString() }, { onConflict: 'date,type' })
-      setSaving(false)
+    debounceRef.current = setTimeout(() => {
+      saveHoursRecord(date, nextKinou, kyou, setSaving)
     }, 800)
   }
 
