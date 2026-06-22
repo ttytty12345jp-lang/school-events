@@ -227,14 +227,19 @@ function prevDateKey(dateKey) {
   return toDateKey(d)
 }
 
-// 学校行事マスターとその日の行事を照合し、学年ごとの時数合計（整数thirds）を返す
-function computeKyou(calendarEvents, jijiMaster) {
+// 学校行事マスターと照合し、学年ごとの時数合計（整数thirds）を返す
+// ・日付あり → その日付が一致するエントリを計上
+// ・日付なし → カレンダー行事のタイトルと一致するエントリを計上（空白・大小無視）
+function computeKyou(calendarEvents, jijiMaster, dateKey) {
   const result = emptyThirds()
-  for (const ev of calendarEvents) {
-    const match = jijiMaster.find(j => j.title && j.title === ev.title)
-    if (match) {
+  const calTitles = new Set(calendarEvents.map(e => e.title?.trim().toLowerCase()).filter(Boolean))
+  for (const entry of jijiMaster) {
+    if (!entry.title) continue
+    const byDate = entry.date && entry.date === dateKey
+    const byTitle = !entry.date && calTitles.has(entry.title.trim().toLowerCase())
+    if (byDate || byTitle) {
       GRADES.forEach(g => {
-        result[g] = (result[g] || 0) + (match.grades?.[g] || 0)
+        result[g] = (result[g] || 0) + (entry.grades?.[g] || 0)
       })
     }
   }
@@ -260,7 +265,7 @@ function SchoolHoursSection({ date, calendarEvents }) {
         }
         setKinou(today ? (today.kinou || emptyThirds()) : autoKinou)
         // 「今日」はマスターと当日行事から自動計上
-        setKyou(computeKyou(calendarEvents, master))
+        setKyou(computeKyou(calendarEvents, master, date))
       })
   }, [date, calendarEvents])
 
