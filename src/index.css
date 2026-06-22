@@ -1190,8 +1190,6 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 }
 .wb-time-input:focus { background: #eff6ff; border-radius: 2px; }
 .wb-time-picker-hidden { position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0; }
-.wb-time-clock-btn { border: none; background: transparent; cursor: pointer; font-size: 12px; padding: 0; line-height: 1; opacity: 0.5; flex-shrink: 0; }
-.wb-time-clock-btn:hover { opacity: 1; }
 .wb-tilde { font-size: 10px; color: #6b7280; flex-shrink: 0; margin: 0 1px; }
 
 /* 大サイズ（特別教室・出張セクション） */
@@ -1199,8 +1197,6 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .wb-left .wb-section:nth-child(2) .wb-time-range { height: 34px; }
 .wb-left .wb-section:nth-child(1) .wb-time-input,
 .wb-left .wb-section:nth-child(2) .wb-time-input { font-size: 16px; height: 28px; width: 60px; }
-.wb-left .wb-section:nth-child(1) .wb-time-clock-btn,
-.wb-left .wb-section:nth-child(2) .wb-time-clock-btn { font-size: 16px; }
 
 /* Row clear button */
 .wb-clear-btn {

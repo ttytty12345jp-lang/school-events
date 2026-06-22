@@ -128,12 +128,12 @@ function TimeInput({ val, onChange }) {
     <span className="wb-time-combo">
       <input type="text" className="wb-time-input" value={text}
         onChange={e => { setText(e.target.value); onChange(e.target.value) }}
-        />
+        onDoubleClick={() => pickerRef.current?.showPicker()}
+        title="ダブルクリックで時刻ピッカーを開く"
+      />
       <input type="time" className="wb-time-picker-hidden" ref={pickerRef}
         onChange={e => { setText(e.target.value); onChange(e.target.value) }}
         tabIndex={-1} />
-      <button className="wb-time-clock-btn" tabIndex={-1}
-        onClick={() => pickerRef.current?.showPicker()}>🕐</button>
     </span>
   )
 }
