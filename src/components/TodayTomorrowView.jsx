@@ -264,19 +264,40 @@ function computeKyou(calendarEvents, jijiMaster, dateKey) {
   return result
 }
 
-// 最大90日遡って最後に保存されたレコードの累計を返す
+// 直近180日の school_hours レコードを一括取得し、dateKey より前で最新の累計を返す
 async function findLastCumulative(dateKey) {
-  let key = prevDateKey(dateKey)
-  for (let i = 0; i < 90; i++) {
-    const rec = await loadHoursRecord(key)
-    if (rec) {
-      const cum = emptyThirds()
-      GRADES.forEach(g => { cum[g] = (rec.kinou?.[g] || 0) + (rec.kyou?.[g] || 0) })
-      return cum
+  const d = new Date(dateKey + 'T00:00:00')
+  d.setDate(d.getDate() - 180)
+  const since = toDateKey(d)
+
+  let rows = []
+  if (!USE_SUPABASE) {
+    // localStorage: 全キーを走査
+    for (let i = 1; i <= 180; i++) {
+      const k = prevDateKey(dateKey)
+      try {
+        const r = JSON.parse(localStorage.getItem(`school_hours_${k}`) || 'null')
+        if (r) { rows.push({ date: k, ...r }); break }
+      } catch {}
     }
-    key = prevDateKey(key)
+  } else {
+    const { data } = await supabase.from('school_notices')
+      .select('date, content')
+      .eq('type', 'school_hours')
+      .gte('date', since)
+      .lt('date', dateKey)
+      .order('date', { ascending: false })
+      .limit(1)
+    rows = data || []
   }
-  return emptyThirds()
+
+  if (!rows.length) return emptyThirds()
+  try {
+    const rec = JSON.parse(rows[0].content)
+    const cum = emptyThirds()
+    GRADES.forEach(g => { cum[g] = (rec.kinou?.[g] || 0) + (rec.kyou?.[g] || 0) })
+    return cum
+  } catch { return emptyThirds() }
 }
 
 async function saveHoursRecord(date, kinou, kyou, setSaving) {
