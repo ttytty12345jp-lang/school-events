@@ -80,7 +80,7 @@ function formatShort(d) {
 }
 
 // ── Inline editable cell ───────────────────────────────────
-function EditCell({ value, onChange, placeholder = '', className = '', align = 'left', listId }) {
+function EditCell({ value, onChange, placeholder = '', className = '', align, listId }) {
   const [local, setLocal] = useState(value)
   useEffect(() => { setLocal(value) }, [value])
   return (
@@ -90,7 +90,7 @@ function EditCell({ value, onChange, placeholder = '', className = '', align = '
       onChange={e => setLocal(e.target.value)}
       onBlur={() => { if (local !== value) onChange(local) }}
       placeholder={placeholder}
-      style={{ textAlign: align }}
+      style={align ? { textAlign: align } : undefined}
       list={listId}
     />
   )

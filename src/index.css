@@ -19,7 +19,7 @@
   --radius: 8px;
   --radius-lg: 12px;
 
-  font-family: 'Hiragino Sans', 'Yu Gothic UI', 'Meiryo', system-ui, sans-serif;
+  font-family: 'UD Digi Kyokasho NP-R', 'UDデジタル教科書体 NP-R', 'UD デジタル 教科書体 NP-R', 'Hiragino Sans', 'Yu Gothic UI', 'Meiryo', system-ui, sans-serif;
   font-size: 14px;
   color: var(--text);
   background: var(--bg);
@@ -1081,7 +1081,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .wb-left .wb-section:nth-child(1) .wb-input,
 .wb-left .wb-section:nth-child(2) .wb-input { font-size: 20px; height: 34px; line-height: 34px; text-align: center !important; }
 .wb-left .wb-section:nth-child(1) .wb-time-input,
-.wb-left .wb-section:nth-child(2) .wb-time-input { font-size: 20px; height: 30px; width: 52px; }
+.wb-left .wb-section:nth-child(2) .wb-time-input { font-size: 20px; height: 30px; width: 68px; box-sizing: border-box; }
 .wb-left .wb-section:nth-child(1) .wb-time-range,
 .wb-left .wb-section:nth-child(2) .wb-time-range { height: 34px; }
 .wb-left .wb-section:nth-child(1) .wb-tilde,
