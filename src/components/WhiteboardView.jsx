@@ -128,7 +128,7 @@ function TimeInput({ val, onChange }) {
     <span className="wb-time-combo">
       <input type="text" className="wb-time-input" value={text}
         onChange={e => { setText(e.target.value); onChange(e.target.value) }}
-        placeholder="時刻" />
+        />
       <input type="time" className="wb-time-picker-hidden" ref={pickerRef}
         onChange={e => { setText(e.target.value); onChange(e.target.value) }}
         tabIndex={-1} />
