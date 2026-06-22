@@ -264,6 +264,21 @@ function computeKyou(calendarEvents, jijiMaster, dateKey) {
   return result
 }
 
+// 最大90日遡って最後に保存されたレコードの累計を返す
+async function findLastCumulative(dateKey) {
+  let key = prevDateKey(dateKey)
+  for (let i = 0; i < 90; i++) {
+    const rec = await loadHoursRecord(key)
+    if (rec) {
+      const cum = emptyThirds()
+      GRADES.forEach(g => { cum[g] = (rec.kinou?.[g] || 0) + (rec.kyou?.[g] || 0) })
+      return cum
+    }
+    key = prevDateKey(key)
+  }
+  return emptyThirds()
+}
+
 async function saveHoursRecord(date, kinou, kyou, setSaving) {
   const record = { kinou, kyou }
   const json = JSON.stringify(record)
@@ -282,21 +297,14 @@ function SchoolHoursSection({ date, calendarEvents }) {
   const kinouRef = useRef(emptyThirds())
 
   useEffect(() => {
-    const prev = prevDateKey(date)
-    Promise.all([loadHoursRecord(date), loadHoursRecord(prev), loadJijiMaster()])
-      .then(([today, yesterday, master]) => {
-        const autoKinou = emptyThirds()
-        if (yesterday) {
-          GRADES.forEach(g => {
-            autoKinou[g] = (yesterday.kinou?.[g] || 0) + (yesterday.kyou?.[g] || 0)
-          })
-        }
-        const resolvedKinou = today ? (today.kinou || emptyThirds()) : autoKinou
+    Promise.all([loadHoursRecord(date), findLastCumulative(date), loadJijiMaster()])
+      .then(([today, lastCum, master]) => {
+        // 今日のレコードがあればその kinou を使い、なければ直近の累計を使う
+        const resolvedKinou = today ? (today.kinou || emptyThirds()) : lastCum
         const resolvedKyou = computeKyou(calendarEvents, master, date)
         kinouRef.current = resolvedKinou
         setKinou(resolvedKinou)
         setKyou(resolvedKyou)
-        // kyou が確定したら自動保存（翌日の「昨日まで」に引き継ぐため）
         saveHoursRecord(date, resolvedKinou, resolvedKyou, null)
       })
   }, [date, calendarEvents])
