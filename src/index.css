@@ -1079,7 +1079,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .wb-left .wb-section:nth-child(1) .wb-row,
 .wb-left .wb-section:nth-child(2) .wb-row { height: 34px; }
 .wb-left .wb-section:nth-child(1) .wb-input,
-.wb-left .wb-section:nth-child(2) .wb-input { font-size: 20px; height: 34px; line-height: 34px; text-align: center !important; }
+.wb-left .wb-section:nth-child(2) .wb-input { font-size: 20px; height: 34px; line-height: 34px; text-align: center !important; padding-left: 20px; }
 .wb-left .wb-section:nth-child(1) .wb-time-input,
 .wb-left .wb-section:nth-child(2) .wb-time-input { font-size: 20px; height: 30px; width: 68px; box-sizing: border-box; }
 .wb-left .wb-section:nth-child(1) .wb-time-range,
@@ -1166,6 +1166,8 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   font-family: inherit;
 }
 .wb-input:focus { background: #eff6ff; }
+.wb-input::-webkit-calendar-picker-indicator { display: none !important; }
+.wb-input::-webkit-list-button { display: none !important; }
 
 /* Time range — flex row inside td */
 .wb-time-range {
