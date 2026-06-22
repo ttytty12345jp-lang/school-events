@@ -97,32 +97,47 @@ function EditCell({ value, onChange, placeholder = '', className = '', align, li
   )
 }
 
-// 30分刻みの時刻リスト（7:30〜18:30）
-const TIME_OPTIONS = Array.from({ length: 23 }, (_, i) => {
-  const totalMin = 7 * 60 + 30 + i * 30
-  const h = String(Math.floor(totalMin / 60)).padStart(2, '0')
-  const m = String(totalMin % 60).padStart(2, '0')
-  return `${h}:${m}`
-})
+const HOURS = Array.from({ length: 13 }, (_, i) => i + 7)   // 7〜19
+const MINS  = ['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55']
 
-// ── Time range: two inputs with datalist ──────────────────
+function parseTime(val) {
+  if (!val) return { h: '', m: '' }
+  const [h, m] = val.split(':')
+  return { h: h || '', m: m || '' }
+}
+function formatTime(h, m) {
+  if (!h && !m) return ''
+  return `${h || ''}:${m || '00'}`
+}
+
+// ── Time picker: 時・分 別select ──────────────────────────
+function TimePicker({ val, onChange }) {
+  const { h, m } = parseTime(val)
+  return (
+    <span className="wb-time-picker">
+      <select className="wb-time-sel" value={h}
+        onChange={e => onChange(formatTime(e.target.value, m))}>
+        <option value="">—</option>
+        {HOURS.map(n => <option key={n} value={n}>{n}</option>)}
+      </select>
+      <span className="wb-time-colon">時</span>
+      <select className="wb-time-sel" value={m}
+        onChange={e => onChange(formatTime(h, e.target.value))}>
+        <option value="">—</option>
+        {MINS.map(n => <option key={n} value={n}>{n}</option>)}
+      </select>
+      <span className="wb-time-colon">分</span>
+    </span>
+  )
+}
+
+// ── Time range: 開始〜終了 ────────────────────────────────
 function TimeRange({ startVal, endVal, onStartChange, onEndChange }) {
-  const [ls, setLs] = useState(startVal)
-  const [le, setLe] = useState(endVal)
-  useEffect(() => { setLs(startVal) }, [startVal])
-  useEffect(() => { setLe(endVal) }, [endVal])
   return (
     <div className="wb-time-range">
-      <datalist id="wb-time-list">
-        {TIME_OPTIONS.map(t => <option key={t} value={t} />)}
-      </datalist>
-      <input className="wb-time-input" value={ls} list="wb-time-list"
-        onChange={e => { setLs(e.target.value); onStartChange(e.target.value) }}
-        placeholder="--:--" />
+      <TimePicker val={startVal} onChange={onStartChange} />
       <span className="wb-tilde">～</span>
-      <input className="wb-time-input" value={le} list="wb-time-list"
-        onChange={e => { setLe(e.target.value); onEndChange(e.target.value) }}
-        placeholder="--:--" />
+      <TimePicker val={endVal} onChange={onEndChange} />
     </div>
   )
 }

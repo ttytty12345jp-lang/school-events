@@ -1080,10 +1080,6 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .wb-left .wb-section:nth-child(2) .wb-row { height: 34px; }
 .wb-left .wb-section:nth-child(1) .wb-input,
 .wb-left .wb-section:nth-child(2) .wb-input { font-size: 20px; height: 34px; line-height: 34px; text-align: center !important; padding-left: 8px; }
-.wb-left .wb-section:nth-child(1) .wb-time-input,
-.wb-left .wb-section:nth-child(2) .wb-time-input { font-size: 20px; height: 30px; width: 82px; box-sizing: border-box; }
-.wb-left .wb-section:nth-child(1) .wb-time-range,
-.wb-left .wb-section:nth-child(2) .wb-time-range { height: 34px; }
 .wb-left .wb-section:nth-child(1) .wb-tilde,
 .wb-left .wb-section:nth-child(2) .wb-tilde { font-size: 14px; }
 .wb-left .wb-section:nth-child(1) .wb-clear-btn,
@@ -1176,23 +1172,32 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   justify-content: center;
   height: 24px;
   padding: 0 2px;
-  gap: 1px;
+  gap: 2px;
+  flex-wrap: nowrap;
 }
-.wb-time-input {
-  width: 40px;
-  flex-shrink: 0;
+.wb-time-picker { display: flex; align-items: center; gap: 1px; }
+.wb-time-sel {
   border: none;
   outline: none;
   background: transparent;
   font-size: 12px;
   font-family: inherit;
-  text-align: center;
-  height: 20px;
-  padding: 0 1px;
-  box-sizing: border-box;
+  height: 22px;
+  padding: 0;
+  cursor: pointer;
+  width: 38px;
 }
-.wb-time-input:focus { background: #eff6ff; border-radius: 2px; }
-.wb-tilde { font-size: 10px; color: #6b7280; flex-shrink: 0; }
+.wb-time-sel:focus { background: #eff6ff; border-radius: 2px; }
+.wb-time-colon { font-size: 11px; color: #374151; }
+.wb-tilde { font-size: 10px; color: #6b7280; flex-shrink: 0; margin: 0 2px; }
+
+/* 大サイズ（特別教室・出張セクション） */
+.wb-left .wb-section:nth-child(1) .wb-time-sel,
+.wb-left .wb-section:nth-child(2) .wb-time-sel { font-size: 18px; height: 30px; width: 48px; }
+.wb-left .wb-section:nth-child(1) .wb-time-colon,
+.wb-left .wb-section:nth-child(2) .wb-time-colon { font-size: 16px; }
+.wb-left .wb-section:nth-child(1) .wb-time-range,
+.wb-left .wb-section:nth-child(2) .wb-time-range { height: 34px; }
 
 /* Row clear button */
 .wb-clear-btn {
