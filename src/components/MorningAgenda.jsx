@@ -17,6 +17,16 @@ function newItem(title = '') {
   return { id: crypto.randomUUID(), title, fromCalendar: false }
 }
 
+const FONT_MAX = 22
+const FONT_MIN = 11
+function autoScale(el) {
+  if (!el) return
+  el.style.fontSize = FONT_MAX + 'px'
+  while (el.scrollWidth > el.clientWidth && parseFloat(el.style.fontSize) > FONT_MIN) {
+    el.style.fontSize = (parseFloat(el.style.fontSize) - 1) + 'px'
+  }
+}
+
 function mergeWithCalendar(saved, calendarEvents) {
   if (saved !== null) return saved
   const items = calendarEvents
@@ -149,10 +159,10 @@ export default function MorningAgenda({ dateKey, calendarEvents }) {
         >
           <span className="agenda-drag-handle" title="ドラッグで並び替え">⠿</span>
           <input
-            ref={el => inputRefs.current[item.id] = el}
+            ref={el => { inputRefs.current[item.id] = el; autoScale(el) }}
             className="agenda-title-input"
             value={item.title}
-            onChange={e => setTitle(item.id, e.target.value)}
+            onChange={e => { setTitle(item.id, e.target.value); autoScale(e.target) }}
             onKeyDown={e => handleKeyDown(e, item.id, i)}
             placeholder="行事・連絡を入力"
           />
