@@ -101,21 +101,31 @@ function EditCell({ value, onChange, placeholder = '', className = '', align, li
   const ref = useRef(null)
   useEffect(() => { setLocal(value) }, [value])
   useEffect(() => { autoScaleWidth(ref.current) }, [local])
+  function handleChange(e) {
+    setLocal(e.target.value)
+    if (live) onChange(e.target.value)
+  }
   return (
     <input
       ref={ref}
       className={`wb-input ${className}`}
       value={local}
-      onChange={e => { setLocal(e.target.value); if (live) onChange(e.target.value) }}
+      onChange={handleChange}
       onBlur={() => { if (!live && local !== value) onChange(local) }}
       placeholder={placeholder}
       style={align ? { textAlign: align } : undefined}
-      list={listId}
+      list={listId || undefined}
     />
   )
 }
 
-// ── Time range: type="time" で自由入力＋ピッカー ──────────
+const TIME_SUGGESTIONS = Array.from({ length: 25 }, (_, i) => {
+  const h = String(Math.floor((i * 30 + 7 * 60) / 60)).padStart(2, '0')
+  const m = (i * 30 + 7 * 60) % 60 === 0 ? '00' : '30'
+  return `${h}:${m}`
+}).filter((_, i) => (7 * 60 + i * 30) <= 19 * 60)
+
+// ── Time range: text + datalist（自由入力＋候補選択）────────
 function TimeRange({ startVal, endVal, onStartChange, onEndChange }) {
   const [ls, setLs] = useState(startVal)
   const [le, setLe] = useState(endVal)
@@ -123,11 +133,16 @@ function TimeRange({ startVal, endVal, onStartChange, onEndChange }) {
   useEffect(() => { setLe(endVal) }, [endVal])
   return (
     <div className="wb-time-range">
-      <input type="time" className="wb-time-input" value={ls}
-        onChange={e => { setLs(e.target.value); onStartChange(e.target.value) }} />
+      <datalist id="wb-time-list">
+        {TIME_SUGGESTIONS.map(t => <option key={t} value={t} />)}
+      </datalist>
+      <input type="text" className="wb-time-input" value={ls} list="wb-time-list"
+        onChange={e => { setLs(e.target.value); onStartChange(e.target.value) }}
+        placeholder="時刻・文字列" />
       <span className="wb-tilde">～</span>
-      <input type="time" className="wb-time-input" value={le}
-        onChange={e => { setLe(e.target.value); onEndChange(e.target.value) }} />
+      <input type="text" className="wb-time-input" value={le} list="wb-time-list"
+        onChange={e => { setLe(e.target.value); onEndChange(e.target.value) }}
+        placeholder="時刻・文字列" />
     </div>
   )
 }

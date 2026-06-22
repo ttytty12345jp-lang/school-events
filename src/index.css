@@ -1195,7 +1195,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .wb-left .wb-section:nth-child(1) .wb-time-range,
 .wb-left .wb-section:nth-child(2) .wb-time-range { height: 34px; }
 .wb-left .wb-section:nth-child(1) .wb-time-input,
-.wb-left .wb-section:nth-child(2) .wb-time-input { font-size: 14px; height: 28px; width: 80px; }
+.wb-left .wb-section:nth-child(2) .wb-time-input { font-size: 14px; height: 28px; width: 76px; }
 
 /* Row clear button */
 .wb-clear-btn {
