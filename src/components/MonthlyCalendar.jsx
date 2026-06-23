@@ -9,9 +9,78 @@ const USE_SUPABASE = !!(SUPABASE_URL && SUPABASE_ANON_KEY)
 const supabase = USE_SUPABASE ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null
 
 const HIGHLIGHTS_TYPE = 'row_highlights'
+const SPAN_TYPE = 'span_events'
+const SPAN_DATE = 'span_events'
+const SPAN_COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#64748b']
 
 const DAYS_JA = ['日', '月', '火', '水', '木', '金', '土']
 const CATEGORIES = ['学校行事', '教職員関係行事', 'その他']
+
+async function loadSpanEvents() {
+  if (!USE_SUPABASE) {
+    try { return JSON.parse(localStorage.getItem('span_events') || '[]') } catch { return [] }
+  }
+  const { data } = await supabase.from('school_notices').select('content')
+    .eq('date', SPAN_DATE).eq('type', SPAN_TYPE).maybeSingle()
+  if (!data?.content) return []
+  try { return JSON.parse(data.content) } catch { return [] }
+}
+
+async function saveSpanEvents(list) {
+  const json = JSON.stringify(list)
+  if (!USE_SUPABASE) { localStorage.setItem('span_events', json); return }
+  await supabase.from('school_notices')
+    .upsert({ date: SPAN_DATE, type: SPAN_TYPE, content: json, updated_at: new Date().toISOString() }, { onConflict: 'date,type' })
+}
+
+function SpanEventModal({ span, onSave, onDelete, onClose }) {
+  const [title, setTitle] = useState(span?.title || '')
+  const [startDate, setStartDate] = useState(span?.startDate || '')
+  const [endDate, setEndDate] = useState(span?.endDate || '')
+  const [color, setColor] = useState(span?.color || SPAN_COLORS[0])
+  const ref = useRef(null)
+
+  useEffect(() => {
+    function handler(e) {
+      if (ref.current && !ref.current.contains(e.target)) onClose()
+    }
+    setTimeout(() => document.addEventListener('mousedown', handler), 0)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [onClose])
+
+  function handleSave() {
+    if (!title.trim() || !startDate || !endDate) return
+    onSave({ id: span?.id || crypto.randomUUID(), title: title.trim(), startDate, endDate, color })
+    onClose()
+  }
+
+  return (
+    <div className="span-modal" ref={ref}>
+      <div className="span-modal-header">
+        <span>{span ? '期間行事を編集' : '期間行事を追加'}</span>
+        <button className="btn-close" onClick={onClose}>×</button>
+      </div>
+      <div className="span-modal-body">
+        <input className="span-modal-input" value={title} onChange={e => setTitle(e.target.value)} placeholder="行事名（例：水泳指導期間）" />
+        <div className="span-modal-row">
+          <input type="date" className="span-modal-date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+          <span>〜</span>
+          <input type="date" className="span-modal-date" value={endDate} onChange={e => setEndDate(e.target.value)} />
+        </div>
+        <div className="span-color-picker">
+          {SPAN_COLORS.map(c => (
+            <button key={c} className={['span-color-btn', color === c ? 'selected' : ''].join(' ')}
+              style={{ background: c }} onClick={() => setColor(c)} />
+          ))}
+        </div>
+        <div className="span-modal-actions">
+          <button className="hc-btn hc-btn-primary" onClick={handleSave}>保存</button>
+          {span && <button className="btn-danger" onClick={() => { onDelete(span.id); onClose() }}>削除</button>}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function toDateKey(y, m, d) {
   return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
@@ -256,6 +325,30 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
   const highlightDebounce = useRef(null)
   const monthKey = `${year}-${String(month).padStart(2, '0')}`
 
+  // 期間行事
+  const [spanEvents, setSpanEvents] = useState([])
+  const [spanModal, setSpanModal] = useState(null) // null | 'new' | {span object}
+
+  useEffect(() => { loadSpanEvents().then(setSpanEvents) }, [])
+
+  function getActiveSpans(dateKey) {
+    return spanEvents.filter(s => s.startDate <= dateKey && dateKey <= s.endDate)
+  }
+
+  async function handleSaveSpan(entry) {
+    const next = spanEvents.some(s => s.id === entry.id)
+      ? spanEvents.map(s => s.id === entry.id ? entry : s)
+      : [...spanEvents, entry]
+    setSpanEvents(next)
+    await saveSpanEvents(next)
+  }
+
+  async function handleDeleteSpan(id) {
+    const next = spanEvents.filter(s => s.id !== id)
+    setSpanEvents(next)
+    await saveSpanEvents(next)
+  }
+
   // 月が変わったら対応するオーバーライドをロード
   useEffect(() => {
     if (!USE_SUPABASE) {
@@ -394,6 +487,7 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
           }))
         }}>📊 Excel出力</button>
         <button className="hc-btn" onClick={() => window.print()}>🖨️ 印刷</button>
+        <button className="hc-btn" onClick={() => setSpanModal('new')}>＋ 期間行事</button>
       </div>
     )
     return () => setControls(null)
@@ -421,10 +515,19 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
       style={{ position: 'relative' }}
       onDragEnd={() => { dragState.current = null }}
     >
+      {spanModal && (
+        <SpanEventModal
+          span={spanModal === 'new' ? null : spanModal}
+          onSave={handleSaveSpan}
+          onDelete={handleDeleteSpan}
+          onClose={() => setSpanModal(null)}
+        />
+      )}
       <div className="monthly-table-wrap">
         <table className="monthly-table">
           <thead>
             <tr>
+              <th className="col-span-bars"></th>
               <th className="col-date">日付</th>
               <th className="col-day">曜日</th>
               {CATEGORIES.map(cat => (
@@ -442,6 +545,7 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
               const isSat = dow === 6
               const isWeekend = isSun || isSat
               const gray = isRowGray(dateKey, isWeekend)
+              const activeSpans = getActiveSpans(dateKey)
               return (
                 <tr key={day} className={[
                   'monthly-row',
@@ -449,6 +553,12 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
                   gray ? 'row-gray' : '',
                   isSun ? 'row-sun' : isSat ? 'row-sat' : '',
                 ].filter(Boolean).join(' ')}>
+                  <td className="col-span-bars" onClick={e => e.stopPropagation()}>
+                    {activeSpans.map(s => (
+                      <div key={s.id} className="span-bar" style={{ background: s.color }}
+                        title={s.title} onClick={() => setSpanModal(s)} />
+                    ))}
+                  </td>
                   <td className="col-date">{month}/{day}</td>
                   <td
                     className="col-day col-day-toggle"
