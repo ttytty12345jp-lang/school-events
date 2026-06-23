@@ -527,7 +527,6 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
         <table className="monthly-table">
           <thead>
             <tr>
-              <th className="col-span-bars"></th>
               <th className="col-date">日付</th>
               <th className="col-day">曜日</th>
               {CATEGORIES.map(cat => (
@@ -546,6 +545,14 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
               const isWeekend = isSun || isSat
               const gray = isRowGray(dateKey, isWeekend)
               const activeSpans = getActiveSpans(dateKey)
+              const BAR_W = 4, BAR_GAP = 2
+              const spanStyle = activeSpans.length ? {
+                backgroundImage: activeSpans.map(s => `linear-gradient(${s.color},${s.color})`).join(','),
+                backgroundSize: activeSpans.map((_, i) => `${BAR_W}px 100%`).join(','),
+                backgroundPosition: activeSpans.map((_, i) => `${i * (BAR_W + BAR_GAP)}px 0`).join(','),
+                backgroundRepeat: 'no-repeat',
+                paddingLeft: activeSpans.length * (BAR_W + BAR_GAP) + 6 + 'px',
+              } : undefined
               return (
                 <tr key={day} className={[
                   'monthly-row',
@@ -553,13 +560,12 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
                   gray ? 'row-gray' : '',
                   isSun ? 'row-sun' : isSat ? 'row-sat' : '',
                 ].filter(Boolean).join(' ')}>
-                  <td className="col-span-bars" onClick={e => e.stopPropagation()}>
-                    {activeSpans.map(s => (
-                      <div key={s.id} className="span-bar" style={{ background: s.color }}
-                        title={s.title} onClick={() => setSpanModal(s)} />
-                    ))}
-                  </td>
-                  <td className="col-date">{month}/{day}</td>
+                  <td
+                    className="col-date"
+                    style={spanStyle}
+                    title={activeSpans.map(s => s.title).join(' / ') || undefined}
+                    onClick={activeSpans.length ? () => setSpanModal(activeSpans[0]) : undefined}
+                  >{month}/{day}</td>
                   <td
                     className="col-day col-day-toggle"
                     title="クリックで塗りつぶし切り替え"

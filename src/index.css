@@ -788,30 +788,10 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   white-space: nowrap;
 }
 
-.monthly-table .col-span-bars { width: 16px; padding: 0 2px; }
-.monthly-table .col-date { width: 60px; text-align: center; }
+.monthly-table .col-date { width: 60px; text-align: right; padding-right: 8px; }
 .monthly-table .col-day  { width: 36px; text-align: center; }
 .monthly-table .col-cat  { min-width: 180px; }
 
-.span-bar {
-  width: 4px;
-  min-height: 100%;
-  border-radius: 2px;
-  cursor: pointer;
-  display: inline-block;
-  margin: 0 1px;
-  opacity: 0.85;
-  transition: opacity 0.15s;
-}
-.span-bar:hover { opacity: 1; }
-
-.col-span-bars {
-  padding: 2px 2px !important;
-  cursor: default;
-  display: flex;
-  align-items: stretch;
-  gap: 2px;
-}
 
 .span-modal {
   position: fixed;
