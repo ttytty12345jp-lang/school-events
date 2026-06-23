@@ -142,8 +142,8 @@ function UpcomingSection({ todayDate, events }) {
     const json = JSON.stringify(overrides)
     if (!USE_SUPABASE) { localStorage.setItem(`row_highlights_${mk}`, json); return }
     if (debounceRefs.current[mk]) clearTimeout(debounceRefs.current[mk])
-    debounceRefs.current[mk] = setTimeout(() => {
-      supabase.from('school_notices')
+    debounceRefs.current[mk] = setTimeout(async () => {
+      await supabase.from('school_notices')
         .upsert({ date: mk, type: HIGHLIGHTS_TYPE, content: json, updated_at: new Date().toISOString() }, { onConflict: 'date,type' })
     }, 600)
   }

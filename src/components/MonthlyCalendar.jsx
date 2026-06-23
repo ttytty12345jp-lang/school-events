@@ -279,8 +279,8 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
       return
     }
     if (highlightDebounce.current) clearTimeout(highlightDebounce.current)
-    highlightDebounce.current = setTimeout(() => {
-      supabase.from('school_notices')
+    highlightDebounce.current = setTimeout(async () => {
+      await supabase.from('school_notices')
         .upsert({ date: monthKey, type: HIGHLIGHTS_TYPE, content: json, updated_at: new Date().toISOString() }, { onConflict: 'date,type' })
     }, 600)
   }
