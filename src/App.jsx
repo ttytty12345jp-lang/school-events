@@ -43,7 +43,7 @@ export default function App() {
         )}
       </main>
       <ToastContainer toasts={toasts} />
-      <StickyNotes />
+      {view === 'whiteboard' && <StickyNotes />}
     </HeaderControlsContext.Provider>
   )
 }

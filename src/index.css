@@ -1441,7 +1441,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .sn-note:active { cursor: grabbing; }
 
 .sn-toolbar {
-  display: flex;
+  display: none;
   align-items: center;
   gap: 3px;
   padding: 3px 4px;
@@ -1449,6 +1449,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   border-radius: 4px 4px 0 0;
   flex-shrink: 0;
 }
+.sn-toolbar.sn-toolbar-visible { display: flex; }
 .sn-colors { display: flex; gap: 2px; }
 .sn-color-btn {
   width: 14px; height: 14px;
@@ -1481,6 +1482,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   white-space: pre-wrap;
   word-break: break-all;
   cursor: grab;
+  text-align: center;
 }
 .sn-placeholder { color: rgba(0,0,0,0.3); font-size: 11px; }
 

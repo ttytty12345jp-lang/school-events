@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 
 const STORAGE_KEY = 'sticky_notes'
 const COLORS = ['#fef08a', '#bbf7d0', '#bfdbfe', '#fecaca', '#e9d5ff', '#fed7aa', '#ffffff']
-const PANEL_X_BASE = window.innerWidth - 10 // notes start just off-screen right
 
 function loadNotes() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]') } catch { return [] }
@@ -26,18 +25,15 @@ function newNote(inPanel = true, index = 0) {
 }
 
 // ── 単一付箋 ──────────────────────────────────────────
-function StickyNote({ note, onUpdate, onDelete, onDuplicate, panelX }) {
+function StickyNote({ note, onUpdate, onDelete, onDuplicate }) {
   const [editing, setEditing] = useState(false)
-  const [showMenu, setShowMenu] = useState(false)
-  const dragRef = useRef(null)
-  const resizeRef = useRef(null)
+  const [hovered, setHovered] = useState(false)
   const noteRef = useRef(null)
   const textRef = useRef(null)
-  const menuRef = useRef(null)
 
   // ── ドラッグ移動 ──
   function onMouseDownDrag(e) {
-    if (e.target.closest('.sn-resize') || e.target.closest('.sn-menu') || e.target.closest('.sn-toolbar')) return
+    if (e.target.closest('.sn-resize') || e.target.closest('.sn-toolbar')) return
     if (e.button !== 0) return
     e.preventDefault()
     const startX = e.clientX - note.x
@@ -69,36 +65,25 @@ function StickyNote({ note, onUpdate, onDelete, onDuplicate, panelX }) {
     document.addEventListener('mouseup', onUp)
   }
 
-  // メニュー外クリックで閉じる
-  useEffect(() => {
-    if (!showMenu) return
-    function handler(e) {
-      if (menuRef.current && !menuRef.current.contains(e.target)) setShowMenu(false)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [showMenu])
-
-  const x = note.inPanel ? panelX : note.x
-  const y = note.inPanel ? note.y : note.y
-
   return (
     <div
       ref={noteRef}
       className="sn-note"
       style={{
-        left: x,
-        top: y,
+        left: note.x,
+        top: note.y,
         width: note.width,
         height: note.height,
         background: note.color,
         zIndex: note.inPanel ? 1001 : 1002,
       }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       onMouseDown={onMouseDownDrag}
       onDoubleClick={() => { setEditing(true); setTimeout(() => textRef.current?.focus(), 0) }}
     >
-      {/* ツールバー */}
-      <div className="sn-toolbar" onMouseDown={e => e.stopPropagation()}>
+      {/* ツールバー: ホバー時のみ表示 */}
+      <div className={`sn-toolbar${hovered ? ' sn-toolbar-visible' : ''}`} onMouseDown={e => e.stopPropagation()}>
         <div className="sn-colors">
           {COLORS.map(c => (
             <button key={c} className="sn-color-btn" style={{ background: c, outline: c === note.color ? '2px solid #333' : 'none' }}
@@ -121,7 +106,7 @@ function StickyNote({ note, onUpdate, onDelete, onDuplicate, panelX }) {
           value={note.text}
           onChange={e => onUpdate({ text: e.target.value })}
           onBlur={() => setEditing(false)}
-          style={{ fontSize: note.fontSize }}
+          style={{ fontSize: note.fontSize, textAlign: 'center' }}
         />
       ) : (
         <div className="sn-text" style={{ fontSize: note.fontSize }}>
@@ -139,14 +124,17 @@ function StickyNote({ note, onUpdate, onDelete, onDuplicate, panelX }) {
 export default function StickyNotes() {
   const [notes, setNotes] = useState(() => {
     const saved = loadNotes()
-    // 初回: デフォルト付箋を5枚用意
     if (saved.length === 0) {
       return Array.from({ length: 5 }, (_, i) => newNote(true, i))
     }
     return saved
   })
   const [panelOpen, setPanelOpen] = useState(true)
-  const panelX = window.innerWidth - (panelOpen ? 200 : 10)
+
+  const panelWidth = 190
+  const panelStartY = 60
+  const noteGap = 10
+  const noteH = 120
 
   useEffect(() => { saveNotes(notes) }, [notes])
 
@@ -171,12 +159,6 @@ export default function StickyNotes() {
   const panelNotes = notes.filter(n => n.inPanel)
   const freeNotes = notes.filter(n => !n.inPanel)
 
-  // パネル内の付箋のy座標を整列
-  const panelWidth = 190
-  const panelStartY = 60
-  const noteGap = 10
-  let panelY = panelStartY
-
   return (
     <>
       {/* パネルタブ */}
@@ -197,12 +179,12 @@ export default function StickyNotes() {
 
       {/* パネル内付箋 */}
       {panelOpen && panelNotes.map((note, i) => {
-        const y = panelStartY + 36 + i * (120 + noteGap)
+        const x = window.innerWidth - panelWidth + 5
+        const y = panelStartY + 36 + i * (noteH + noteGap)
         return (
           <StickyNote
             key={note.id}
-            note={{ ...note, x: window.innerWidth - panelWidth + 5, y, width: panelWidth - 10, height: 120 }}
-            panelX={window.innerWidth - panelWidth + 5}
+            note={{ ...note, x, y, width: panelWidth - 10, height: noteH }}
             onUpdate={patch => update(note.id, patch)}
             onDelete={() => remove(note.id)}
             onDuplicate={() => duplicate(note.id)}
@@ -215,7 +197,6 @@ export default function StickyNotes() {
         <StickyNote
           key={note.id}
           note={note}
-          panelX={0}
           onUpdate={patch => update(note.id, patch)}
           onDelete={() => remove(note.id)}
           onDuplicate={() => duplicate(note.id)}
