@@ -256,14 +256,17 @@ function prevDateKey(dateKey) {
 // 学校行事マスターと照合し、学年ごとの時数合計（整数thirds）を返す
 // ・日付あり → その日付が一致するエントリを計上
 // ・日付なし → カレンダー行事のタイトルと一致するエントリを計上（空白・大小無視）
-function computeKyou(calendarEvents, jijiMaster, dateKey) {
+function computeKyou(calendarEvents, agendaItems, jijiMaster, dateKey) {
   const result = emptyThirds()
-  const calTitles = calendarEvents.map(e => e.title?.trim().toLowerCase()).filter(Boolean)
+  const allTitles = [
+    ...calendarEvents.map(e => e.title?.trim().toLowerCase()),
+    ...agendaItems.map(e => e.title?.trim().toLowerCase()),
+  ].filter(Boolean)
   for (const entry of jijiMaster) {
     if (!entry.title) continue
     const entryTitle = entry.title.trim().toLowerCase()
     const byDate = entry.date && entry.date === dateKey
-    const byTitle = !entry.date && calTitles.some(t => t.includes(entryTitle) || entryTitle.includes(t))
+    const byTitle = !entry.date && allTitles.some(t => t.includes(entryTitle) || entryTitle.includes(t))
     if (byDate || byTitle) {
       GRADES.forEach(g => {
         result[g] = (result[g] || 0) + (entry.grades?.[g] || 0)
@@ -271,6 +274,16 @@ function computeKyou(calendarEvents, jijiMaster, dateKey) {
     }
   }
   return result
+}
+
+async function loadAgendaItems(dateKey) {
+  if (!USE_SUPABASE) {
+    try { return JSON.parse(localStorage.getItem(`agenda_${dateKey}`) || 'null') || [] } catch { return [] }
+  }
+  const { data } = await supabase.from('school_notices').select('content')
+    .eq('date', dateKey).eq('type', 'morning_agenda').maybeSingle()
+  if (!data?.content) return []
+  try { return JSON.parse(data.content) } catch { return [] }
 }
 
 // 直近180日の school_hours レコードを一括取得し、dateKey より前で最新の累計を返す
@@ -327,17 +340,39 @@ function SchoolHoursSection({ date, calendarEvents }) {
   const kyouRef = useRef(emptyThirds())
 
   useEffect(() => {
-    Promise.all([loadHoursRecord(date), findLastCumulative(date), loadJijiMaster()])
-      .then(([today, lastCum, master]) => {
-        // 手動変更済みのときだけ保存kinou を使う。それ以外は直近累計
+    Promise.all([loadHoursRecord(date), findLastCumulative(date), loadJijiMaster(), loadAgendaItems(date)])
+      .then(([today, lastCum, master, agendaItems]) => {
         const resolvedKinou = today?.kinouManual ? (today.kinou || lastCum) : lastCum
-        const resolvedKyou = computeKyou(calendarEvents, master, date)
+        const resolvedKyou = computeKyou(calendarEvents, agendaItems, master, date)
         kyouRef.current = resolvedKyou
         setKinou(resolvedKinou)
         setKyou(resolvedKyou)
-        // kinou（累計）と kyou を両方保存 → findLastCumulative が正確に繋がる
         saveHoursRecord(date, resolvedKinou, resolvedKyou, false, null)
       })
+  }, [date, calendarEvents])
+
+  // morning_agenda の変更をリアルタイムで検知して再計算
+  useEffect(() => {
+    if (!USE_SUPABASE) return
+    const channel = supabase.channel(`school_hours_agenda_${date}`)
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'school_notices',
+        filter: `date=eq.${date}`,
+      }, payload => {
+        const rec = payload.new || payload.old
+        if (rec?.type !== 'morning_agenda' && rec?.type !== 'jiji_master') return
+        Promise.all([loadJijiMaster(), loadAgendaItems(date)]).then(([master, agendaItems]) => {
+          const resolvedKyou = computeKyou(calendarEvents, agendaItems, master, date)
+          kyouRef.current = resolvedKyou
+          setKyou(resolvedKyou)
+          setKinou(prev => {
+            saveHoursRecord(date, prev, resolvedKyou, false, null)
+            return prev
+          })
+        })
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
   }, [date, calendarEvents])
 
   function stepKinou(grade, delta) {
