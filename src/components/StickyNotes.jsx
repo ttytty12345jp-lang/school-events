@@ -129,7 +129,7 @@ export default function StickyNotes() {
     }
     return saved
   })
-  const [panelOpen, setPanelOpen] = useState(true)
+  const [panelOpen, setPanelOpen] = useState(false)
 
   const panelWidth = 190
   const panelStartY = 60
