@@ -177,32 +177,38 @@ function UpcomingSection({ todayDate, events }) {
   useEffect(() => {
     const el = bodyRef.current
     if (!el) return
-    let raf1, raf2
+    const MAX = 14, MIN = 7
+
     function measure() {
       const rows = Array.from(el.querySelectorAll('.upcoming-day'))
       if (!rows.length) return
-      const MAX = 14, MIN = 7
-      rows.forEach(r => { r.style.fontSize = MAX + 'px' })
-      // 2フレーム待ってレイアウト確定後に計測
-      raf2 = requestAnimationFrame(() => {
-        const containerH = el.clientHeight
-        if (!containerH) return
-        // 各行の期待高さ = コンテナ高さ ÷ 行数（実際のclientHeightは行が伸びると不正確）
-        const expectedRowH = Math.floor(containerH / rows.length)
-        let size = MAX
-        while (size > MIN) {
-          const anyOverflow = rows.some(r => {
-            const inner = r.querySelector('.upcoming-day-events')
-            return inner && inner.scrollHeight > expectedRowH + 2
-          })
-          if (!anyOverflow) break
-          size -= 1
-          rows.forEach(r => { r.style.fontSize = size + 'px' })
-        }
+      const containerH = el.getBoundingClientRect().height
+      if (!containerH) return
+      const expectedRowH = Math.floor(containerH / rows.length)
+
+      // 行に明示的な高さ上限を設定（CSSのflex制約が効かない場合の保険）
+      rows.forEach(r => {
+        r.style.maxHeight = expectedRowH + 'px'
+        r.style.overflow = 'hidden'
+        r.style.fontSize = MAX + 'px'
       })
+
+      let size = MAX
+      while (size > MIN) {
+        const anyOverflow = rows.some(r => {
+          const inner = r.querySelector('.upcoming-day-events')
+          return inner && inner.scrollHeight > expectedRowH + 2
+        })
+        if (!anyOverflow) break
+        size -= 1
+        rows.forEach(r => { r.style.fontSize = size + 'px' })
+      }
     }
-    raf1 = requestAnimationFrame(measure)
-    return () => { cancelAnimationFrame(raf1); cancelAnimationFrame(raf2) }
+
+    // ResizeObserver: レイアウト確定後に発火するので RAF より確実
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
   }, [days])
 
   return (
