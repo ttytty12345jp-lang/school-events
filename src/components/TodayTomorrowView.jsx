@@ -177,26 +177,28 @@ function UpcomingSection({ todayDate, events }) {
   useEffect(() => {
     const el = bodyRef.current
     if (!el) return
-    let raf
+    let raf1, raf2
     function measure() {
-      const rows = el.querySelectorAll('.upcoming-day')
+      const rows = Array.from(el.querySelectorAll('.upcoming-day'))
       if (!rows.length) return
-      const MAX = 14, MIN = 8
-      // まずリセット
+      const MAX = 14, MIN = 7
       rows.forEach(r => { r.style.fontSize = MAX + 'px' })
-      const containerH = el.clientHeight
-      if (!containerH) return
-      // display:block に切り替えて自然な高さで計測
-      el.style.display = 'block'
-      let size = MAX
-      while (size > MIN && el.scrollHeight > containerH) {
-        size -= 1
-        rows.forEach(r => { r.style.fontSize = size + 'px' })
-      }
-      el.style.display = ''
+      // 2フレーム待ってレイアウト確定後に計測
+      raf2 = requestAnimationFrame(() => {
+        // overflow:hidden を一時解除して自然な scrollHeight を計測できるようにする
+        rows.forEach(r => { r.style.overflow = 'visible' })
+        let size = MAX
+        while (size > MIN) {
+          const anyOverflow = rows.some(r => r.scrollHeight > r.clientHeight + 1)
+          if (!anyOverflow) break
+          size -= 1
+          rows.forEach(r => { r.style.fontSize = size + 'px' })
+        }
+        rows.forEach(r => { r.style.overflow = '' })
+      })
     }
-    raf = requestAnimationFrame(measure)
-    return () => cancelAnimationFrame(raf)
+    raf1 = requestAnimationFrame(measure)
+    return () => { cancelAnimationFrame(raf1); cancelAnimationFrame(raf2) }
   }, [days])
 
   return (
