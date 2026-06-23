@@ -206,24 +206,22 @@ function autoScaleWidth(el) {
 // ── Inline editable cell ───────────────────────────────────
 function EditCell({ value, onChange, placeholder = '', className = '', align, listId, options, live = false }) {
   const [local, setLocal] = useState(value)
-  const [open, setOpen] = useState(false)
+  const [dropPos, setDropPos] = useState(null) // { top, left, width } or null
   const ref = useRef(null)
-  const wrapRef = useRef(null)
   useEffect(() => { setLocal(value) }, [value])
   useEffect(() => { autoScaleWidth(ref.current) }, [local])
 
-  // options prop があるときはカスタムドロップダウン
   const opts = options || []
   const hasOpts = opts.length > 0
 
   useEffect(() => {
-    if (!open) return
+    if (!dropPos) return
     function handler(e) {
-      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false)
+      if (ref.current && !ref.current.contains(e.target)) setDropPos(null)
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
-  }, [open])
+  }, [dropPos])
 
   function handleChange(e) {
     setLocal(e.target.value)
@@ -235,36 +233,41 @@ function EditCell({ value, onChange, placeholder = '', className = '', align, li
   function handleKeyDown(e) {
     if (e.key === 'Enter') { e.preventDefault(); ref.current?.blur() }
   }
+  function handleFocus() {
+    if (!hasOpts) return
+    const rect = ref.current?.getBoundingClientRect()
+    if (rect) setDropPos({ top: rect.bottom + window.scrollY, left: rect.left + window.scrollX, width: Math.max(rect.width, 120) })
+  }
   function handleSelect(opt) {
     setLocal(opt)
     onChange(opt)
-    setOpen(false)
+    setDropPos(null)
     autoScaleWidth(ref.current)
   }
 
   return (
-    <div ref={wrapRef} style={{ position: 'relative', width: '100%' }}>
+    <>
       <input
         ref={ref}
         className={`wb-input ${className}`}
         value={local}
         onChange={handleChange}
         onBlur={handleBlur}
-        onFocus={() => { if (hasOpts) setOpen(true) }}
+        onFocus={handleFocus}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         style={align ? { textAlign: align } : undefined}
         list={hasOpts ? undefined : (listId || undefined)}
         autoComplete="off"
       />
-      {hasOpts && open && (
-        <ul className="wb-dropdown">
+      {hasOpts && dropPos && (
+        <ul className="wb-dropdown" style={{ position: 'fixed', top: dropPos.top, left: dropPos.left, width: dropPos.width, zIndex: 9999 }}>
           {opts.map(opt => (
             <li key={opt} className="wb-dropdown-item" onMouseDown={() => handleSelect(opt)}>{opt}</li>
           ))}
         </ul>
       )}
-    </div>
+    </>
   )
 }
 
