@@ -258,11 +258,12 @@ function prevDateKey(dateKey) {
 // ・日付なし → カレンダー行事のタイトルと一致するエントリを計上（空白・大小無視）
 function computeKyou(calendarEvents, jijiMaster, dateKey) {
   const result = emptyThirds()
-  const calTitles = new Set(calendarEvents.map(e => e.title?.trim().toLowerCase()).filter(Boolean))
+  const calTitles = calendarEvents.map(e => e.title?.trim().toLowerCase()).filter(Boolean)
   for (const entry of jijiMaster) {
     if (!entry.title) continue
+    const entryTitle = entry.title.trim().toLowerCase()
     const byDate = entry.date && entry.date === dateKey
-    const byTitle = !entry.date && calTitles.has(entry.title.trim().toLowerCase())
+    const byTitle = !entry.date && calTitles.some(t => t.includes(entryTitle) || entryTitle.includes(t))
     if (byDate || byTitle) {
       GRADES.forEach(g => {
         result[g] = (result[g] || 0) + (entry.grades?.[g] || 0)
