@@ -232,6 +232,9 @@ function EditCell({ value, onChange, placeholder = '', className = '', align, li
   function handleBlur() {
     if (!live && local !== value) onChange(local)
   }
+  function handleKeyDown(e) {
+    if (e.key === 'Enter') { e.preventDefault(); ref.current?.blur() }
+  }
   function handleSelect(opt) {
     setLocal(opt)
     onChange(opt)
@@ -248,6 +251,7 @@ function EditCell({ value, onChange, placeholder = '', className = '', align, li
         onChange={handleChange}
         onBlur={handleBlur}
         onFocus={() => { if (hasOpts) setOpen(true) }}
+        onKeyDown={handleKeyDown}
         placeholder={placeholder}
         style={align ? { textAlign: align } : undefined}
         list={hasOpts ? undefined : (listId || undefined)}
@@ -273,6 +277,7 @@ function TimeInput({ val, onChange }) {
     <span className="wb-time-combo">
       <input type="text" className="wb-time-input" value={text}
         onChange={e => { setText(e.target.value); onChange(e.target.value) }}
+        onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }}
         onDoubleClick={() => pickerRef.current?.showPicker()}
         title="ダブルクリックで時刻ピッカーを開く"
       />
