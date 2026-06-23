@@ -1255,15 +1255,10 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   min-height: 22px;
 }
 .wb-long-leave-entry {
-  background: #dbeafe;
-  color: #1e40af;
-  border-radius: 3px;
-  padding: 0 5px;
   font-size: 12px;
   cursor: pointer;
   white-space: nowrap;
 }
-.wb-long-leave-entry:hover { background: #bfdbfe; }
 .wb-long-leave-add {
   color: #94a3b8;
   font-size: 13px;
