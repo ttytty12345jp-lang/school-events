@@ -37,6 +37,37 @@ const LONG_LEAVE_TYPES = new Set(['病休', '休職', '産休', '育休'])
 const LONG_LEAVE_TYPE = 'long_leave'
 const LONG_LEAVE_DATE = 'long_leave'
 
+const ROOM_RES_TYPE = 'room_reservations'
+const ROOM_RES_DATE = 'room_reservations'
+
+async function loadRoomReservations() {
+  if (!USE_SUPABASE) {
+    try { return JSON.parse(localStorage.getItem(ROOM_RES_DATE) || '[]') } catch { return [] }
+  }
+  const { data } = await supabase.from('school_notices').select('content')
+    .eq('date', ROOM_RES_DATE).eq('type', ROOM_RES_TYPE).maybeSingle()
+  if (!data?.content) return []
+  try { return JSON.parse(data.content) } catch { return [] }
+}
+
+async function saveRoomReservations(list) {
+  const json = JSON.stringify(list)
+  if (!USE_SUPABASE) { localStorage.setItem(ROOM_RES_DATE, json); return }
+  await supabase.from('school_notices')
+    .upsert({ date: ROOM_RES_DATE, type: ROOM_RES_TYPE, content: json, updated_at: new Date().toISOString() }, { onConflict: 'date,type' })
+}
+
+// 月・日 → 年付きの日付キー（入力日基準で近未来を推定）
+function getTargetDateKey(month, day, entryDateKey) {
+  const m = parseInt(month), d = parseInt(day)
+  if (!m || !d) return null
+  const entry = new Date(entryDateKey + 'T00:00:00')
+  let year = entry.getFullYear()
+  const target = new Date(year, m - 1, d)
+  if (target < entry) year++
+  return `${year}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+}
+
 async function loadLongLeave() {
   if (!USE_SUPABASE) {
     try { return JSON.parse(localStorage.getItem('long_leave') || '[]') } catch { return [] }
@@ -322,9 +353,12 @@ export default function WhiteboardView({ events, db = {} }) {
   const [spanEvents, setSpanEvents] = useState([])
   const [longLeave, setLongLeave] = useState([])
   const [longLeaveModal, setLongLeaveModal] = useState(null) // { leaveType, entry|null }
+  const [roomReservations, setRoomReservations] = useState([])
+  const roomResDebounceRef = useRef(null)
 
   useEffect(() => { loadSpanEvents().then(setSpanEvents) }, [])
   useEffect(() => { loadLongLeave().then(setLongLeave) }, [])
+  useEffect(() => { loadRoomReservations().then(setRoomReservations) }, [])
 
   function getActiveLongLeave(leaveType) {
     return longLeave.filter(e => e.type === leaveType && e.startDate <= selectedKey && selectedKey <= e.endDate)
@@ -387,20 +421,53 @@ export default function WhiteboardView({ events, db = {} }) {
 
   // Update helpers
   function toHalf(s) { return String(s).replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)) }
+
+  // selectedKey に表示すべき予約（entryDate〜targetDate の期間内）
+  const activeRoomReservations = useMemo(() => {
+    return roomReservations.filter(r => {
+      if (!r.entryDate) return false
+      const targetKey = getTargetDateKey(r.month, r.day, r.entryDate)
+      if (!targetKey) return r.entryDate <= selectedKey
+      return r.entryDate <= selectedKey && selectedKey <= targetKey
+    })
+  }, [roomReservations, selectedKey])
+
+  // アクティブ予約 + 空行で ROOM_COUNT 行埋める
+  const displayedRooms = useMemo(() => {
+    const empties = Math.max(0, ROOM_COUNT - activeRoomReservations.length)
+    return [
+      ...activeRoomReservations,
+      ...Array.from({ length: empties }, () => ({ id: null, entryDate: selectedKey, place: '', month: '', day: '', dow: '', timeStart: '', timeEnd: '', users: '', purpose: '' }))
+    ]
+  }, [activeRoomReservations, selectedKey])
+
+  function scheduleRoomResSave(next) {
+    setRoomReservations(next)
+    if (roomResDebounceRef.current) clearTimeout(roomResDebounceRef.current)
+    roomResDebounceRef.current = setTimeout(() => saveRoomReservations(next), 800)
+  }
+
   function updateRoom(i, field, val) {
     const v = (field === 'month' || field === 'day') ? toHalf(val) : val
-    const rooms = data.rooms.map((r, idx) => {
-      if (idx !== i) return r
-      const updated = { ...r, [field]: v }
-      if (field === 'month' || field === 'day')
-        updated.dow = detectDow(field === 'month' ? v : r.month, field === 'day' ? v : r.day)
-      return updated
-    })
-    scheduleSave({ ...data, rooms })
+    const row = displayedRooms[i]
+    const updated = { ...row, [field]: v }
+    if (field === 'month' || field === 'day')
+      updated.dow = detectDow(field === 'month' ? v : row.month, field === 'day' ? v : row.day)
+    let next
+    if (row.id) {
+      next = roomReservations.map(r => r.id === row.id ? updated : r)
+    } else {
+      updated.id = crypto.randomUUID()
+      updated.entryDate = selectedKey
+      next = [...roomReservations, updated]
+    }
+    scheduleRoomResSave(next)
   }
   function clearRoom(i) {
-    const rooms = data.rooms.map((r, idx) => idx === i ? emptyRoom() : r)
-    scheduleSave({ ...data, rooms })
+    const row = displayedRooms[i]
+    if (!row.id) return
+    const next = roomReservations.filter(r => r.id !== row.id)
+    scheduleRoomResSave(next)
   }
   function updateTrip(i, field, val) {
     const trips = data.trips.map((t, idx) => idx === i ? { ...t, [field]: val } : t)
@@ -493,7 +560,7 @@ export default function WhiteboardView({ events, db = {} }) {
                   <td className="wb-th">使用目的</td>
                   <td className="wb-th wb-th-clear"></td>
                 </tr>
-                {data.rooms.map((r, i) => (
+                {displayedRooms.map((r, i) => (
                   <tr key={i} className="wb-row">
                     <td className="wb-td">
                       <EditCell value={r.place} onChange={v => updateRoom(i, 'place', v)} listId="wb-rooms-list" />
