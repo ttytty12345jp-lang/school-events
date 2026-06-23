@@ -250,7 +250,7 @@ function DraggableChip({ ev, onDragStart }) {
 }
 
 // ── セル（ドロップターゲット） ────────────────────────────
-function DroppableCell({ dateKey, cat, cellEvents, isActive, onCellClick, onAdd, onUpdate, onDelete, addToast, dragState, onDropToCell, onDropBetween }) {
+function DroppableCell({ dateKey, cat, cellEvents, isActive, onCellClick, onAdd, onUpdate, onDelete, addToast, dragState, onDropToCell, onDropBetween, startSpans = [] }) {
   const [cellOver, setCellOver] = useState(false)
   const [zoneOver, setZoneOver] = useState({}) // index → bool
 
@@ -277,6 +277,12 @@ function DroppableCell({ dateKey, cat, cellEvents, isActive, onCellClick, onAdd,
       onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setCellOver(false) }}
       onDrop={handleCellDrop}
     >
+      {startSpans.map(s => (
+        <span key={s.id} className="span-label-chip" style={{ background: s.color }}>
+          {s.title}
+        </span>
+      ))}
+
       {/* 先頭ドロップゾーン */}
       <DropZone
         isOver={!!zoneOver[-1]}
@@ -571,10 +577,13 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
                     title="クリックで塗りつぶし切り替え"
                     onClick={() => toggleRowHighlight(dateKey, isWeekend)}
                   >{DAYS_JA[dow]}</td>
-                  {CATEGORIES.map(cat => {
+                  {CATEGORIES.map((cat, catIdx) => {
                     const cellKey = `${dateKey}__${cat}`
                     const cellEvents = eventMap.get(cellKey) || []
                     const isActive = activeCell?.date === dateKey && activeCell?.category === cat
+                    const startSpans = catIdx === 0
+                      ? spanEvents.filter(s => s.startDate === dateKey)
+                      : []
                     return (
                       <DroppableCell
                         key={cat}
@@ -590,6 +599,7 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
                         dragState={dragState}
                         onDropToCell={(d, c, idx) => handleDrop(d, c, idx)}
                         onDropBetween={(d, c, idx) => handleDrop(d, c, idx)}
+                        startSpans={startSpans}
                       />
                     )
                   })}
