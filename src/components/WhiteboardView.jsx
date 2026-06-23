@@ -204,27 +204,63 @@ function autoScaleWidth(el) {
 }
 
 // ── Inline editable cell ───────────────────────────────────
-// live=true のとき onChange で即時保存（曜日自動入力のトリガー用）
-function EditCell({ value, onChange, placeholder = '', className = '', align, listId, live = false }) {
+function EditCell({ value, onChange, placeholder = '', className = '', align, listId, options, live = false }) {
   const [local, setLocal] = useState(value)
+  const [open, setOpen] = useState(false)
   const ref = useRef(null)
+  const wrapRef = useRef(null)
   useEffect(() => { setLocal(value) }, [value])
   useEffect(() => { autoScaleWidth(ref.current) }, [local])
+
+  // options prop があるときはカスタムドロップダウン
+  const opts = options || []
+  const hasOpts = opts.length > 0
+
+  useEffect(() => {
+    if (!open) return
+    function handler(e) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
   function handleChange(e) {
     setLocal(e.target.value)
     if (live) onChange(e.target.value)
   }
+  function handleBlur() {
+    if (!live && local !== value) onChange(local)
+  }
+  function handleSelect(opt) {
+    setLocal(opt)
+    onChange(opt)
+    setOpen(false)
+    autoScaleWidth(ref.current)
+  }
+
   return (
-    <input
-      ref={ref}
-      className={`wb-input ${className}`}
-      value={local}
-      onChange={handleChange}
-      onBlur={() => { if (!live && local !== value) onChange(local) }}
-      placeholder={placeholder}
-      style={align ? { textAlign: align } : undefined}
-      list={listId || undefined}
-    />
+    <div ref={wrapRef} style={{ position: 'relative', width: '100%' }}>
+      <input
+        ref={ref}
+        className={`wb-input ${className}`}
+        value={local}
+        onChange={handleChange}
+        onBlur={handleBlur}
+        onFocus={() => { if (hasOpts) setOpen(true) }}
+        placeholder={placeholder}
+        style={align ? { textAlign: align } : undefined}
+        list={hasOpts ? undefined : (listId || undefined)}
+        autoComplete="off"
+      />
+      {hasOpts && open && (
+        <ul className="wb-dropdown">
+          {opts.map(opt => (
+            <li key={opt} className="wb-dropdown-item" onMouseDown={() => handleSelect(opt)}>{opt}</li>
+          ))}
+        </ul>
+      )}
+    </div>
   )
 }
 
@@ -563,7 +599,7 @@ export default function WhiteboardView({ events, db = {} }) {
                 {displayedRooms.map((r, i) => (
                   <tr key={i} className="wb-row">
                     <td className="wb-td">
-                      <EditCell value={r.place} onChange={v => updateRoom(i, 'place', v)} listId="wb-rooms-list" />
+                      <EditCell value={r.place} onChange={v => updateRoom(i, 'place', v)} options={db.rooms || []} />
                     </td>
                     <td className="wb-td wb-td-center">
                       <EditCell value={r.month} onChange={v => updateRoom(i, 'month', v)} align="center" />
@@ -582,7 +618,7 @@ export default function WhiteboardView({ events, db = {} }) {
                       />
                     </td>
                     <td className="wb-td">
-                      <EditCell value={r.users} onChange={v => updateRoom(i, 'users', v)} listId="wb-names-list" />
+                      <EditCell value={r.users} onChange={v => updateRoom(i, 'users', v)} options={db.names || []} />
                     </td>
                     <td className="wb-td">
                       <EditCell value={r.purpose} onChange={v => updateRoom(i, 'purpose', v)} />
@@ -619,7 +655,7 @@ export default function WhiteboardView({ events, db = {} }) {
                 {data.trips.map((t, i) => (
                   <tr key={i} className="wb-row">
                     <td className="wb-td">
-                      <EditCell value={t.name} onChange={v => updateTrip(i, 'name', v)} listId="wb-names-list" />
+                      <EditCell value={t.name} onChange={v => updateTrip(i, 'name', v)} options={db.names || []} />
                     </td>
                     <td className="wb-td">
                       <EditCell value={t.destination} onChange={v => updateTrip(i, 'destination', v)} />
