@@ -1286,7 +1286,9 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   font-size: 13px;
   line-height: 1;
   margin-left: 2px;
+  opacity: 0;
 }
+.wb-long-leave-cell:hover .wb-long-leave-add { opacity: 1; }
 
 /* ── Inputs ── */
 .wb-input {
