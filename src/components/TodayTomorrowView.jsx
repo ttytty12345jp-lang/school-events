@@ -185,16 +185,18 @@ function UpcomingSection({ todayDate, events }) {
       rows.forEach(r => { r.style.fontSize = MAX + 'px' })
       // 2フレーム待ってレイアウト確定後に計測
       raf2 = requestAnimationFrame(() => {
-        // overflow:hidden を一時解除して自然な scrollHeight を計測できるようにする
-        rows.forEach(r => { r.style.overflow = 'visible' })
         let size = MAX
         while (size > MIN) {
-          const anyOverflow = rows.some(r => r.scrollHeight > r.clientHeight + 1)
+          // flex制約下では行自体のscrollHeightは使えないため、
+          // 内側のチップコンテナの高さと行の割り当て高さを比較する
+          const anyOverflow = rows.some(r => {
+            const inner = r.querySelector('.upcoming-day-events')
+            return inner && inner.scrollHeight > r.clientHeight + 1
+          })
           if (!anyOverflow) break
           size -= 1
           rows.forEach(r => { r.style.fontSize = size + 'px' })
         }
-        rows.forEach(r => { r.style.overflow = '' })
       })
     }
     raf1 = requestAnimationFrame(measure)
