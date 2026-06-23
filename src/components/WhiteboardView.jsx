@@ -386,12 +386,14 @@ export default function WhiteboardView({ events, db = {} }) {
   }, [selectedKey, todayKey, saving])
 
   // Update helpers
+  function toHalf(s) { return String(s).replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)) }
   function updateRoom(i, field, val) {
+    const v = (field === 'month' || field === 'day') ? toHalf(val) : val
     const rooms = data.rooms.map((r, idx) => {
       if (idx !== i) return r
-      const updated = { ...r, [field]: val }
+      const updated = { ...r, [field]: v }
       if (field === 'month' || field === 'day')
-        updated.dow = detectDow(field === 'month' ? val : r.month, field === 'day' ? val : r.day)
+        updated.dow = detectDow(field === 'month' ? v : r.month, field === 'day' ? v : r.day)
       return updated
     })
     scheduleSave({ ...data, rooms })
