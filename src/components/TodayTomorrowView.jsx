@@ -185,13 +185,15 @@ function UpcomingSection({ todayDate, events }) {
       rows.forEach(r => { r.style.fontSize = MAX + 'px' })
       // 2フレーム待ってレイアウト確定後に計測
       raf2 = requestAnimationFrame(() => {
+        const containerH = el.clientHeight
+        if (!containerH) return
+        // 各行の期待高さ = コンテナ高さ ÷ 行数（実際のclientHeightは行が伸びると不正確）
+        const expectedRowH = Math.floor(containerH / rows.length)
         let size = MAX
         while (size > MIN) {
-          // flex制約下では行自体のscrollHeightは使えないため、
-          // 内側のチップコンテナの高さと行の割り当て高さを比較する
           const anyOverflow = rows.some(r => {
             const inner = r.querySelector('.upcoming-day-events')
-            return inner && inner.scrollHeight > r.clientHeight + 1
+            return inner && inner.scrollHeight > expectedRowH + 2
           })
           if (!anyOverflow) break
           size -= 1
