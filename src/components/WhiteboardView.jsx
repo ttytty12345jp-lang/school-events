@@ -33,6 +33,68 @@ function monthKey(y, m) {
 
 const LEAVE_TYPES_LEFT  = ['年休', '時休', '前半休', '後半休', '職免', '育児']
 const LEAVE_TYPES_RIGHT = ['特休', '病休', '休職', '産休', '育休', '介護']
+const LONG_LEAVE_TYPES = new Set(['病休', '休職', '産休', '育休'])
+const LONG_LEAVE_TYPE = 'long_leave'
+const LONG_LEAVE_DATE = 'long_leave'
+
+async function loadLongLeave() {
+  if (!USE_SUPABASE) {
+    try { return JSON.parse(localStorage.getItem('long_leave') || '[]') } catch { return [] }
+  }
+  const { data } = await supabase.from('school_notices').select('content')
+    .eq('date', LONG_LEAVE_DATE).eq('type', LONG_LEAVE_TYPE).maybeSingle()
+  if (!data?.content) return []
+  try { return JSON.parse(data.content) } catch { return [] }
+}
+
+async function saveLongLeave(list) {
+  const json = JSON.stringify(list)
+  if (!USE_SUPABASE) { localStorage.setItem('long_leave', json); return }
+  await supabase.from('school_notices')
+    .upsert({ date: LONG_LEAVE_DATE, type: LONG_LEAVE_TYPE, content: json, updated_at: new Date().toISOString() }, { onConflict: 'date,type' })
+}
+
+function LongLeaveModal({ leaveType, entry, onSave, onDelete, onClose }) {
+  const [name, setName] = useState(entry?.name || '')
+  const [startDate, setStartDate] = useState(entry?.startDate || '')
+  const [endDate, setEndDate] = useState(entry?.endDate || '')
+  const ref = useRef(null)
+
+  useEffect(() => {
+    function handler(e) {
+      if (ref.current && !ref.current.contains(e.target)) onClose()
+    }
+    setTimeout(() => document.addEventListener('mousedown', handler), 0)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [onClose])
+
+  function handleSave() {
+    if (!name.trim() || !startDate || !endDate) return
+    onSave({ id: entry?.id || crypto.randomUUID(), type: leaveType, name: name.trim(), startDate, endDate })
+    onClose()
+  }
+
+  return (
+    <div className="span-modal" ref={ref}>
+      <div className="span-modal-header">
+        <span>{leaveType} — {entry ? '編集' : '追加'}</span>
+        <button className="btn-close" onClick={onClose}>×</button>
+      </div>
+      <div className="span-modal-body">
+        <input className="span-modal-input" value={name} onChange={e => setName(e.target.value)} placeholder="氏名" autoFocus />
+        <div className="span-modal-row">
+          <input type="date" className="span-modal-date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+          <span>〜</span>
+          <input type="date" className="span-modal-date" value={endDate} onChange={e => setEndDate(e.target.value)} />
+        </div>
+        <div className="span-modal-actions">
+          <button className="hc-btn hc-btn-primary" onClick={handleSave}>保存</button>
+          {entry && <button className="btn-danger" onClick={() => { onDelete(entry.id); onClose() }}>削除</button>}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 const ROOM_COUNT = 9
 const TRIP_COUNT = 7
@@ -258,8 +320,29 @@ export default function WhiteboardView({ events, db = {} }) {
   const [data, setData] = useState(emptyData)
   const [saving, setSaving] = useState(false)
   const [spanEvents, setSpanEvents] = useState([])
+  const [longLeave, setLongLeave] = useState([])
+  const [longLeaveModal, setLongLeaveModal] = useState(null) // { leaveType, entry|null }
 
   useEffect(() => { loadSpanEvents().then(setSpanEvents) }, [])
+  useEffect(() => { loadLongLeave().then(setLongLeave) }, [])
+
+  function getActiveLongLeave(leaveType) {
+    return longLeave.filter(e => e.type === leaveType && e.startDate <= selectedKey && selectedKey <= e.endDate)
+  }
+
+  async function handleSaveLongLeave(entry) {
+    const next = longLeave.some(e => e.id === entry.id)
+      ? longLeave.map(e => e.id === entry.id ? entry : e)
+      : [...longLeave, entry]
+    setLongLeave(next)
+    await saveLongLeave(next)
+  }
+
+  async function handleDeleteLongLeave(id) {
+    const next = longLeave.filter(e => e.id !== id)
+    setLongLeave(next)
+    await saveLongLeave(next)
+  }
   const debounceRef = useRef(null)
   const { setControls } = useHeaderControls()
 
@@ -356,6 +439,15 @@ export default function WhiteboardView({ events, db = {} }) {
 
   return (
     <div className="wb-wrap">
+      {longLeaveModal && (
+        <LongLeaveModal
+          leaveType={longLeaveModal.leaveType}
+          entry={longLeaveModal.entry}
+          onSave={handleSaveLongLeave}
+          onDelete={handleDeleteLongLeave}
+          onClose={() => setLongLeaveModal(null)}
+        />
+      )}
       <datalist id="wb-rooms-list">
         {(db.rooms || []).map(r => <option key={r} value={r} />)}
       </datalist>
@@ -504,7 +596,19 @@ export default function WhiteboardView({ events, db = {} }) {
                     </td>
                     <td className="wb-td-leave-type">{LEAVE_TYPES_RIGHT[i]}</td>
                     <td className="wb-td">
-                      <EditCell value={data.leave[LEAVE_TYPES_RIGHT[i]]} onChange={v => updateLeave(LEAVE_TYPES_RIGHT[i], v)} />
+                      {LONG_LEAVE_TYPES.has(LEAVE_TYPES_RIGHT[i]) ? (
+                        <div className="wb-long-leave-cell" onClick={() => setLongLeaveModal({ leaveType: LEAVE_TYPES_RIGHT[i], entry: null })}>
+                          {getActiveLongLeave(LEAVE_TYPES_RIGHT[i]).map(e => (
+                            <span key={e.id} className="wb-long-leave-entry"
+                              onClick={ev => { ev.stopPropagation(); setLongLeaveModal({ leaveType: LEAVE_TYPES_RIGHT[i], entry: e }) }}>
+                              {e.name}
+                            </span>
+                          ))}
+                          <span className="wb-long-leave-add">＋</span>
+                        </div>
+                      ) : (
+                        <EditCell value={data.leave[LEAVE_TYPES_RIGHT[i]]} onChange={v => updateLeave(LEAVE_TYPES_RIGHT[i], v)} />
+                      )}
                     </td>
                   </tr>
                 ))}

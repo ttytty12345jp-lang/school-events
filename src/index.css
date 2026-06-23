@@ -1245,6 +1245,31 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   white-space: nowrap;
   padding: 1px 3px;
 }
+.wb-long-leave-cell {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 3px;
+  padding: 1px 4px;
+  cursor: pointer;
+  min-height: 22px;
+}
+.wb-long-leave-entry {
+  background: #dbeafe;
+  color: #1e40af;
+  border-radius: 3px;
+  padding: 0 5px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.wb-long-leave-entry:hover { background: #bfdbfe; }
+.wb-long-leave-add {
+  color: #94a3b8;
+  font-size: 13px;
+  line-height: 1;
+  margin-left: 2px;
+}
 
 /* ── Inputs ── */
 .wb-input {
