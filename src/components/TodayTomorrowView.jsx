@@ -286,6 +286,52 @@ async function loadAgendaItems(dateKey) {
   try { return JSON.parse(data.content) } catch { return [] }
 }
 
+// jiji_master 変更時: 全期間の school_hours を再計算して累計チェーンを再構築
+async function recalculateAllSchoolHours() {
+  if (!USE_SUPABASE) return
+  const [jijiMaster, agendaRes, calRes, hoursRes] = await Promise.all([
+    loadJijiMaster(),
+    supabase.from('school_notices').select('date, content').eq('type', 'morning_agenda'),
+    supabase.from('school_events').select('date, title, start_time, end_time'),
+    supabase.from('school_notices').select('date, content').eq('type', 'school_hours').order('date'),
+  ])
+
+  const agendaByDate = {}
+  for (const row of agendaRes.data || []) {
+    try { agendaByDate[row.date] = JSON.parse(row.content) } catch {}
+  }
+  const calByDate = {}
+  for (const ev of calRes.data || []) {
+    if (!calByDate[ev.date]) calByDate[ev.date] = []
+    calByDate[ev.date].push(ev)
+  }
+  const hoursMap = {}
+  for (const row of hoursRes.data || []) {
+    try { hoursMap[row.date] = JSON.parse(row.content) } catch {}
+  }
+
+  const sortedDates = Object.keys(hoursMap).sort()
+  let cumulative = emptyThirds()
+  const upserts = []
+
+  for (const date of sortedDates) {
+    const agendaItems = agendaByDate[date] || []
+    const calEvents = calByDate[date] || []
+    const kyou = computeKyou(calEvents, agendaItems, jijiMaster, date)
+    const existing = hoursMap[date]
+    const kinou = existing?.kinouManual ? (existing.kinou || cumulative) : cumulative
+    upserts.push({ date, record: { kinou, kyou, ...(existing?.kinouManual ? { kinouManual: true } : {}) } })
+    const newCum = emptyThirds()
+    GRADES.forEach(g => { newCum[g] = (kinou[g] || 0) + (kyou[g] || 0) })
+    cumulative = newCum
+  }
+
+  for (const { date, record } of upserts) {
+    await supabase.from('school_notices')
+      .upsert({ date, type: 'school_hours', content: JSON.stringify(record), updated_at: new Date().toISOString() }, { onConflict: 'date,type' })
+  }
+}
+
 // 直近180日の school_hours レコードを一括取得し、dateKey より前で最新の累計を返す
 async function findLastCumulative(dateKey) {
   const d = new Date(dateKey + 'T00:00:00')
@@ -351,7 +397,7 @@ function SchoolHoursSection({ date, calendarEvents }) {
       })
   }, [date, calendarEvents])
 
-  // morning_agenda の変更をリアルタイムで検知して再計算
+  // morning_agenda の変更をリアルタイムで検知して当日分を再計算
   useEffect(() => {
     if (!USE_SUPABASE) return
     const channel = supabase.channel(`school_hours_agenda_${date}`)
@@ -360,7 +406,7 @@ function SchoolHoursSection({ date, calendarEvents }) {
         filter: `date=eq.${date}`,
       }, payload => {
         const rec = payload.new || payload.old
-        if (rec?.type !== 'morning_agenda' && rec?.type !== 'jiji_master') return
+        if (rec?.type !== 'morning_agenda') return
         Promise.all([loadJijiMaster(), loadAgendaItems(date)]).then(([master, agendaItems]) => {
           const resolvedKyou = computeKyou(calendarEvents, agendaItems, master, date)
           kyouRef.current = resolvedKyou
@@ -374,6 +420,25 @@ function SchoolHoursSection({ date, calendarEvents }) {
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [date, calendarEvents])
+
+  // 全期間再計算後に school_hours が外部更新されたら表示をリロード
+  useEffect(() => {
+    if (!USE_SUPABASE) return
+    const channel = supabase.channel(`school_hours_ext_${date}`)
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'school_notices',
+        filter: `date=eq.${date}`,
+      }, payload => {
+        if (payload.new?.type !== 'school_hours') return
+        try {
+          const rec = JSON.parse(payload.new.content)
+          if (rec.kinou) setKinou(rec.kinou)
+          if (rec.kyou) { setKyou(rec.kyou); kyouRef.current = rec.kyou }
+        } catch {}
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [date])
 
   function stepKinou(grade, delta) {
     setKinou(prev => {
@@ -441,6 +506,21 @@ export default function TodayTomorrowView({ events }) {
   const todayKey = toDateKey(today)
   const [selectedKey, setSelectedKey] = useState(todayKey)
   const { setControls } = useHeaderControls()
+
+  // jiji_master が変更されたら全期間の school_hours を再計算
+  useEffect(() => {
+    if (!USE_SUPABASE) return
+    const channel = supabase.channel('jiji_master_watch')
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'school_notices',
+        filter: 'date=eq.master',
+      }, payload => {
+        if ((payload.new || payload.old)?.type !== 'jiji_master') return
+        recalculateAllSchoolHours()
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [])
 
   const selectedDate = new Date(selectedKey + 'T00:00:00')
   const selectedEvents = useMemo(() => events.filter(e => e.date === selectedKey), [events, selectedKey])
