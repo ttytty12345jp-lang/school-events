@@ -10,6 +10,22 @@ const supabase = USE_SUPABASE ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : 
 
 const DAYS_JA = ['日', '月', '火', '水', '木', '金', '土']
 const HIGHLIGHTS_TYPE = 'row_highlights'
+const SPAN_TYPE = 'span_events'
+const SPAN_DATE = 'span_events'
+
+async function loadSpanEvents() {
+  if (!USE_SUPABASE) {
+    try { return JSON.parse(localStorage.getItem('span_events') || '[]') } catch { return [] }
+  }
+  const { data } = await supabase.from('school_notices').select('content')
+    .eq('date', SPAN_DATE).eq('type', SPAN_TYPE).maybeSingle()
+  if (!data?.content) return []
+  try { return JSON.parse(data.content) } catch { return [] }
+}
+
+function getActiveSpans(spanEvents, dateKey) {
+  return spanEvents.filter(s => s.startDate <= dateKey && dateKey <= s.endDate)
+}
 
 function monthKey(y, m) {
   return `${y}-${String(m).padStart(2, '0')}`
@@ -241,6 +257,9 @@ export default function WhiteboardView({ events, db = {} }) {
 
   const [data, setData] = useState(emptyData)
   const [saving, setSaving] = useState(false)
+  const [spanEvents, setSpanEvents] = useState([])
+
+  useEffect(() => { loadSpanEvents().then(setSpanEvents) }, [])
   const debounceRef = useRef(null)
   const { setControls } = useHeaderControls()
 
@@ -516,6 +535,9 @@ export default function WhiteboardView({ events, db = {} }) {
               </span>
             </div>
             <div className="wb-week-event">
+              {getActiveSpans(spanEvents, selectedKey).map(s => (
+                <span key={s.id} className="span-label-chip" style={{ background: s.color }}>{s.title}</span>
+              ))}
               <EditCell value={data.weekEventToday} onChange={v => updateField('weekEventToday', v)}
                 placeholder="" className="wb-week-input" />
               <button className="wb-sync-btn" onClick={() => syncAgenda(selectedKey, setAgendaResetToday)} title="月中行事と同期">↺ 同期</button>
@@ -544,6 +566,9 @@ export default function WhiteboardView({ events, db = {} }) {
               </span>
             </div>
             <div className="wb-week-event">
+              {getActiveSpans(spanEvents, tomorrowKey).map(s => (
+                <span key={s.id} className="span-label-chip" style={{ background: s.color }}>{s.title}</span>
+              ))}
               <EditCell value={data.weekEventTomorrow} onChange={v => updateField('weekEventTomorrow', v)}
                 placeholder="" className="wb-week-input" />
               <button className="wb-sync-btn" onClick={() => syncAgenda(tomorrowKey, setAgendaResetTomorrow)} title="月中行事と同期">↺ 同期</button>

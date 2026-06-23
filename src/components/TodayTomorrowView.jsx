@@ -10,8 +10,20 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
 const USE_SUPABASE = !!(SUPABASE_URL && SUPABASE_ANON_KEY)
 const supabase = USE_SUPABASE ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null
 const HIGHLIGHTS_TYPE = 'row_highlights'
+const SPAN_TYPE = 'span_events'
+const SPAN_DATE = 'span_events'
 
 const DAYS_JA = ['日', '月', '火', '水', '木', '金', '土']
+
+async function loadSpanEvents() {
+  if (!USE_SUPABASE) {
+    try { return JSON.parse(localStorage.getItem('span_events') || '[]') } catch { return [] }
+  }
+  const { data } = await supabase.from('school_notices').select('content')
+    .eq('date', SPAN_DATE).eq('type', SPAN_TYPE).maybeSingle()
+  if (!data?.content) return []
+  try { return JSON.parse(data.content) } catch { return [] }
+}
 
 function toDateKey(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -94,6 +106,9 @@ function monthKey(y, m) {
 
 // 右下：明日以降5日分
 function UpcomingSection({ todayDate, events }) {
+  const [spanEvents, setSpanEvents] = useState([])
+  useEffect(() => { loadSpanEvents().then(setSpanEvents) }, [])
+
   const days = useMemo(() => {
     const arr = []
     for (let i = 1; i <= 7; i++) {
@@ -205,6 +220,11 @@ function UpcomingSection({ todayDate, events }) {
                 style={{ cursor: 'pointer' }}
               >{formatDate(date)}</div>
               <div className="upcoming-day-events">
+                {spanEvents.filter(s => s.startDate <= key && key <= s.endDate).map(s => (
+                  <span key={`span-${s.id}`} className="upcoming-chip span-label-chip" style={{ background: s.color, color: '#fff' }}>
+                    {s.title}
+                  </span>
+                ))}
                 {dayEvs.map(ev => (
                     <span key={ev.id} className="upcoming-chip" style={{ color: ev.color === 'red' ? '#dc2626' : 'inherit' }}>
                       {ev.start_time && <span className="upcoming-time">{ev.start_time}</span>}
