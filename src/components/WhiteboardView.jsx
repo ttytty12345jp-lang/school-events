@@ -208,6 +208,7 @@ function EditCell({ value, onChange, placeholder = '', className = '', align, li
   const [local, setLocal] = useState(value)
   const [dropPos, setDropPos] = useState(null) // { top, left, width } or null
   const ref = useRef(null)
+  const dropRef = useRef(null)
   useEffect(() => { setLocal(value) }, [value])
   useEffect(() => { autoScaleWidth(ref.current) }, [local])
 
@@ -217,7 +218,9 @@ function EditCell({ value, onChange, placeholder = '', className = '', align, li
   useEffect(() => {
     if (!dropPos) return
     function handler(e) {
-      if (ref.current && !ref.current.contains(e.target)) setDropPos(null)
+      const inInput = ref.current?.contains(e.target)
+      const inDrop = dropRef.current?.contains(e.target)
+      if (!inInput && !inDrop) setDropPos(null)
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
@@ -261,7 +264,7 @@ function EditCell({ value, onChange, placeholder = '', className = '', align, li
         autoComplete="off"
       />
       {hasOpts && dropPos && (
-        <ul className="wb-dropdown" style={{ position: 'fixed', top: dropPos.top, left: dropPos.left, width: dropPos.width, zIndex: 9999 }}>
+        <ul ref={dropRef} className="wb-dropdown" style={{ position: 'fixed', top: dropPos.top, left: dropPos.left, width: dropPos.width, zIndex: 9999 }}>
           {opts.map(opt => (
             <li key={opt} className="wb-dropdown-item" onMouseDown={() => handleSelect(opt)}>{opt}</li>
           ))}
