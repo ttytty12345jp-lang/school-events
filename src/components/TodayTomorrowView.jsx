@@ -177,38 +177,12 @@ function UpcomingSection({ todayDate, events }) {
   useEffect(() => {
     const el = bodyRef.current
     if (!el) return
-    const MAX = 14, MIN = 7
-
-    function measure() {
-      const rows = Array.from(el.querySelectorAll('.upcoming-day'))
-      if (!rows.length) return
-      const containerH = el.getBoundingClientRect().height
-      if (!containerH) return
-      const expectedRowH = Math.floor(containerH / rows.length)
-
-      // 行に明示的な高さ上限を設定（CSSのflex制約が効かない場合の保険）
-      rows.forEach(r => {
-        r.style.maxHeight = expectedRowH + 'px'
-        r.style.overflow = 'hidden'
-        r.style.fontSize = MAX + 'px'
-      })
-
-      let size = MAX
-      while (size > MIN) {
-        const anyOverflow = rows.some(r => {
-          const inner = r.querySelector('.upcoming-day-events')
-          return inner && inner.scrollHeight > expectedRowH + 2
-        })
-        if (!anyOverflow) break
-        size -= 1
-        rows.forEach(r => { r.style.fontSize = size + 'px' })
-      }
-    }
-
-    // ResizeObserver: レイアウト確定後に発火するので RAF より確実
-    const ro = new ResizeObserver(measure)
-    ro.observe(el)
-    return () => ro.disconnect()
+    const rows = Array.from(el.querySelectorAll('.upcoming-day'))
+    if (!rows.length) return
+    // 最大イベント数に応じてフォントサイズを段階的に縮小
+    const maxEvents = Math.max(...days.map(d => d.events.length))
+    const size = maxEvents >= 4 ? 9 : maxEvents >= 3 ? 11 : maxEvents >= 2 ? 13 : 14
+    rows.forEach(r => { r.style.fontSize = size + 'px' })
   }, [days])
 
   return (
