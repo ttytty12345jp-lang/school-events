@@ -38,14 +38,18 @@ function formatDateLong(d) {
 }
 
 // 左上：朝会アジェンダ（月中行事 + 自由追記が同一リスト）
-function TodaySection({ date, events, dateKey }) {
+function TodaySection({ date, events, dateKey, spanEvents = [] }) {
   const { content: weekEvent, handleChange: setWeekEvent } = useNotice(dateKey, 'week_event')
+  const activeSpans = spanEvents.filter(s => s.startDate <= dateKey && dateKey <= s.endDate)
   return (
     <div className="ttv-panel">
       <div className="ttv-header ttv-header-today">
         <span className="ttv-header-date-large">{formatDateLong(date)}</span>
       </div>
       <div className="ttv-week-event-row">
+        {activeSpans.map(s => (
+          <span key={s.id} className="span-label-chip" style={{ background: s.color }}>{s.title}</span>
+        ))}
         <input
           className="ttv-week-event-input"
           value={weekEvent}
@@ -106,8 +110,6 @@ function monthKey(y, m) {
 
 // 右下：明日以降5日分
 function UpcomingSection({ todayDate, events }) {
-  const [spanEvents, setSpanEvents] = useState([])
-  useEffect(() => { loadSpanEvents().then(setSpanEvents) }, [])
 
   const days = useMemo(() => {
     const arr = []
@@ -220,11 +222,6 @@ function UpcomingSection({ todayDate, events }) {
                 style={{ cursor: 'pointer' }}
               >{formatDate(date)}</div>
               <div className="upcoming-day-events">
-                {spanEvents.filter(s => s.startDate <= key && key <= s.endDate).map(s => (
-                  <span key={`span-${s.id}`} className="upcoming-chip span-label-chip" style={{ background: s.color, color: '#fff' }}>
-                    {s.title}
-                  </span>
-                ))}
                 {dayEvs.map(ev => (
                     <span key={ev.id} className="upcoming-chip" style={{ color: ev.color === 'red' ? '#dc2626' : 'inherit' }}>
                       {ev.start_time && <span className="upcoming-time">{ev.start_time}</span>}
@@ -512,6 +509,8 @@ export default function TodayTomorrowView({ events }) {
   const todayKey = toDateKey(today)
   const [selectedKey, setSelectedKey] = useState(todayKey)
   const { setControls } = useHeaderControls()
+  const [spanEvents, setSpanEvents] = useState([])
+  useEffect(() => { loadSpanEvents().then(setSpanEvents) }, [])
 
   // jiji_master が変更されたら全期間の school_hours を再計算
   useEffect(() => {
@@ -554,7 +553,7 @@ export default function TodayTomorrowView({ events }) {
       <div className="ttv-layout">
         {/* 左2/3 */}
         <div className="ttv-left">
-          <TodaySection date={selectedDate} events={selectedEvents} dateKey={selectedKey} />
+          <TodaySection date={selectedDate} events={selectedEvents} dateKey={selectedKey} spanEvents={spanEvents} />
           <NoticeSection date={selectedKey} />
         </div>
         {/* 右1/3 */}
