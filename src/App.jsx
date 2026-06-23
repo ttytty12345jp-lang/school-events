@@ -9,6 +9,7 @@ import { ToastContainer, useToast } from './components/Toast'
 import { useEvents } from './hooks/useEvents'
 import { useDatabaseLists } from './hooks/useDatabaseLists'
 import { HeaderControlsContext } from './HeaderControlsContext'
+import StickyNotes from './components/StickyNotes'
 
 export default function App() {
   const [view, setView] = useState('today')
@@ -42,6 +43,7 @@ export default function App() {
         )}
       </main>
       <ToastContainer toasts={toasts} />
+      <StickyNotes />
     </HeaderControlsContext.Provider>
   )
 }
