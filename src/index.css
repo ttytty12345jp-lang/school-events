@@ -594,7 +594,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   gap: 8px;
   padding: 0 0;
   border-bottom: 1px solid var(--border);
-  font-size: 13px;
+  font-size: 14px;
   flex: 1;
   min-height: 0;
   overflow: hidden;
@@ -618,7 +618,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   color: var(--text);
   border-radius: 0;
   padding: 1px 2px;
-  font-size: 11px;
+  font-size: inherit;
 }
 .upcoming-day-gray { background: #f3f4f6; }
 .upcoming-sun { color: #dc2626; }
