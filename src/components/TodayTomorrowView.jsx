@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useLayoutEffect, useRef } from 'react'
+import { useMemo, useState, useEffect, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { useNotice } from '../hooks/useNotice'
 import MorningAgenda from './MorningAgenda'
@@ -174,23 +174,29 @@ function UpcomingSection({ todayDate, events }) {
   }
 
   const bodyRef = useRef(null)
-  useLayoutEffect(() => {
+  useEffect(() => {
     const el = bodyRef.current
     if (!el) return
-    const rows = el.querySelectorAll('.upcoming-day')
-    if (!rows.length) return
-    const MAX = 14, MIN = 8
-    const containerH = el.clientHeight
-    let size = MAX
-    rows.forEach(r => { r.style.fontSize = size + 'px' })
-    // flex を一時解除して自然な高さで判定
-    el.style.display = 'block'
-    while (size > MIN) {
-      if (el.scrollHeight <= containerH) break
-      size -= 1
-      rows.forEach(r => { r.style.fontSize = size + 'px' })
+    let raf
+    function measure() {
+      const rows = el.querySelectorAll('.upcoming-day')
+      if (!rows.length) return
+      const MAX = 14, MIN = 8
+      // まずリセット
+      rows.forEach(r => { r.style.fontSize = MAX + 'px' })
+      const containerH = el.clientHeight
+      if (!containerH) return
+      // display:block に切り替えて自然な高さで計測
+      el.style.display = 'block'
+      let size = MAX
+      while (size > MIN && el.scrollHeight > containerH) {
+        size -= 1
+        rows.forEach(r => { r.style.fontSize = size + 'px' })
+      }
+      el.style.display = ''
     }
-    el.style.display = ''
+    raf = requestAnimationFrame(measure)
+    return () => cancelAnimationFrame(raf)
   }, [days])
 
   return (
