@@ -529,6 +529,10 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
           onClose={() => setSpanModal(null)}
         />
       )}
+      <div className="monthly-print-header">
+        <span>2026年度　{month}月　月中行事</span>
+        <span>大阪市立北中島小学校</span>
+      </div>
       <div className="monthly-table-wrap">
         <table className="monthly-table">
           <thead>

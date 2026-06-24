@@ -1429,6 +1429,8 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   @page { size: A4 portrait; margin: 6mm; }
 }
 
+.monthly-print-header { display: none; }
+
 /* 月中行事 印刷: A4縦1枚に収める */
 @media print {
   .main-content:has(.calendar-grid),
@@ -1447,6 +1449,16 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
     zoom: 0.78;
     max-height: none;
     overflow: visible;
+  }
+  .monthly-print-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 15px;
+    font-weight: 700;
+    padding: 4px 2px 6px;
+    border-bottom: 2px solid #000;
+    margin-bottom: 4px;
   }
 }
 
