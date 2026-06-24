@@ -1420,6 +1420,10 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
     border: 6px solid #000 !important;
     background: #fff !important;
   }
+  .ttv-panel {
+    box-shadow: none;
+    border: 4px solid #000 !important;
+  }
   .modal-overlay { display: none !important; }
   .annual-grid { grid-template-columns: repeat(3, 1fr); }
   @page { size: A4 portrait; margin: 6mm; }
