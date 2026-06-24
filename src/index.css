@@ -1230,6 +1230,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   width: 22px;
   letter-spacing: 1px;
   padding: 4px 3px;
+  vertical-align: middle;
 }
 /* 休暇等 は横書き */
 .wb-th-section-h {
