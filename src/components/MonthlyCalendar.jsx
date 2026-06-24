@@ -492,7 +492,14 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
             return ey === y && em === m
           }))
         }}>📊 Excel出力</button>
-        <button className="hc-btn" onClick={() => window.print()}>🖨️ 印刷</button>
+        <button className="hc-btn" onClick={() => {
+          const style = document.createElement('style')
+          style.id = 'monthly-print-override'
+          style.textContent = '@page { size: A4 portrait; margin: 6mm; }'
+          document.head.appendChild(style)
+          window.print()
+          document.getElementById('monthly-print-override')?.remove()
+        }}>🖨️ 印刷</button>
         <button className="hc-btn" onClick={() => setSpanModal('new')}>＋ 期間行事</button>
       </div>
     )

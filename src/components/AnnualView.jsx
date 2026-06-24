@@ -120,7 +120,14 @@ export default function AnnualView({ events, onMonthClick }) {
         <span className="hc-label">{fiscalYear}年度</span>
         <button className="hc-btn-nav" onClick={() => setFiscalYear(y => y + 1)}>›</button>
         <button className="hc-btn" onClick={() => exportAnnualExcel(fiscalYear, eventsRef.current)}>📊 年間Excel出力</button>
-        <button className="hc-btn" onClick={() => window.print()}>🖨️ 印刷</button>
+        <button className="hc-btn" onClick={() => {
+          const style = document.createElement('style')
+          style.id = 'annual-print-override'
+          style.textContent = '@page { size: A3 landscape; margin: 8mm; }'
+          document.head.appendChild(style)
+          window.print()
+          document.getElementById('annual-print-override')?.remove()
+        }}>🖨️ 印刷</button>
       </div>
     )
     return () => setControls(null)
@@ -128,6 +135,10 @@ export default function AnnualView({ events, onMonthClick }) {
 
   return (
     <div>
+      <div className="annual-print-header">
+        <span>2026年度　年間行事予定</span>
+        <span>大阪市立北中島小学校</span>
+      </div>
       <div className="annual-table-wrap">
         <table className="annual-table">
           <thead>
