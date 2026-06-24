@@ -538,7 +538,14 @@ export default function TodayTomorrowView({ events }) {
           const d = new Date(selectedKey + 'T00:00:00'); d.setDate(d.getDate() + 1); setSelectedKey(toDateKey(d))
         }}>›</button>
         {!isToday && <button className="hc-btn" onClick={() => setSelectedKey(todayKey)}>今日に戻る</button>}
-        <button className="hc-btn" onClick={() => window.print()}>🖨️ 印刷</button>
+        <button className="hc-btn" onClick={() => {
+          const wrap = document.querySelector('.ttv-wrap')
+          const clone = wrap.cloneNode(true)
+          clone.classList.add('ttv-print-clone')
+          wrap.parentNode.insertBefore(clone, wrap.nextSibling)
+          window.print()
+          clone.remove()
+        }}>🖨️ 印刷</button>
       </div>
     )
     return () => setControls(null)
