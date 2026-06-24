@@ -247,12 +247,8 @@ function EditCell({ value, onChange, placeholder = '', className = '', align, li
     if (e.key === 'Enter') {
       e.preventDefault()
       setDropPos(null)
-      if (!live && local !== value) onChange(local)
-      if (onNext) {
-        onNext()
-      } else {
-        ref.current?.blur()
-      }
+      ref.current?.blur()           // handleBlur が onChange を担う
+      if (onNext) setTimeout(onNext, 0)  // 再レンダー後に次セルへ
     }
   }
   function handleFocus() {
@@ -265,7 +261,7 @@ function EditCell({ value, onChange, placeholder = '', className = '', align, li
     onChange(opt)
     setDropPos(null)
     autoScaleWidth(ref.current)
-    if (onNext) onNext()
+    if (onNext) setTimeout(onNext, 0)  // 再レンダー後に次セルへ
   }
 
   return (
