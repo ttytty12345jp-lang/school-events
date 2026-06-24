@@ -292,7 +292,7 @@ function EditCell({ value, onChange, placeholder = '', className = '', align, li
 }
 
 // ── 自由テキスト＋時計ボタンでネイティブピッカー ─────────
-function TimeInput({ val, onChange }) {
+function TimeInput({ val, onChange, cellKey, onNext }) {
   const [text, setText] = useState(val)
   const pickerRef = useRef(null)
   useEffect(() => { setText(val) }, [val])
@@ -300,9 +300,10 @@ function TimeInput({ val, onChange }) {
     <span className="wb-time-combo">
       <input type="text" className="wb-time-input" value={text}
         onChange={e => { setText(e.target.value); onChange(e.target.value) }}
-        onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }}
+        onKeyDown={e => { if (e.key === 'Enter') { e.currentTarget.blur(); if (onNext) setTimeout(onNext, 0) } }}
         onDoubleClick={() => pickerRef.current?.showPicker()}
         title="ダブルクリックで時刻ピッカーを開く"
+        {...(cellKey ? { 'data-room-cell': cellKey } : {})}
       />
       <input type="time" className="wb-time-picker-hidden" ref={pickerRef}
         onChange={e => { setText(e.target.value); onChange(e.target.value) }}
@@ -312,12 +313,13 @@ function TimeInput({ val, onChange }) {
 }
 
 // ── Time range ────────────────────────────────────────────
-function TimeRange({ startVal, endVal, onStartChange, onEndChange }) {
+function TimeRange({ startVal, endVal, onStartChange, onEndChange, startCellKey, endCellKey, onEndNext }) {
   return (
     <div className="wb-time-range">
-      <TimeInput val={startVal} onChange={onStartChange} />
+      <TimeInput val={startVal} onChange={onStartChange} cellKey={startCellKey}
+        onNext={endCellKey ? () => document.querySelector(`input[data-room-cell="${endCellKey}"]`)?.focus() : undefined} />
       <span className="wb-tilde">～</span>
-      <TimeInput val={endVal} onChange={onEndChange} />
+      <TimeInput val={endVal} onChange={onEndChange} cellKey={endCellKey} onNext={onEndNext} />
     </div>
   )
 }
@@ -641,7 +643,7 @@ export default function WhiteboardView({ events, db = {} }) {
                       <EditCell value={r.month} onChange={v => updateRoom(i, 'month', v)} align="center" onNext={goTo('day')} cellKey={`${i}-month`} />
                     </td>
                     <td className="wb-td wb-td-center">
-                      <EditCell value={r.day} onChange={v => updateRoom(i, 'day', v)} align="center" onNext={goTo('users')} cellKey={`${i}-day`} />
+                      <EditCell value={r.day} onChange={v => updateRoom(i, 'day', v)} align="center" onNext={goTo('time-start')} cellKey={`${i}-day`} />
                     </td>
                     <td className="wb-td wb-td-center">
                       <EditCell value={r.dow} onChange={v => updateRoom(i, 'dow', v)} align="center" cellKey={`${i}-dow`} />
@@ -651,6 +653,9 @@ export default function WhiteboardView({ events, db = {} }) {
                         startVal={r.timeStart} endVal={r.timeEnd}
                         onStartChange={v => updateRoom(i, 'timeStart', v)}
                         onEndChange={v => updateRoom(i, 'timeEnd', v)}
+                        startCellKey={`${i}-time-start`}
+                        endCellKey={`${i}-time-end`}
+                        onEndNext={goTo('users')}
                       />
                     </td>
                     <td className="wb-td">
