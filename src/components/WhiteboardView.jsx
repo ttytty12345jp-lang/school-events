@@ -265,6 +265,7 @@ function EditCell({ value, onChange, placeholder = '', className = '', align, li
     onChange(opt)
     setDropPos(null)
     autoScaleWidth(ref.current)
+    if (onNext) onNext()
   }
 
   return (
