@@ -168,7 +168,17 @@ async function loadWhiteboard(dateKey) {
   const { data } = await supabase.from('school_notices').select('content')
     .eq('date', dateKey).eq('type', 'whiteboard').maybeSingle()
   if (!data?.content) return null
-  try { return JSON.parse(data.content) } catch { return null }
+  try {
+    const parsed = JSON.parse(data.content)
+    // 定数変更時に古いデータの行数が足りない場合を補正
+    if (parsed && Array.isArray(parsed.trips) && parsed.trips.length < TRIP_COUNT) {
+      parsed.trips = [...parsed.trips, ...Array.from({ length: TRIP_COUNT - parsed.trips.length }, emptyTrip)]
+    }
+    if (parsed && Array.isArray(parsed.rooms) && parsed.rooms.length < ROOM_COUNT) {
+      parsed.rooms = [...parsed.rooms, ...Array.from({ length: ROOM_COUNT - parsed.rooms.length }, emptyRoom)]
+    }
+    return parsed
+  } catch { return null }
 }
 
 async function saveWhiteboard(dateKey, data) {
