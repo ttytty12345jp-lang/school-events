@@ -1481,8 +1481,9 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   }
   .main-content:has(.annual-table-wrap) .annual-table-wrap {
     overflow: visible;
-    zoom: 0.68;
+    zoom: 0.52;
   }
+  .annual-print-header { font-size: 13px; }
   .main-content:has(.annual-table-wrap) ~ .main-content { display: none; }
   @page { size: A3 landscape; margin: 8mm; }
 }
