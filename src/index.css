@@ -1641,8 +1641,8 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 }
 .sn-panel-header {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 4px;
   padding: 8px 10px;
   font-size: 12px;
   font-weight: 600;
@@ -1651,4 +1651,29 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   position: sticky;
   top: 0;
   background: rgba(241,245,249,0.95);
+  z-index: 1;
 }
+.sn-panel-title { font-size: 12px; font-weight: 700; }
+.sn-panel-add-btns { display: flex; gap: 4px; }
+.sn-panel-add-btns .sn-btn { flex: 1; font-size: 10px; padding: 2px 4px; }
+
+/* リンクアイテム */
+.sn-link-item { display: flex; flex-direction: column; justify-content: center; gap: 4px; cursor: default; }
+.sn-link-body { display: flex; align-items: center; gap: 6px; padding: 4px 8px; }
+.sn-link-icon { width: 22px; height: 22px; flex-shrink: 0; }
+.sn-link-label { flex: 1; font-size: 13px; font-weight: 600; color: #1e40af; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sn-link-open { font-size: 14px; color: #3b82f6; text-decoration: none; flex-shrink: 0; }
+.sn-link-open:hover { color: #1d4ed8; }
+.sn-link-url { font-size: 9px; color: #94a3b8; padding: 0 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: text; }
+.sn-link-url:hover { color: #64748b; }
+.sn-link-edit { width: 100%; font-size: 12px; border: 1px solid #93c5fd; border-radius: 3px; padding: 2px 4px; outline: none; }
+.sn-link-url-input { font-size: 10px; }
+
+/* 表アイテム */
+.sn-table-item { cursor: default; }
+.sn-table-wrap { flex: 1; overflow: auto; padding: 4px; }
+.sn-table { border-collapse: collapse; width: 100%; }
+.sn-table td { border: 1px solid #cbd5e1; padding: 0; }
+.sn-table-cell { width: 100%; border: none; outline: none; font-size: 11px; padding: 2px 4px; background: transparent; min-width: 30px; }
+.sn-table-ctrl { display: flex; gap: 2px; flex-wrap: wrap; }
+.sn-table-ctrl .sn-btn { font-size: 9px; padding: 1px 3px; }
