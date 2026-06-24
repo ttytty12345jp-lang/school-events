@@ -444,6 +444,11 @@ export default function WhiteboardView({ events, db = {} }) {
         const merged = { ...emptyData(), ...saved }
         // migrate legacy weekEvent → weekEventToday
         if (saved.weekEvent && !saved.weekEventToday) merged.weekEventToday = saved.weekEvent
+        // 保存データの行数が定数より少ない場合は空行で補完
+        if (!Array.isArray(merged.trips) || merged.trips.length < TRIP_COUNT)
+          merged.trips = [...(merged.trips || []), ...Array.from({ length: TRIP_COUNT - (merged.trips?.length || 0) }, emptyTrip)]
+        if (!Array.isArray(merged.rooms) || merged.rooms.length < ROOM_COUNT)
+          merged.rooms = [...(merged.rooms || []), ...Array.from({ length: ROOM_COUNT - (merged.rooms?.length || 0) }, emptyRoom)]
         setData(merged)
       }
     })
