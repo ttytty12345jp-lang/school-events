@@ -1409,12 +1409,19 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 
 /* ── Print styles ── */
 @media print {
+  * { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
   .no-print, .app-header .header-tabs, .header-export-btns { display: none !important; }
   .app-header { position: static; box-shadow: none; padding: 8px 16px; }
   body { background: white; }
   .main-content { padding: 8px; max-width: none; }
   .calendar-cell { min-height: 60px; }
-  .day-section { box-shadow: none; border: 2px solid #000; background: #fff; }
+  .day-section {
+    box-shadow: none;
+    border: 3px solid #000 !important;
+    background: #fff !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
   .modal-overlay { display: none !important; }
   .annual-grid { grid-template-columns: repeat(3, 1fr); }
   @page { size: A4 portrait; margin: 6mm; }
