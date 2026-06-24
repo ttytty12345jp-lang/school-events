@@ -472,12 +472,8 @@ function SchoolHoursSection({ date, calendarEvents }) {
             <tr>
               <td className="hours-td-label">昨日まで</td>
               {GRADES.map(g => (
-                <td key={g} className="hours-td-cell">
-                  <div className="thirds-stepper">
-                    <button className="thirds-btn" onClick={() => stepKinou(g, -1)} disabled={!kinou[g]}>−</button>
-                    <span className="thirds-val">{thirdsDisplay(kinou[g] || 0)}</span>
-                    <button className="thirds-btn" onClick={() => stepKinou(g, 1)}>＋</button>
-                  </div>
+                <td key={g} className="hours-td-cell hours-td-total">
+                  {thirdsDisplay(kinou[g] || 0)}
                 </td>
               ))}
             </tr>
