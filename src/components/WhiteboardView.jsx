@@ -214,7 +214,7 @@ function autoScaleWidth(el) {
 }
 
 // ── Inline editable cell ───────────────────────────────────
-function EditCell({ value, onChange, placeholder = '', className = '', align, listId, options, live = false, onNext }) {
+function EditCell({ value, onChange, placeholder = '', className = '', align, listId, options, live = false, onNext, cellKey }) {
   const [local, setLocal] = useState(value)
   const [dropPos, setDropPos] = useState(null) // { top, left, width } or null
   const ref = useRef(null)
@@ -278,6 +278,7 @@ function EditCell({ value, onChange, placeholder = '', className = '', align, li
         style={align ? { textAlign: align } : undefined}
         list={hasOpts ? undefined : (listId || undefined)}
         autoComplete="off"
+        {...(cellKey ? { 'data-room-cell': cellKey } : {})}
       />
       {hasOpts && dropPos && (
         <ul ref={dropRef} className="wb-dropdown" style={{ position: 'fixed', top: dropPos.top, left: dropPos.left, width: dropPos.width, zIndex: 9999 }}>
@@ -629,26 +630,21 @@ export default function WhiteboardView({ events, db = {} }) {
                   <td className="wb-th wb-th-clear"></td>
                 </tr>
                 {displayedRooms.map((r, i) => {
-                  function nextInRow(colIdx) {
-                    return () => {
-                      const row = document.querySelector(`tr[data-room-idx="${i}"]`)
-                      const tds = row?.querySelectorAll('td.wb-td')
-                      tds?.[colIdx]?.querySelector('input')?.focus()
-                    }
-                  }
+                  const goTo = field => () =>
+                    document.querySelector(`input[data-room-cell="${i}-${field}"]`)?.focus()
                   return (
-                  <tr key={i} className="wb-row" data-room-idx={i}>
+                  <tr key={i} className="wb-row">
                     <td className="wb-td">
-                      <EditCell value={r.place} onChange={v => updateRoom(i, 'place', v)} options={db.rooms || []} onNext={nextInRow(1)} />
+                      <EditCell value={r.place} onChange={v => updateRoom(i, 'place', v)} options={db.rooms || []} onNext={goTo('month')} cellKey={`${i}-place`} />
                     </td>
                     <td className="wb-td wb-td-center">
-                      <EditCell value={r.month} onChange={v => updateRoom(i, 'month', v)} align="center" onNext={nextInRow(2)} />
+                      <EditCell value={r.month} onChange={v => updateRoom(i, 'month', v)} align="center" onNext={goTo('day')} cellKey={`${i}-month`} />
                     </td>
                     <td className="wb-td wb-td-center">
-                      <EditCell value={r.day} onChange={v => updateRoom(i, 'day', v)} align="center" onNext={nextInRow(5)} />
+                      <EditCell value={r.day} onChange={v => updateRoom(i, 'day', v)} align="center" onNext={goTo('users')} cellKey={`${i}-day`} />
                     </td>
                     <td className="wb-td wb-td-center">
-                      <EditCell value={r.dow} onChange={v => updateRoom(i, 'dow', v)} align="center" />
+                      <EditCell value={r.dow} onChange={v => updateRoom(i, 'dow', v)} align="center" cellKey={`${i}-dow`} />
                     </td>
                     <td className="wb-td">
                       <TimeRange
@@ -658,10 +654,10 @@ export default function WhiteboardView({ events, db = {} }) {
                       />
                     </td>
                     <td className="wb-td">
-                      <EditCell value={r.users} onChange={v => updateRoom(i, 'users', v)} options={db.names || []} onNext={nextInRow(6)} />
+                      <EditCell value={r.users} onChange={v => updateRoom(i, 'users', v)} options={db.names || []} onNext={goTo('purpose')} cellKey={`${i}-users`} />
                     </td>
                     <td className="wb-td">
-                      <EditCell value={r.purpose} onChange={v => updateRoom(i, 'purpose', v)} />
+                      <EditCell value={r.purpose} onChange={v => updateRoom(i, 'purpose', v)} cellKey={`${i}-purpose`} />
                     </td>
                     <td className="wb-td wb-td-clear">
                       <ClearBtn onClick={() => clearRoom(i)} />
