@@ -214,7 +214,7 @@ function autoScaleWidth(el) {
 }
 
 // ── Inline editable cell ───────────────────────────────────
-function EditCell({ value, onChange, placeholder = '', className = '', align, listId, options, live = false }) {
+function EditCell({ value, onChange, placeholder = '', className = '', align, listId, options, live = false, onNext }) {
   const [local, setLocal] = useState(value)
   const [dropPos, setDropPos] = useState(null) // { top, left, width } or null
   const ref = useRef(null)
@@ -244,7 +244,16 @@ function EditCell({ value, onChange, placeholder = '', className = '', align, li
     if (!live && local !== value) onChange(local)
   }
   function handleKeyDown(e) {
-    if (e.key === 'Enter') { e.preventDefault(); ref.current?.blur() }
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      setDropPos(null)
+      if (!live && local !== value) onChange(local)
+      if (onNext) {
+        onNext()
+      } else {
+        ref.current?.blur()
+      }
+    }
   }
   function handleFocus() {
     if (!hasOpts) return
@@ -622,19 +631,27 @@ export default function WhiteboardView({ events, db = {} }) {
                   <td className="wb-th">使用目的</td>
                   <td className="wb-th wb-th-clear"></td>
                 </tr>
-                {displayedRooms.map((r, i) => (
-                  <tr key={i} className="wb-row">
+                {displayedRooms.map((r, i) => {
+                  function nextInRow(colIdx) {
+                    return () => {
+                      const row = document.querySelector(`tr[data-room-idx="${i}"]`)
+                      const tds = row?.querySelectorAll('td.wb-td')
+                      tds?.[colIdx]?.querySelector('input')?.focus()
+                    }
+                  }
+                  return (
+                  <tr key={i} className="wb-row" data-room-idx={i}>
                     <td className="wb-td">
-                      <EditCell value={r.place} onChange={v => updateRoom(i, 'place', v)} options={db.rooms || []} />
+                      <EditCell value={r.place} onChange={v => updateRoom(i, 'place', v)} options={db.rooms || []} onNext={nextInRow(1)} />
                     </td>
                     <td className="wb-td wb-td-center">
-                      <EditCell value={r.month} onChange={v => updateRoom(i, 'month', v)} align="center" />
+                      <EditCell value={r.month} onChange={v => updateRoom(i, 'month', v)} align="center" onNext={nextInRow(2)} />
                     </td>
                     <td className="wb-td wb-td-center">
-                      <EditCell value={r.day} onChange={v => updateRoom(i, 'day', v)} align="center" />
+                      <EditCell value={r.day} onChange={v => updateRoom(i, 'day', v)} align="center" onNext={nextInRow(3)} />
                     </td>
                     <td className="wb-td wb-td-center">
-                      <EditCell value={r.dow} onChange={v => updateRoom(i, 'dow', v)} align="center" />
+                      <EditCell value={r.dow} onChange={v => updateRoom(i, 'dow', v)} align="center" onNext={nextInRow(4)} />
                     </td>
                     <td className="wb-td">
                       <TimeRange
@@ -644,7 +661,7 @@ export default function WhiteboardView({ events, db = {} }) {
                       />
                     </td>
                     <td className="wb-td">
-                      <EditCell value={r.users} onChange={v => updateRoom(i, 'users', v)} options={db.names || []} />
+                      <EditCell value={r.users} onChange={v => updateRoom(i, 'users', v)} options={db.names || []} onNext={nextInRow(6)} />
                     </td>
                     <td className="wb-td">
                       <EditCell value={r.purpose} onChange={v => updateRoom(i, 'purpose', v)} />
@@ -653,7 +670,8 @@ export default function WhiteboardView({ events, db = {} }) {
                       <ClearBtn onClick={() => clearRoom(i)} />
                     </td>
                   </tr>
-                ))}
+                  )
+                })}
               </tbody>
             </table>
           </div>
