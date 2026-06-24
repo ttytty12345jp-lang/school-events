@@ -648,10 +648,10 @@ export default function WhiteboardView({ events, db = {} }) {
                       <EditCell value={r.month} onChange={v => updateRoom(i, 'month', v)} align="center" onNext={nextInRow(2)} />
                     </td>
                     <td className="wb-td wb-td-center">
-                      <EditCell value={r.day} onChange={v => updateRoom(i, 'day', v)} align="center" onNext={nextInRow(3)} />
+                      <EditCell value={r.day} onChange={v => updateRoom(i, 'day', v)} align="center" onNext={nextInRow(5)} />
                     </td>
                     <td className="wb-td wb-td-center">
-                      <EditCell value={r.dow} onChange={v => updateRoom(i, 'dow', v)} align="center" onNext={nextInRow(4)} />
+                      <EditCell value={r.dow} onChange={v => updateRoom(i, 'dow', v)} align="center" />
                     </td>
                     <td className="wb-td">
                       <TimeRange
