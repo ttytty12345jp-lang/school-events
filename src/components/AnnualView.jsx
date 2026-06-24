@@ -114,22 +114,14 @@ export default function AnnualView({ events, onMonthClick }) {
   useEffect(() => { eventsRef.current = events }, [events])
 
   useEffect(() => {
-    function inject() {
-      if (!document.getElementById('annual-print-override')) {
-        const s = document.createElement('style')
-        s.id = 'annual-print-override'
-        s.textContent = '@page { size: A3 landscape; margin: 8mm; }'
-        document.head.appendChild(s)
-      }
+    // 年間行事ビューが表示されている間は常にA3横を設定
+    if (!document.getElementById('annual-print-override')) {
+      const s = document.createElement('style')
+      s.id = 'annual-print-override'
+      s.textContent = '@page { size: A3 landscape; margin: 8mm; }'
+      document.head.appendChild(s)
     }
-    function remove() { document.getElementById('annual-print-override')?.remove() }
-    window.addEventListener('beforeprint', inject)
-    window.addEventListener('afterprint', remove)
-    return () => {
-      window.removeEventListener('beforeprint', inject)
-      window.removeEventListener('afterprint', remove)
-      remove()
-    }
+    return () => { document.getElementById('annual-print-override')?.remove() }
   }, [])
 
   useEffect(() => {
@@ -158,9 +150,12 @@ export default function AnnualView({ events, onMonthClick }) {
               <th className="annual-col-day">日</th>
               <th className="annual-col-dow">曜</th>
               {months.map(({ year, month }) => (
-                <th key={`${year}-${month}`} className="annual-col-month">
-                  {month}月
-                </th>
+                <>
+                  <th key={`${year}-${month}`} className="annual-col-month">
+                    {month}月
+                  </th>
+                  {month === 8 && <th key="sep-day-head" className="annual-col-day annual-col-sep">日</th>}
+                </>
               ))}
             </tr>
           </thead>
@@ -178,38 +173,45 @@ export default function AnnualView({ events, onMonthClick }) {
                   <td className="annual-col-dow annual-dows">&nbsp;</td>
                   {months.map(({ year, month }) => {
                     const daysInMonth = new Date(year, month, 0).getDate()
-                    if (day > daysInMonth) {
-                      return <td key={`${year}-${month}`} className="annual-cell annual-cell-empty" />
-                    }
-                    const dateKey = toDateKey(year, month, day)
-                    const dow = new Date(dateKey).getDay()
-                    const dayEvs = eventMap.get(dateKey) || []
-                    const isToday = dateKey === todayKey
-                    const isSun = dow === 0
-                    const isSat = dow === 6
-                    const isWeekend = isSun || isSat
-                    const gray = isCellGray(year, month, dateKey, isWeekend)
+                    const cell = day > daysInMonth
+                      ? <td key={`${year}-${month}`} className="annual-cell annual-cell-empty" />
+                      : (() => {
+                          const dateKey = toDateKey(year, month, day)
+                          const dow = new Date(dateKey).getDay()
+                          const dayEvs = eventMap.get(dateKey) || []
+                          const isToday = dateKey === todayKey
+                          const isSun = dow === 0
+                          const isSat = dow === 6
+                          const isWeekend = isSun || isSat
+                          const gray = isCellGray(year, month, dateKey, isWeekend)
+                          return (
+                            <td
+                              key={`${year}-${month}`}
+                              className={[
+                                'annual-cell',
+                                isToday ? 'annual-cell-today' : '',
+                                gray ? 'annual-cell-gray' : '',
+                                isSun ? 'annual-cell-sun' : isSat ? 'annual-cell-sat' : '',
+                                dayEvs.length > 0 ? 'annual-cell-has-event' : '',
+                              ].filter(Boolean).join(' ')}
+                              title={dayEvs.map(e => e.title).join('、')}
+                            >
+                              <span
+                                className="annual-dow-label annual-dow-toggle"
+                                title="クリックで塗りつぶし切り替え"
+                                onClick={e => { e.stopPropagation(); toggleCell(year, month, dateKey, isWeekend) }}
+                              >{DAYS_JA[dow]}</span>
+                              {dayEvs.map(ev => (
+                                <span key={ev.id} className="annual-event-chip" style={{ color: ev.color === 'red' ? '#dc2626' : 'inherit' }}>{ev.title}</span>
+                              ))}
+                            </td>
+                          )
+                        })()
                     return (
-                      <td
-                        key={`${year}-${month}`}
-                        className={[
-                          'annual-cell',
-                          isToday ? 'annual-cell-today' : '',
-                          gray ? 'annual-cell-gray' : '',
-                          isSun ? 'annual-cell-sun' : isSat ? 'annual-cell-sat' : '',
-                          dayEvs.length > 0 ? 'annual-cell-has-event' : '',
-                        ].filter(Boolean).join(' ')}
-                        title={dayEvs.map(e => e.title).join('、')}
-                      >
-                        <span
-                          className="annual-dow-label annual-dow-toggle"
-                          title="クリックで塗りつぶし切り替え"
-                          onClick={e => { e.stopPropagation(); toggleCell(year, month, dateKey, isWeekend) }}
-                        >{DAYS_JA[dow]}</span>
-                        {dayEvs.map(ev => (
-                          <span key={ev.id} className="annual-event-chip" style={{ color: ev.color === 'red' ? '#dc2626' : 'inherit' }}>{ev.title}</span>
-                        ))}
-                      </td>
+                      <>
+                        {cell}
+                        {month === 8 && <td key={`sep-day-${day}`} className="annual-col-day annual-col-sep">{day}</td>}
+                      </>
                     )
                   })}
                 </tr>

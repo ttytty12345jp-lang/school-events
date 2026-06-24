@@ -1052,7 +1052,8 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   border-collapse: collapse;
   background: var(--surface);
   font-size: 12px;
-  min-width: 100%;
+  width: 100%;
+  table-layout: fixed;
 }
 
 .annual-table thead th {
@@ -1068,9 +1069,19 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 }
 
 .annual-table thead th.annual-col-month {
-  min-width: 80px;
+  /* 12等分: 日列×2(28px×2) + 区切り日列(28px) を除いた残りを12等分 */
+  width: calc((100% - 84px) / 12);
 }
 .annual-table thead th.annual-col-month:hover { background: var(--primary-light); }
+
+/* 8/9月間の区切り日列 */
+.annual-col-sep {
+  background: var(--surface2) !important;
+  color: var(--text-muted);
+  font-size: 10px;
+  border-left: 2px solid var(--border) !important;
+  border-right: 2px solid var(--border) !important;
+}
 
 .annual-col-day {
   width: 28px;
@@ -1101,7 +1112,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 }
 
 .annual-cell {
-  min-width: 80px;
+  overflow: hidden;
   cursor: pointer;
   transition: background 0.1s;
 }
