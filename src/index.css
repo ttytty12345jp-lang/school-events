@@ -1429,6 +1429,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 
 /* 朝会記録簿 印刷: A4縦に2段 */
 @media print {
+  .app-header { display: none !important; }
   .main-content:has(.ttv-wrap) {
     padding: 0;
     display: flex;
@@ -1439,9 +1440,12 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
     flex: 1;
     zoom: 0.5;
     page-break-inside: avoid;
-    border-bottom: 1px dashed #ccc;
   }
-  .ttv-print-clone { border-bottom: none; }
+  .ttv-wrap {
+    border-bottom: 3px dashed #999;
+    padding-bottom: 8mm;
+    margin-bottom: 8mm;
+  }
 }
 
 /* ── Responsive ── */
