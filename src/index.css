@@ -1444,8 +1444,8 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
     page-break-inside: avoid;
   }
   .ttv-wrap {
-    padding-bottom: 4mm;
-    margin-bottom: 4mm;
+    padding-bottom: 8mm;
+    margin-bottom: 8mm;
   }
 }
 
