@@ -1429,6 +1429,27 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   @page { size: A4 portrait; margin: 6mm; }
 }
 
+/* 月中行事 印刷: A4縦1枚に収める */
+@media print {
+  .main-content:has(.calendar-grid),
+  .main-content:has(.monthly-table-wrap) {
+    padding: 0;
+  }
+  .main-content:has(.calendar-grid) .calendar-header,
+  .main-content:has(.monthly-table-wrap) .calendar-header { margin-bottom: 4px; }
+  .main-content:has(.calendar-grid) .calendar-title,
+  .main-content:has(.monthly-table-wrap) .calendar-title { font-size: 14px; }
+  .main-content:has(.calendar-grid) .calendar-grid {
+    zoom: 0.72;
+  }
+  .main-content:has(.calendar-grid) .calendar-cell { min-height: 0; height: 14mm; }
+  .main-content:has(.monthly-table-wrap) .monthly-table-wrap {
+    zoom: 0.78;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
 /* 朝会記録簿 印刷: A4縦に2段 */
 @media print {
   .app-header { display: none !important; }
