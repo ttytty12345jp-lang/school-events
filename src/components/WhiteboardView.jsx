@@ -140,6 +140,46 @@ function navKey(key, delta) {
   return toDateKey(d)
 }
 
+// 2つの日付キーが属するISO週の月曜日を返す
+function mondayOf(dateKey) {
+  const d = dateFromKey(dateKey)
+  const day = d.getDay() // 0=日,1=月,...
+  const diff = (day + 6) % 7 // 月曜起点
+  d.setDate(d.getDate() - diff)
+  return toDateKey(d)
+}
+// 週差（正=currが後）
+function weekDiff(prevKey, currKey) {
+  const ms = dateFromKey(mondayOf(currKey)) - dateFromKey(mondayOf(prevKey))
+  return Math.round(ms / (7 * 24 * 60 * 60 * 1000))
+}
+// 直近の teamToday から dateKey に対応する班番号を推定（1〜4, なければ ''）
+async function inferTeam(dateKey) {
+  let lastDate = null, lastTeam = 0
+  if (!USE_SUPABASE) {
+    for (let i = 1; i <= 90; i++) {
+      const d = dateFromKey(dateKey); d.setDate(d.getDate() - i)
+      const k = toDateKey(d)
+      try {
+        const saved = JSON.parse(localStorage.getItem(`whiteboard_${k}`) || 'null')
+        if (saved?.teamToday) { lastDate = k; lastTeam = parseInt(saved.teamToday); break }
+      } catch {}
+    }
+  } else {
+    const { data } = await supabase.from('school_notices').select('date, content')
+      .eq('type', 'whiteboard').lt('date', dateKey).order('date', { ascending: false }).limit(90)
+    for (const row of (data || [])) {
+      try {
+        const parsed = JSON.parse(row.content)
+        if (parsed?.teamToday) { lastDate = row.date; lastTeam = parseInt(parsed.teamToday); break }
+      } catch {}
+    }
+  }
+  if (!lastDate || isNaN(lastTeam) || lastTeam < 1 || lastTeam > 4) return ''
+  const weeks = weekDiff(lastDate, dateKey)
+  return String(((lastTeam - 1 + weeks) % 4) + 1)
+}
+
 function emptyRoom() { return { place: '', month: '', day: '', dow: '', timeStart: '', timeEnd: '', users: '', purpose: '' } }
 function emptyTrip() { return { name: '', destination: '', purpose: '', timeStart: '', timeEnd: '' } }
 function emptyLeave() {
@@ -452,18 +492,33 @@ export default function WhiteboardView({ events, db = {} }) {
 
   useEffect(() => {
     setData(emptyData())
-    loadWhiteboard(selectedKey).then(saved => {
-      if (saved) {
-        const merged = { ...emptyData(), ...saved }
-        // migrate legacy weekEvent → weekEventToday
-        if (saved.weekEvent && !saved.weekEventToday) merged.weekEventToday = saved.weekEvent
-        // 保存データの行数が定数より少ない場合は空行で補完
-        if (!Array.isArray(merged.trips) || merged.trips.length < TRIP_COUNT)
-          merged.trips = [...(merged.trips || []), ...Array.from({ length: TRIP_COUNT - (merged.trips?.length || 0) }, emptyTrip)]
-        if (!Array.isArray(merged.rooms) || merged.rooms.length < ROOM_COUNT)
-          merged.rooms = [...(merged.rooms || []), ...Array.from({ length: ROOM_COUNT - (merged.rooms?.length || 0) }, emptyRoom)]
-        setData(merged)
+    loadWhiteboard(selectedKey).then(async saved => {
+      const merged = { ...emptyData(), ...(saved || {}) }
+      if (saved?.weekEvent && !saved.weekEventToday) merged.weekEventToday = saved.weekEvent
+      if (!Array.isArray(merged.trips) || merged.trips.length < TRIP_COUNT)
+        merged.trips = [...(merged.trips || []), ...Array.from({ length: TRIP_COUNT - (merged.trips?.length || 0) }, emptyTrip)]
+      if (!Array.isArray(merged.rooms) || merged.rooms.length < ROOM_COUNT)
+        merged.rooms = [...(merged.rooms || []), ...Array.from({ length: ROOM_COUNT - (merged.rooms?.length || 0) }, emptyRoom)]
+
+      // 未保存の日は直近の班から自動推定
+      if (!saved) {
+        const team = await inferTeam(selectedKey)
+        if (team) {
+          merged.teamToday = team
+          const key = `班${team}`
+          const dow = DAYS_JA[dateFromKey(selectedKey).getDay()]
+          merged.dutyToday = (db.nursing || {})[key]?.[dow] || ''
+        }
+        const teamTom = await inferTeam(tomorrowKey)
+        if (teamTom) {
+          merged.teamTomorrow = teamTom
+          const key = `班${teamTom}`
+          const dow = DAYS_JA[dateFromKey(tomorrowKey).getDay()]
+          merged.dutyTomorrow = (db.nursing || {})[key]?.[dow] || ''
+        }
       }
+
+      setData(merged)
     })
   }, [selectedKey])
 
