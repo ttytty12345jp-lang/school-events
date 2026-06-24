@@ -114,20 +114,32 @@ export default function AnnualView({ events, onMonthClick }) {
   useEffect(() => { eventsRef.current = events }, [events])
 
   useEffect(() => {
+    function inject() {
+      if (!document.getElementById('annual-print-override')) {
+        const s = document.createElement('style')
+        s.id = 'annual-print-override'
+        s.textContent = '@page { size: A3 landscape; margin: 8mm; }'
+        document.head.appendChild(s)
+      }
+    }
+    function remove() { document.getElementById('annual-print-override')?.remove() }
+    window.addEventListener('beforeprint', inject)
+    window.addEventListener('afterprint', remove)
+    return () => {
+      window.removeEventListener('beforeprint', inject)
+      window.removeEventListener('afterprint', remove)
+      remove()
+    }
+  }, [])
+
+  useEffect(() => {
     setControls(
       <div className="hc-row">
         <button className="hc-btn-nav" onClick={() => setFiscalYear(y => y - 1)}>‹</button>
         <span className="hc-label">{fiscalYear}年度</span>
         <button className="hc-btn-nav" onClick={() => setFiscalYear(y => y + 1)}>›</button>
         <button className="hc-btn" onClick={() => exportAnnualExcel(fiscalYear, eventsRef.current)}>📊 年間Excel出力</button>
-        <button className="hc-btn" onClick={() => {
-          const style = document.createElement('style')
-          style.id = 'annual-print-override'
-          style.textContent = '@page { size: A3 landscape; margin: 8mm; }'
-          document.head.appendChild(style)
-          window.print()
-          document.getElementById('annual-print-override')?.remove()
-        }}>🖨️ 印刷</button>
+        <button className="hc-btn" onClick={() => window.print()}>🖨️ 印刷</button>
       </div>
     )
     return () => setControls(null)
