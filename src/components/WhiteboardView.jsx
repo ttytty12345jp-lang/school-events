@@ -214,7 +214,7 @@ function autoScaleWidth(el) {
 }
 
 // ── Inline editable cell ───────────────────────────────────
-function EditCell({ value, onChange, placeholder = '', className = '', align, listId, options, live = false, onNext, cellKey }) {
+function EditCell({ value, onChange, placeholder = '', className = '', align, listId, options, live = false, onNext, cellKey, tripKey }) {
   const [local, setLocal] = useState(value)
   const [dropPos, setDropPos] = useState(null) // { top, left, width } or null
   const ref = useRef(null)
@@ -279,6 +279,7 @@ function EditCell({ value, onChange, placeholder = '', className = '', align, li
         list={hasOpts ? undefined : (listId || undefined)}
         autoComplete="off"
         {...(cellKey ? { 'data-room-cell': cellKey } : {})}
+        {...(tripKey ? { 'data-trip-cell': tripKey } : {})}
       />
       {hasOpts && dropPos && (
         <ul ref={dropRef} className="wb-dropdown" style={{ position: 'fixed', top: dropPos.top, left: dropPos.left, width: dropPos.width, zIndex: 9999 }}>
@@ -292,7 +293,7 @@ function EditCell({ value, onChange, placeholder = '', className = '', align, li
 }
 
 // ── 自由テキスト＋時計ボタンでネイティブピッカー ─────────
-function TimeInput({ val, onChange, cellKey, onNext }) {
+function TimeInput({ val, onChange, cellKey, tripCellKey, onNext }) {
   const [text, setText] = useState(val)
   const pickerRef = useRef(null)
   useEffect(() => { setText(val) }, [val])
@@ -304,6 +305,7 @@ function TimeInput({ val, onChange, cellKey, onNext }) {
         onDoubleClick={() => pickerRef.current?.showPicker()}
         title="ダブルクリックで時刻ピッカーを開く"
         {...(cellKey ? { 'data-room-cell': cellKey } : {})}
+        {...(tripCellKey ? { 'data-trip-cell': tripCellKey } : {})}
       />
       <input type="time" className="wb-time-picker-hidden" ref={pickerRef}
         onChange={e => { setText(e.target.value); onChange(e.target.value) }}
@@ -313,13 +315,15 @@ function TimeInput({ val, onChange, cellKey, onNext }) {
 }
 
 // ── Time range ────────────────────────────────────────────
-function TimeRange({ startVal, endVal, onStartChange, onEndChange, startCellKey, endCellKey, onEndNext }) {
+function TimeRange({ startVal, endVal, onStartChange, onEndChange, startCellKey, endCellKey, onEndNext, startTripKey, endTripKey }) {
+  const endAttr = endCellKey ? `input[data-room-cell="${endCellKey}"]`
+    : endTripKey ? `input[data-trip-cell="${endTripKey}"]` : null
   return (
     <div className="wb-time-range">
-      <TimeInput val={startVal} onChange={onStartChange} cellKey={startCellKey}
-        onNext={endCellKey ? () => document.querySelector(`input[data-room-cell="${endCellKey}"]`)?.focus() : undefined} />
+      <TimeInput val={startVal} onChange={onStartChange} cellKey={startCellKey} tripCellKey={startTripKey}
+        onNext={endAttr ? () => document.querySelector(endAttr)?.focus() : undefined} />
       <span className="wb-tilde">～</span>
-      <TimeInput val={endVal} onChange={onEndChange} cellKey={endCellKey} onNext={onEndNext} />
+      <TimeInput val={endVal} onChange={onEndChange} cellKey={endCellKey} tripCellKey={endTripKey} onNext={onEndNext} />
     </div>
   )
 }
@@ -694,29 +698,35 @@ export default function WhiteboardView({ events, db = {} }) {
                   <td className="wb-th">時間</td>
                   <td className="wb-th wb-th-clear"></td>
                 </tr>
-                {data.trips.map((t, i) => (
+                {data.trips.map((t, i) => {
+                  const goTo = field => () =>
+                    document.querySelector(`input[data-trip-cell="${i}-${field}"]`)?.focus()
+                  return (
                   <tr key={i} className="wb-row">
                     <td className="wb-td">
-                      <EditCell value={t.name} onChange={v => updateTrip(i, 'name', v)} options={db.names || []} />
+                      <EditCell value={t.name} onChange={v => updateTrip(i, 'name', v)} options={db.names || []} onNext={goTo('destination')} tripKey={`${i}-name`} />
                     </td>
                     <td className="wb-td">
-                      <EditCell value={t.destination} onChange={v => updateTrip(i, 'destination', v)} />
+                      <EditCell value={t.destination} onChange={v => updateTrip(i, 'destination', v)} onNext={goTo('purpose')} tripKey={`${i}-destination`} />
                     </td>
                     <td className="wb-td">
-                      <EditCell value={t.purpose} onChange={v => updateTrip(i, 'purpose', v)} />
+                      <EditCell value={t.purpose} onChange={v => updateTrip(i, 'purpose', v)} onNext={goTo('time-start')} tripKey={`${i}-purpose`} />
                     </td>
                     <td className="wb-td">
                       <TimeRange
                         startVal={t.timeStart} endVal={t.timeEnd}
                         onStartChange={v => updateTrip(i, 'timeStart', v)}
                         onEndChange={v => updateTrip(i, 'timeEnd', v)}
+                        startTripKey={`${i}-time-start`}
+                        endTripKey={`${i}-time-end`}
                       />
                     </td>
                     <td className="wb-td wb-td-clear">
                       <ClearBtn onClick={() => clearTrip(i)} />
                     </td>
                   </tr>
-                ))}
+                  )
+                })}
               </tbody>
             </table>
           </div>
