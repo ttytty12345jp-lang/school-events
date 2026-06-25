@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
+import { DAYS_JA } from '../utils/date'
 
-const DAYS_JA = ['日', '月', '火', '水', '木', '金', '土']
 const CATEGORIES = ['学校行事', '教職員関係行事', 'その他']
 
 function emptyEvent() {

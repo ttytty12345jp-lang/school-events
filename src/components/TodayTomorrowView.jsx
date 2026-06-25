@@ -1,33 +1,13 @@
 import { useMemo, useState, useEffect, useRef } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { supabase, USE_SUPABASE } from '../lib/supabase'
 import { useNotice } from '../hooks/useNotice'
 import MorningAgenda from './MorningAgenda'
 import { loadJijiMaster, thirdsDisplay } from './SchoolJijiView'
 import { useHeaderControls } from '../HeaderControlsContext'
+import { DAYS_JA, dateKey as toDateKey, monthKey } from '../utils/date'
+import { loadSpanEvents, getActiveSpans } from '../lib/spanEvents'
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
-const USE_SUPABASE = !!(SUPABASE_URL && SUPABASE_ANON_KEY)
-const supabase = USE_SUPABASE ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null
 const HIGHLIGHTS_TYPE = 'row_highlights'
-const SPAN_TYPE = 'span_events'
-const SPAN_DATE = 'span_events'
-
-const DAYS_JA = ['日', '月', '火', '水', '木', '金', '土']
-
-async function loadSpanEvents() {
-  if (!USE_SUPABASE) {
-    try { return JSON.parse(localStorage.getItem('span_events') || '[]') } catch { return [] }
-  }
-  const { data } = await supabase.from('school_notices').select('content')
-    .eq('date', SPAN_DATE).eq('type', SPAN_TYPE).maybeSingle()
-  if (!data?.content) return []
-  try { return JSON.parse(data.content) } catch { return [] }
-}
-
-function toDateKey(d) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
 
 function formatDate(d) {
   return `${d.getMonth() + 1}/${d.getDate()}（${DAYS_JA[d.getDay()]}）`
@@ -40,7 +20,7 @@ function formatDateLong(d) {
 // 左上：朝会アジェンダ（月中行事 + 自由追記が同一リスト）
 function TodaySection({ date, events, dateKey, spanEvents = [] }) {
   const { content: weekEvent, handleChange: setWeekEvent } = useNotice(dateKey, 'week_event')
-  const activeSpans = spanEvents.filter(s => s.startDate <= dateKey && dateKey <= s.endDate)
+  const activeSpans = getActiveSpans(spanEvents, dateKey)
   return (
     <div className="ttv-panel">
       <div className="ttv-header ttv-header-today">
@@ -104,9 +84,6 @@ function DistributionSection({ date }) {
   )
 }
 
-function monthKey(y, m) {
-  return `${y}-${String(m).padStart(2, '0')}`
-}
 
 // 右下：明日以降5日分
 function UpcomingSection({ todayDate, events }) {

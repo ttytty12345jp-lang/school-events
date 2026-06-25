@@ -1,13 +1,12 @@
 import * as XLSX from 'xlsx'
+import { DAYS_JA, ymdKey } from './date'
 
-const CATEGORIES = ['学校行事', '教職員関係行事', 'その他']
 const IMPORT_HEADERS = ['日付', '区分', '行事名', '開始時刻', '備考', '色']
 
 // インポート用テンプレートをダウンロード
 export function downloadMonthlyTemplate(year, month) {
   const wb = XLSX.utils.book_new()
   const daysInMonth = new Date(year, month, 0).getDate()
-  const DAYS_JA_L = ['日', '月', '火', '水', '木', '金', '土']
 
   const rows = [
     [`${year}年${month}月 行事予定 入力テンプレート`],
@@ -17,7 +16,7 @@ export function downloadMonthlyTemplate(year, month) {
   ]
 
   for (let d = 1; d <= daysInMonth; d++) {
-    const dateKey = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+    const dateKey = ymdKey(year, month, d)
     rows.push([dateKey, '学校行事', '', '', '', '黒'])
   }
 
@@ -53,7 +52,7 @@ function normalizeCategory(raw) {
 // Excelシリアル値 → YYYY-MM-DD
 function serialToDateKey(serial) {
   const parsed = XLSX.SSF.parse_date_code(serial)
-  return `${parsed.y}-${String(parsed.m).padStart(2, '0')}-${String(parsed.d).padStart(2, '0')}`
+  return ymdKey(parsed.y, parsed.m, parsed.d)
 }
 
 // Excelファイルをパースしてイベントオブジェクトのリストを返す
@@ -65,7 +64,6 @@ export function parseImportExcel(file) {
     reader.onload = e => {
       try {
         const wb = XLSX.read(e.target.result, { type: 'binary' })
-        const pad = n => String(n).padStart(2, '0')
         const allEvents = []
 
         // 全シートを処理
@@ -151,7 +149,7 @@ export function parseImportExcel(file) {
             const day = parseInt(dayRaw)
             if (!day || day < 1 || day > 31) continue
 
-            const dateKey = `${year}-${pad(month)}-${pad(day)}`
+            const dateKey = ymdKey(year, month, day)
 
             for (const { idx, category } of catCols) {
               const cellText = String(row[idx] ?? '').trim()
@@ -174,13 +172,6 @@ export function parseImportExcel(file) {
     reader.onerror = () => reject(new Error('ファイル読み込み失敗'))
     reader.readAsBinaryString(file)
   })
-}
-
-const DAYS_JA = ['日', '月', '火', '水', '木', '金', '土']
-
-function dateStr(dateText) {
-  const d = new Date(dateText)
-  return `${d.getMonth() + 1}/${d.getDate()}(${DAYS_JA[d.getDay()]})`
 }
 
 const EXPORT_CATS = [
@@ -212,7 +203,7 @@ export function exportMonthlyExcel(year, month, events) {
   ]
 
   for (let d = 1; d <= daysInMonth; d++) {
-    const dateKey = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+    const dateKey = ymdKey(year, month, d)
     const dow = DAYS_JA[new Date(dateKey).getDay()]
     const dayData = eventMap[dateKey] || {}
     rows.push([
@@ -236,7 +227,7 @@ export function exportMonthlyExcel(year, month, events) {
   // 行高：データ行は複数行の行事があり得るので折り返し対応（pt単位）
   ws['!rows'] = [{ hpt: 22 }, { hpt: 16 }, { hpt: 18 }]
   for (let d = 0; d < daysInMonth; d++) {
-    const dateKey = `${year}-${String(month).padStart(2, '0')}-${String(d + 1).padStart(2, '0')}`
+    const dateKey = ymdKey(year, month, d + 1)
     const dayData = eventMap[dateKey] || {}
     const maxLines = Math.max(1, ...EXPORT_CATS.map(c => (dayData[c.key] || []).length))
     ws['!rows'].push({ hpt: Math.max(18, maxLines * 16) })
@@ -273,7 +264,7 @@ export function exportAnnualExcel(fiscalYear, events) {
     let monthLabel = `${month}月`
     let firstInMonth = true
     for (let d = 1; d <= daysInMonth; d++) {
-      const dateKey = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+      const dateKey = ymdKey(year, month, d)
       const dayOfWeek = DAYS_JA[new Date(dateKey).getDay()]
       const dayEvents = events.filter(e => e.date === dateKey)
       if (dayEvents.length === 0) continue

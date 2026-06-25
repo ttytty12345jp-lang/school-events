@@ -1,26 +1,13 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { supabase, USE_SUPABASE } from '../lib/supabase'
 import { exportAnnualExcel } from '../utils/exportExcel'
 import { useHeaderControls } from '../HeaderControlsContext'
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
-const USE_SUPABASE = !!(SUPABASE_URL && SUPABASE_ANON_KEY)
-const supabase = USE_SUPABASE ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null
+import { DAYS_JA, ymdKey as toDateKey, monthKey } from '../utils/date'
 
 const HIGHLIGHTS_TYPE = 'row_highlights'
-const DAYS_JA = ['日', '月', '火', '水', '木', '金', '土']
 
 function getFiscalYear(date) {
   return date.getMonth() >= 3 ? date.getFullYear() : date.getFullYear() - 1
-}
-
-function toDateKey(y, m, d) {
-  return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
-}
-
-function monthKey(y, m) {
-  return `${y}-${String(m).padStart(2, '0')}`
 }
 
 export default function AnnualView({ events, onMonthClick }) {

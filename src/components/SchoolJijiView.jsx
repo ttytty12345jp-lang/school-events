@@ -1,11 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { supabase, USE_SUPABASE } from '../lib/supabase'
 import { useHeaderControls } from '../HeaderControlsContext'
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
-const USE_SUPABASE = !!(SUPABASE_URL && SUPABASE_ANON_KEY)
-const supabase = USE_SUPABASE ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null
 
 const GRADES = ['1年', '2年', '3年', '4年', '5年', '6年']
 const LS_KEY = 'jiji_master'

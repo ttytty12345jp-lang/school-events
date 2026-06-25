@@ -1,10 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { createClient } from '@supabase/supabase-js'
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
-const USE_SUPABASE = !!(SUPABASE_URL && SUPABASE_ANON_KEY)
-const supabase = USE_SUPABASE ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null
+import { supabase, USE_SUPABASE } from '../lib/supabase'
 
 export const NURSING_DAYS = ['月', '火', '水', '木', '金']
 export const NURSING_TEAMS = ['班1', '班2', '班3', '班4']

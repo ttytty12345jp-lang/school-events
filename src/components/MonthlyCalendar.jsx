@@ -1,37 +1,14 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { supabase, USE_SUPABASE } from '../lib/supabase'
 import { exportMonthlyExcel, downloadMonthlyTemplate, parseImportExcel } from '../utils/exportExcel'
 import { useHeaderControls } from '../HeaderControlsContext'
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
-const USE_SUPABASE = !!(SUPABASE_URL && SUPABASE_ANON_KEY)
-const supabase = USE_SUPABASE ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null
+import { DAYS_JA, ymdKey as toDateKey } from '../utils/date'
+import { loadSpanEvents, saveSpanEvents, getActiveSpans } from '../lib/spanEvents'
 
 const HIGHLIGHTS_TYPE = 'row_highlights'
-const SPAN_TYPE = 'span_events'
-const SPAN_DATE = 'span_events'
 const SPAN_COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#64748b']
 
-const DAYS_JA = ['日', '月', '火', '水', '木', '金', '土']
 const CATEGORIES = ['学校行事', '教職員関係行事', 'その他']
-
-async function loadSpanEvents() {
-  if (!USE_SUPABASE) {
-    try { return JSON.parse(localStorage.getItem('span_events') || '[]') } catch { return [] }
-  }
-  const { data } = await supabase.from('school_notices').select('content')
-    .eq('date', SPAN_DATE).eq('type', SPAN_TYPE).maybeSingle()
-  if (!data?.content) return []
-  try { return JSON.parse(data.content) } catch { return [] }
-}
-
-async function saveSpanEvents(list) {
-  const json = JSON.stringify(list)
-  if (!USE_SUPABASE) { localStorage.setItem('span_events', json); return }
-  await supabase.from('school_notices')
-    .upsert({ date: SPAN_DATE, type: SPAN_TYPE, content: json, updated_at: new Date().toISOString() }, { onConflict: 'date,type' })
-}
 
 function SpanEventModal({ span, onSave, onDelete, onClose }) {
   const [title, setTitle] = useState(span?.title || '')
@@ -82,9 +59,6 @@ function SpanEventModal({ span, onSave, onDelete, onClose }) {
   )
 }
 
-function toDateKey(y, m, d) {
-  return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
-}
 
 function sortedEvents(evs) {
   return [...evs].sort((a, b) => {
@@ -337,10 +311,6 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
 
   useEffect(() => { loadSpanEvents().then(setSpanEvents) }, [])
 
-  function getActiveSpans(dateKey) {
-    return spanEvents.filter(s => s.startDate <= dateKey && dateKey <= s.endDate)
-  }
-
   async function handleSaveSpan(entry) {
     const next = spanEvents.some(s => s.id === entry.id)
       ? spanEvents.map(s => s.id === entry.id ? entry : s)
@@ -561,7 +531,7 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
               const isSat = dow === 6
               const isWeekend = isSun || isSat
               const gray = isRowGray(dateKey, isWeekend)
-              const activeSpans = getActiveSpans(dateKey)
+              const activeSpans = getActiveSpans(spanEvents, dateKey)
               const BAR_W = 4, BAR_GAP = 2
               const spanStyle = activeSpans.length ? {
                 backgroundImage: activeSpans.map(s => `linear-gradient(${s.color},${s.color})`).join(','),

@@ -1,35 +1,11 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { supabase, USE_SUPABASE } from '../lib/supabase'
 import { useHeaderControls } from '../HeaderControlsContext'
 import MorningAgenda from './MorningAgenda'
+import { DAYS_JA, dateKey as toDateKey, monthKey } from '../utils/date'
+import { loadSpanEvents, getActiveSpans } from '../lib/spanEvents'
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
-const USE_SUPABASE = !!(SUPABASE_URL && SUPABASE_ANON_KEY)
-const supabase = USE_SUPABASE ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null
-
-const DAYS_JA = ['日', '月', '火', '水', '木', '金', '土']
 const HIGHLIGHTS_TYPE = 'row_highlights'
-const SPAN_TYPE = 'span_events'
-const SPAN_DATE = 'span_events'
-
-async function loadSpanEvents() {
-  if (!USE_SUPABASE) {
-    try { return JSON.parse(localStorage.getItem('span_events') || '[]') } catch { return [] }
-  }
-  const { data } = await supabase.from('school_notices').select('content')
-    .eq('date', SPAN_DATE).eq('type', SPAN_TYPE).maybeSingle()
-  if (!data?.content) return []
-  try { return JSON.parse(data.content) } catch { return [] }
-}
-
-function getActiveSpans(spanEvents, dateKey) {
-  return spanEvents.filter(s => s.startDate <= dateKey && dateKey <= s.endDate)
-}
-
-function monthKey(y, m) {
-  return `${y}-${String(m).padStart(2, '0')}`
-}
 
 const LEAVE_TYPES_LEFT  = ['年休', '時休', '前半休', '後半休', '職免', '育児']
 const LEAVE_TYPES_RIGHT = ['特休', '病休', '休職', '産休', '育休', '介護']
@@ -130,9 +106,6 @@ function LongLeaveModal({ leaveType, entry, onSave, onDelete, onClose }) {
 const ROOM_COUNT = 9
 const TRIP_COUNT = 7
 
-function toDateKey(d) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
 function dateFromKey(k) { return new Date(k + 'T00:00:00') }
 function navKey(key, delta) {
   const d = dateFromKey(key)
