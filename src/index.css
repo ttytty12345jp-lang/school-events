@@ -1526,6 +1526,39 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   .cell-event { font-size: 10px; }
   .annual-grid { grid-template-columns: 1fr; }
   .event-item-row input[type="time"] { width: 90px; }
+
+  /* ヘッダー：タブを縮小、コントロールは折り返し */
+  .header-tabs { flex-shrink: 1; overflow: hidden; }
+  .header-tab { font-size: 10px; padding: 3px 6px; }
+  .hc-row { flex-wrap: wrap; gap: 2px; }
+
+  /* 朝会記録簿：縦積み */
+  .ttv-layout { flex-direction: column; height: auto; min-height: 0; }
+  .ttv-left { flex: none; min-height: 0; }
+  .ttv-right { flex: none; min-height: 0; }
+  .ttv-left .ttv-panel:first-child,
+  .ttv-left .ttv-panel:last-child,
+  .ttv-right .ttv-panel:first-child,
+  .ttv-right .ttv-panel:last-child { flex: none; min-height: 120px; }
+
+  /* 朝会記録簿：高さ固定を解除 */
+  .ttv-wrap { height: auto; }
+
+  /* ホワイトボード：縦積み・高さ固定解除 */
+  .wb-wrap { height: auto; }
+  .wb-layout { grid-template-columns: 1fr; height: auto; }
+  .wb-left, .wb-right { overflow-x: auto; overflow-y: visible; min-height: 0; }
+
+  /* 月中行事：全列を1画面に収める */
+  .monthly-table-wrap { overflow-x: visible; }
+  .monthly-table { font-size: 10px; }
+  .monthly-table thead th { padding: 4px 2px; font-size: 9px; }
+  .monthly-table .col-date { width: 28px; padding-right: 2px; }
+  .monthly-table .col-day  { width: 16px; }
+  .monthly-table .col-cat  { min-width: 0; }
+  .col-cat-cell { padding: 2px 3px; }
+  /* ポップオーバーはみ出し解消 */
+  .cell-popover { width: 92vw; left: 0; right: auto; }
 }
 
 /* ── Sticky Notes ── */
