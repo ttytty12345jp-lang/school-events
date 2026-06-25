@@ -1715,6 +1715,13 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 
 /* 表アイテム */
 .sn-table-item { cursor: default; overflow: hidden; }
+.sn-table-handle {
+  display: flex; align-items: center; gap: 4px;
+  background: #f1f5f9; border-bottom: 1px solid #e2e8f0;
+  padding: 2px 4px; cursor: grab; user-select: none; flex-shrink: 0;
+}
+.sn-table-handle:active { cursor: grabbing; }
+.sn-table-handle-dots { color: #94a3b8; font-size: 12px; line-height: 1; }
 .sn-table-wrap { flex: 1; overflow: auto; padding: 4px; min-height: 0; }
 .sn-table { border-collapse: collapse; width: 100%; }
 .sn-table td { border: 1px solid #cbd5e1; padding: 0; }

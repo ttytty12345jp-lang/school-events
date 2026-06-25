@@ -202,17 +202,22 @@ function TableItem({ note, onUpdate, onDelete, onDuplicate, onDrag, onResize }) 
 
   return (
     <div className="sn-note sn-table-item" style={{ left: note.x, top: note.y, width: note.width, height: note.height, background: '#fff', zIndex: note.inPanel ? 1001 : 1002 }}
-      onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
-      onMouseDown={e => { if (!e.target.closest('.sn-resize') && !e.target.closest('.sn-toolbar') && !e.target.closest('input') && !e.target.closest('.sn-table-ctrl')) onDrag(e, note) }}>
-      <ItemToolbar hovered={hovered} inPanel={note.inPanel} onStore={() => onUpdate(note.id, { inPanel: true })} onDelete={onDelete} onDuplicate={onDuplicate}
-        extra={hovered ? (
-          <div className="sn-table-ctrl">
-            <button className="sn-btn" onClick={addRow} title="行追加">+行</button>
-            <button className="sn-btn" onClick={addCol} title="列追加">+列</button>
-            <button className="sn-btn" onClick={delRow} title="行削除">-行</button>
-            <button className="sn-btn" onClick={delCol} title="列削除">-列</button>
+      onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+      {/* ドラッグハンドルバー（常に掴める） */}
+      <div className="sn-table-handle" onMouseDown={e => onDrag(e, note)}>
+        <span className="sn-table-handle-dots">⠿</span>
+        {hovered && (
+          <div className="sn-table-ctrl" onMouseDown={e => e.stopPropagation()}>
+            <button className="sn-btn" onClick={addRow}>+行</button>
+            <button className="sn-btn" onClick={addCol}>+列</button>
+            <button className="sn-btn" onClick={delRow}>-行</button>
+            <button className="sn-btn" onClick={delCol}>-列</button>
+            {!note.inPanel && <button className="sn-btn" onClick={() => onUpdate(note.id, { inPanel: true })}>▶</button>}
+            <button className="sn-btn" onClick={onDuplicate}>⧉</button>
+            <button className="sn-btn sn-btn-del" onClick={onDelete}>×</button>
           </div>
-        ) : null} />
+        )}
+      </div>
       <div className="sn-table-wrap">
         <table className="sn-table">
           <tbody>
