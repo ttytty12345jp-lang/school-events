@@ -81,23 +81,54 @@ function NoteItem({ note, onUpdate, onDelete, onDuplicate, onDrag, onResize }) {
 }
 
 // ── リンクアイコン ─────────────────────────────────────────
-function faviconUrl(url) {
-  try { return `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=64` } catch { return '' }
+function iconUrl(url) {
+  try {
+    const host = new URL(url).hostname
+    if (host.includes('google.com')) {
+      if (host.includes('drive')) return 'https://ssl.gstatic.com/images/branding/product/2x/drive_2020q4_48dp.png'
+      if (host.includes('docs')) return 'https://ssl.gstatic.com/images/branding/product/2x/docs_2020q4_48dp.png'
+      if (host.includes('sheets')) return 'https://ssl.gstatic.com/images/branding/product/2x/sheets_2020q4_48dp.png'
+      if (host.includes('slides')) return 'https://ssl.gstatic.com/images/branding/product/2x/slides_2020q4_48dp.png'
+    }
+    return `https://www.google.com/s2/favicons?domain=${host}&sz=64`
+  } catch { return '' }
 }
 
-function LinkItem({ note, onUpdate, onDelete, onDuplicate, onDrag }) {
+function LinkItem({ note, onUpdate, onDelete, onDuplicate }) {
   const [hovered, setHovered] = useState(false)
   const [editingLabel, setEditingLabel] = useState(false)
   const [editingUrl, setEditingUrl] = useState(false)
   const [label, setLabel] = useState(note.label)
   const [url, setUrl] = useState(note.url)
+  const draggedRef = useRef(false)
 
-  const iconSrc = faviconUrl(note.url)
+  function handleMouseDown(e) {
+    if (e.button !== 0) return
+    if (e.target.closest('.sn-icon-toolbar') || e.target.closest('input')) return
+    e.preventDefault()
+    draggedRef.current = false
+    const sx = e.clientX - (note.x || 0), sy = e.clientY - (note.y || 0)
+    function onMove(ev) {
+      draggedRef.current = true
+      onUpdate(note.id, { x: ev.clientX - sx, y: ev.clientY - sy, inPanel: false })
+    }
+    function onUp() {
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+  }
+
+  function handleIconClick(e) {
+    if (draggedRef.current) { e.preventDefault(); return }
+    window.open(note.url, '_blank', 'noreferrer')
+  }
 
   return (
     <div className="sn-icon-item" style={{ left: note.x, top: note.y, zIndex: note.inPanel ? 1001 : 1002 }}
       onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
-      onMouseDown={e => { if (!e.target.closest('.sn-icon-toolbar') && !e.target.closest('.sn-link-edit')) onDrag(e, note) }}>
+      onMouseDown={handleMouseDown}>
 
       {/* ホバー時ミニツールバー */}
       <div className={`sn-icon-toolbar${hovered ? ' sn-icon-toolbar-visible' : ''}`}>
@@ -107,12 +138,12 @@ function LinkItem({ note, onUpdate, onDelete, onDuplicate, onDrag }) {
       </div>
 
       {/* アイコン本体 */}
-      <a className="sn-icon-link" href={note.url} target="_blank" rel="noreferrer"
-        onMouseDown={e => e.stopPropagation()}>
-        <img className="sn-icon-img" src={iconSrc} alt={note.label} onError={e => { e.target.src = ''; e.target.style.background = '#e2e8f0' }} />
-      </a>
+      <div className="sn-icon-link" onClick={handleIconClick} title={note.url}>
+        <img className="sn-icon-img" src={iconUrl(note.url)} alt={note.label}
+          onError={e => { e.target.src = ''; e.target.style.background = '#e2e8f0' }} />
+      </div>
 
-      {/* ラベル（ダブルクリックで編集） */}
+      {/* ラベル */}
       {editingLabel
         ? <input className="sn-icon-label-edit" autoFocus value={label}
             onChange={e => setLabel(e.target.value)}
@@ -121,7 +152,7 @@ function LinkItem({ note, onUpdate, onDelete, onDuplicate, onDrag }) {
             onMouseDown={e => e.stopPropagation()} />
         : <div className="sn-icon-label" onDoubleClick={() => setEditingLabel(true)}>{note.label}</div>}
 
-      {/* URL編集ポップアップ */}
+      {/* URL編集 */}
       {editingUrl && (
         <input className="sn-icon-url-edit" autoFocus value={url}
           onChange={e => setUrl(e.target.value)}
