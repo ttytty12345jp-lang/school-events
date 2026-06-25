@@ -27,4 +27,9 @@ export default defineConfig({
   define: {
     __BUILD_ID__: JSON.stringify(BUILD_ID),
   },
+  build: {
+    // 古いブラウザでもメディアクエリが解釈されるよう従来構文(max-width)で出力させる
+    // （既定だと @media (width<=600px) という新しい範囲構文に最適化されてしまう）
+    cssTarget: 'chrome80',
+  },
 })
