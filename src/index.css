@@ -1548,9 +1548,10 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   /* 朝会記録簿：高さ固定を解除 */
   .ttv-wrap { height: auto; }
 
-  /* 朝会記録簿の行事予定：文字を日付くらいまで小さく */
-  .upcoming-day { font-size: 11px; }
-  .upcoming-day-label { font-size: 11px; min-width: 60px; }
+  /* 朝会記録簿の行事予定：文字をさらに小さく */
+  .upcoming-day { font-size: 8px; }
+  .upcoming-day-label { font-size: 8px; min-width: 48px; }
+  .upcoming-time { font-size: 7px; }
 
 /* 月中行事：全列を1画面に収める */
   .monthly-table-wrap { overflow-x: hidden; }
