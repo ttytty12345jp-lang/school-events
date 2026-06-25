@@ -1546,12 +1546,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   /* 朝会記録簿：高さ固定を解除 */
   .ttv-wrap { height: auto; }
 
-  /* ホワイトボード：縦積み・高さ固定解除 */
-  .wb-wrap { height: auto; }
-  .wb-layout { grid-template-columns: 1fr; height: auto; }
-  .wb-left, .wb-right { overflow-x: auto; overflow-y: visible; min-height: 0; }
-
-  /* 月中行事：全列を1画面に収める */
+/* 月中行事：全列を1画面に収める */
   .monthly-table-wrap { overflow-x: hidden; }
   .monthly-table { font-size: 8px; table-layout: fixed; }
   .monthly-table thead th { padding: 3px 2px; font-size: 8px; }
