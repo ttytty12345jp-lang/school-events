@@ -1587,9 +1587,13 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   .wb-left .wb-section:nth-child(2) .wb-row { height: 26px; }
   .wb-table { font-size: 10px; }
   .wb-th { font-size: 9px; padding: 2px 1px; }
-  .wb-time-input { font-size: 11px; }
+  /* 時刻欄：デスクトップの高詳細度ルール(16px/幅60px)を同詳細度で上書きして列内に収める */
+  .wb-left .wb-section:nth-child(1) .wb-time-input,
+  .wb-left .wb-section:nth-child(2) .wb-time-input { font-size: 10px; height: 22px; width: 38px; padding: 0; }
+  .wb-left .wb-section:nth-child(1) .wb-time-range,
+  .wb-left .wb-section:nth-child(2) .wb-time-range { height: 26px; }
   .wb-left .wb-section:nth-child(1) .wb-tilde,
-  .wb-left .wb-section:nth-child(2) .wb-tilde { font-size: 10px; }
+  .wb-left .wb-section:nth-child(2) .wb-tilde { font-size: 9px; margin: 0; }
 }
 
 /* ── Sticky Notes ── */
