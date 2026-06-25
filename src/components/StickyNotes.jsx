@@ -138,7 +138,7 @@ function LinkItem({ note, onUpdate, onDelete }) {
     e.stopPropagation(); e.preventDefault()
     const startSz = note.width || 72, startX = e.clientX
     function onMove(ev) {
-      onUpdate(note.id, { width: Math.max(40, Math.min(200, startSz + ev.clientX - startX)) })
+      onUpdate(note.id, { width: Math.max(16, Math.min(200, startSz + ev.clientX - startX)) })
     }
     function onUp() {
       document.removeEventListener('mousemove', onMove)
