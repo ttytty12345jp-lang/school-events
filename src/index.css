@@ -1527,9 +1527,11 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   .annual-grid { grid-template-columns: 1fr; }
   .event-item-row input[type="time"] { width: 90px; }
 
-  /* ヘッダー：タブを縮小、コントロールは折り返し */
-  .header-tabs { flex-shrink: 1; overflow: hidden; }
+  /* ヘッダー：2行に折り返し */
+  .app-header { height: auto; flex-wrap: wrap; padding: 4px 8px; gap: 4px; overflow: visible; }
+  .header-tabs { flex-wrap: wrap; gap: 2px; width: 100%; }
   .header-tab { font-size: 10px; padding: 3px 6px; }
+  .header-controls { margin-left: 0; width: 100%; overflow: visible; }
   .hc-row { flex-wrap: wrap; gap: 2px; }
 
   /* 朝会記録簿：縦積み */
