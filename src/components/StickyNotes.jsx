@@ -12,10 +12,11 @@ function newNote(inPanel = true) {
   return { id: crypto.randomUUID(), type: 'note', text: '', x: 200, y: 200, width: 180, height: 140, color: COLORS[0], fontSize: 14, inPanel }
 }
 function newLink(inPanel = true) {
-  return { id: crypto.randomUUID(), type: 'link', label: 'Google Drive', url: 'https://drive.google.com', x: 200, y: 200, inPanel }
+  return { id: crypto.randomUUID(), type: 'link', label: 'Google Drive', url: 'https://drive.google.com', x: 200, y: 200, width: 24, inPanel }
 }
 function newTable(inPanel = true) {
-  return { id: crypto.randomUUID(), type: 'table', cells: [['','',''],['','',''],['','','']], x: 200, y: 200, width: 240, height: 120, inPanel }
+  const cols = 4, rows = 4
+  return { id: crypto.randomUUID(), type: 'table', cells: Array.from({length: rows}, () => Array(cols).fill('')), x: 200, y: 200, width: 320, height: 160, inPanel }
 }
 
 // ── ドラッグ＆リサイズ共通フック ──────────────────────────
@@ -45,7 +46,7 @@ function ItemToolbar({ hovered, inPanel, onStore, onDelete, onDuplicate, extra }
     <div className={`sn-toolbar${hovered ? ' sn-toolbar-visible' : ''}`} onMouseDown={e => e.stopPropagation()}>
       {extra}
       <div className="sn-actions">
-        {!inPanel && <button className="sn-btn" title="パネルにしまう" onClick={onStore}>◀</button>}
+        {!inPanel && <button className="sn-btn" title="パネルにしまう" onClick={onStore}>▶</button>}
         <button className="sn-btn" title="複製" onClick={onDuplicate}>⧉</button>
         <button className="sn-btn sn-btn-del" title="削除" onClick={onDelete}>×</button>
       </div>
@@ -160,7 +161,7 @@ function LinkItem({ note, onUpdate, onDelete }) {
 
       {/* ツールバー（常にスペース確保、ホバー時のみ表示） */}
       <div className="sn-icon-toolbar" style={{ opacity: hovered ? 1 : 0, pointerEvents: hovered ? 'all' : 'none' }}>
-        {!note.inPanel && <button className="sn-btn" onClick={() => onUpdate(note.id, { inPanel: true })}>◀</button>}
+        {!note.inPanel && <button className="sn-btn" onClick={() => onUpdate(note.id, { inPanel: true })}>▶</button>}
         <button className="sn-btn" onClick={() => { setUrlDraft(note.url); setEditingUrl(true) }}>✎</button>
         <button className="sn-btn sn-btn-del" onClick={onDelete}>×</button>
       </div>
