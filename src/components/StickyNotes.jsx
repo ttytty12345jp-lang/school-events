@@ -81,15 +81,27 @@ function NoteItem({ note, onUpdate, onDelete, onDuplicate, onDrag, onResize }) {
 }
 
 // ── リンクアイコン ─────────────────────────────────────────
-const DRIVE_SVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 87.3 78'%3E%3Cpath d='M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3L27.5 53H0c0 1.55.4 3.1 1.2 4.5z' fill='%230066da'/%3E%3Cpath d='M43.65 25L29.9 1.2C28.55 2 27.4 3.1 26.6 4.5L1.2 47.5C.4 48.9 0 50.45 0 52h27.5z' fill='%2300ac47'/%3E%3Cpath d='M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5H59.55z' fill='%23ea4335'/%3E%3Cpath d='M43.65 25L57.4 1.2C56.05.4 54.5 0 52.9 0H34.4c-1.6 0-3.15.45-4.5 1.2z' fill='%2300832d'/%3E%3Cpath d='M59.8 52H27.5L13.75 75.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z' fill='%232684fc'/%3E%3Cpath d='M73.4 26.5L60.75 4.7c-1.35-.8-2.9-1.2-4.5-1.2h-.85c1.6 0 3.15.45 4.5 1.2L72.55 26.5 87.1 52.5c.8-1.4 1.2-2.95 1.2-4.5 0-1.55-.4-3.1-1.2-4.5z' fill='%23ffba00'/%3E%3C/svg%3E`
+function DriveIcon({ size }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 87.3 78" width={size} height={size} style={{ display: 'block' }}>
+      <path fill="#0066da" d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3L27.5 53H0c0 1.55.4 3.1 1.2 4.5z"/>
+      <path fill="#00ac47" d="M43.65 25L29.9 1.2C28.55 2 27.4 3.1 26.6 4.5L1.2 47.5C.4 48.9 0 50.45 0 52h27.5z"/>
+      <path fill="#ea4335" d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5H59.55z"/>
+      <path fill="#00832d" d="M43.65 25L57.4 1.2C56.05.4 54.5 0 52.9 0H34.4c-1.6 0-3.15.45-4.5 1.2z"/>
+      <path fill="#2684fc" d="M59.8 52H27.5L13.75 75.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z"/>
+      <path fill="#ffba00" d="M43.65 25l16.15 27H87.3c0-1.55-.4-3.1-1.2-4.5L60.75 4.7c-1.35-.8-2.9-1.2-4.5-1.2h-.85z"/>
+    </svg>
+  )
+}
 
-function iconSrc(url) {
+function FaviconIcon({ url, size }) {
   try {
     const host = new URL(url).hostname
-    if (host.includes('drive.google')) return DRIVE_SVG
-    return `https://www.google.com/s2/favicons?domain=${host}&sz=64`
-  } catch { return '' }
+    return <img src={`https://www.google.com/s2/favicons?domain=${host}&sz=64`} alt="" width={size} height={size} style={{ display: 'block', objectFit: 'contain' }} />
+  } catch { return null }
 }
+
+const TOOLBAR_H = 28
 
 function LinkItem({ note, onUpdate, onDelete }) {
   const [hovered, setHovered] = useState(false)
@@ -97,16 +109,21 @@ function LinkItem({ note, onUpdate, onDelete }) {
   const [urlDraft, setUrlDraft] = useState(note.url)
   const draggedRef = useRef(false)
   const sz = note.width || 72
+  const isDrive = note.url.includes('drive.google')
 
+  // ドラッグ：ツールバー含む外枠全体で受付、ツールバーボタンクリックは除外
   function handleMouseDown(e) {
     if (e.button !== 0) return
-    if (e.target.closest('.sn-icon-toolbar') || e.target.closest('input')) return
+    if (e.target.closest('button') || e.target.closest('input')) return
     e.preventDefault()
     draggedRef.current = false
-    const sx = e.clientX - (note.x || 0), sy = e.clientY - (note.y || 0)
+    // note.y はアイコン上端。外枠はアイコン上端 - TOOLBAR_H
+    const outerTop = (note.y || 0) - TOOLBAR_H
+    const sx = e.clientX - (note.x || 0), sy = e.clientY - outerTop
     function onMove(ev) {
       draggedRef.current = true
-      onUpdate(note.id, { x: ev.clientX - sx, y: ev.clientY - sy, inPanel: false })
+      const newOuterTop = ev.clientY - sy
+      onUpdate(note.id, { x: ev.clientX - sx, y: newOuterTop + TOOLBAR_H, inPanel: false })
     }
     function onUp() {
       document.removeEventListener('mousemove', onMove)
@@ -117,14 +134,10 @@ function LinkItem({ note, onUpdate, onDelete }) {
   }
 
   function handleResizeDown(e) {
-    e.stopPropagation()
-    e.preventDefault()
-    const startSz = note.width || 72
-    const startX = e.clientX
+    e.stopPropagation(); e.preventDefault()
+    const startSz = note.width || 72, startX = e.clientX
     function onMove(ev) {
-      const delta = ev.clientX - startX
-      const next = Math.max(40, Math.min(200, startSz + delta))
-      onUpdate(note.id, { width: next })
+      onUpdate(note.id, { width: Math.max(40, Math.min(200, startSz + ev.clientX - startX)) })
     }
     function onUp() {
       document.removeEventListener('mousemove', onMove)
@@ -134,29 +147,28 @@ function LinkItem({ note, onUpdate, onDelete }) {
     document.addEventListener('mouseup', onUp)
   }
 
-  function handleIconClick(e) {
-    if (draggedRef.current) return
-    window.open(note.url, '_blank', 'noreferrer')
+  function handleIconClick() {
+    if (!draggedRef.current) window.open(note.url, '_blank', 'noreferrer')
   }
 
+  // 外枠：ツールバー(TOOLBAR_H) + アイコン(sz) を1つのdivで囲み当たり判定を統一
   return (
-    <div className="sn-icon-item" style={{ left: note.x, top: note.y, width: sz, height: sz, zIndex: note.inPanel ? 1001 : 1002 }}
+    <div className="sn-icon-wrap"
+      style={{ left: note.x, top: (note.y || 0) - TOOLBAR_H, width: sz, height: sz + TOOLBAR_H, zIndex: note.inPanel ? 1001 : 1002 }}
       onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
       onMouseDown={handleMouseDown}>
 
-      {/* ツールバー */}
-      {hovered && (
-        <div className="sn-icon-toolbar" onMouseDown={e => e.stopPropagation()}>
-          {!note.inPanel && <button className="sn-btn" title="しまう" onMouseDown={e => e.stopPropagation()} onClick={() => onUpdate(note.id, { inPanel: true })}>◀</button>}
-          <button className="sn-btn" title="URL編集" onMouseDown={e => e.stopPropagation()} onClick={() => { setUrlDraft(note.url); setEditingUrl(true) }}>✎</button>
-          <button className="sn-btn sn-btn-del" title="削除" onMouseDown={e => e.stopPropagation()} onClick={onDelete}>×</button>
-        </div>
-      )}
+      {/* ツールバー（常にスペース確保、ホバー時のみ表示） */}
+      <div className="sn-icon-toolbar" style={{ opacity: hovered ? 1 : 0, pointerEvents: hovered ? 'all' : 'none' }}>
+        {!note.inPanel && <button className="sn-btn" onClick={() => onUpdate(note.id, { inPanel: true })}>◀</button>}
+        <button className="sn-btn" onClick={() => { setUrlDraft(note.url); setEditingUrl(true) }}>✎</button>
+        <button className="sn-btn sn-btn-del" onClick={onDelete}>×</button>
+      </div>
 
-      {/* アイコン画像 */}
-      <img className="sn-icon-img" src={iconSrc(note.url)} alt="" onClick={handleIconClick}
-        style={{ width: sz, height: sz, borderRadius: sz * 0.15 }}
-        onError={e => { e.target.src = ''; e.target.style.background = '#e2e8f0' }} />
+      {/* アイコン本体 */}
+      <div className="sn-icon-body" style={{ width: sz, height: sz, borderRadius: sz * 0.15 }} onClick={handleIconClick}>
+        {isDrive ? <DriveIcon size={sz} /> : <FaviconIcon url={note.url} size={sz} />}
+      </div>
 
       {/* リサイズハンドル */}
       {hovered && <div className="sn-icon-resize" onMouseDown={handleResizeDown} />}

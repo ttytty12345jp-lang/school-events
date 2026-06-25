@@ -1658,45 +1658,48 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .sn-panel-add-btns .sn-btn { flex: 1; font-size: 10px; padding: 2px 4px; }
 
 /* リンクアイコン */
-.sn-icon-item {
+.sn-icon-wrap {
   position: fixed;
   cursor: grab;
   user-select: none;
-}
-.sn-icon-item:active { cursor: grabbing; }
-.sn-icon-toolbar {
-  position: absolute;
-  bottom: calc(100% + 4px);
-  left: 50%;
-  transform: translateX(-50%);
   display: flex;
-  gap: 2px;
-  background: rgba(30,41,59,0.92);
-  border-radius: 5px;
-  padding: 3px 5px;
-  z-index: 9999;
-  white-space: nowrap;
-  pointer-events: all;
+  flex-direction: column;
+  align-items: center;
 }
-.sn-icon-img {
-  display: block;
-  object-fit: contain;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.22);
+.sn-icon-wrap:active { cursor: grabbing; }
+.sn-icon-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  height: 26px;
+  background: rgba(30,41,59,0.88);
+  border-radius: 5px;
+  padding: 2px 5px;
+  width: fit-content;
+  transition: opacity 0.1s;
+}
+.sn-icon-body {
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.22);
   cursor: pointer;
+  flex-shrink: 0;
 }
 .sn-icon-resize {
   position: absolute;
-  bottom: -4px;
-  right: -4px;
+  bottom: 0;
+  right: 0;
   width: 14px;
   height: 14px;
-  background: rgba(30,41,59,0.7);
-  border-radius: 3px;
+  background: rgba(30,41,59,0.65);
+  border-radius: 3px 0 3px 0;
   cursor: se-resize;
-  z-index: 10;
 }
 .sn-icon-url-edit {
-  position: fixed;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
   width: 220px;
   font-size: 12px;
   border: 1px solid #93c5fd;
@@ -1706,9 +1709,6 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
   z-index: 10000;
   outline: none;
-  transform: translateX(-50%) translateY(calc(100% + 6px));
-  left: 50%;
-  top: 100%;
 }
 
 /* 表アイテム */
