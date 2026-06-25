@@ -1182,8 +1182,10 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   display: flex;
   flex-direction: column;
 }
-.wb-left .wb-section:nth-child(1),
-.wb-left .wb-section:nth-child(2) { flex: 1; }
+/* 行数に比例して高さを配分（特別教室9行 : 出張7行）。
+   同じ flex:1 だと行数の多い特別教室の最終行がクリップされるため。 */
+.wb-left .wb-section:nth-child(1) { flex: 9 1 0; min-height: 0; }
+.wb-left .wb-section:nth-child(2) { flex: 7 1 0; min-height: 0; }
 .wb-left .wb-section:nth-child(3) { flex: none; }
 
 .wb-left .wb-section:nth-child(1) .wb-row,
