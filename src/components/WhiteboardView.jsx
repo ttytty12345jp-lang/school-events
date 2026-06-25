@@ -562,13 +562,23 @@ export default function WhiteboardView({ events, db = {} }) {
     })
   }, [roomReservations, selectedKey])
 
-  // アクティブ予約 + 空行で ROOM_COUNT 行埋める
+  // ROOM_COUNT 個の固定スロットに、各予約を slot 位置で配置（入力した段に留める）
   const displayedRooms = useMemo(() => {
-    const empties = Math.max(0, ROOM_COUNT - activeRoomReservations.length)
-    return [
-      ...activeRoomReservations,
-      ...Array.from({ length: empties }, () => ({ id: null, entryDate: selectedKey, place: '', month: '', day: '', dow: '', timeStart: '', timeEnd: '', users: '', purpose: '' }))
-    ]
+    const slots = Array.from({ length: ROOM_COUNT }, (_, i) => ({
+      id: null, entryDate: selectedKey, slot: i,
+      place: '', month: '', day: '', dow: '', timeStart: '', timeEnd: '', users: '', purpose: '',
+    }))
+    const overflow = []
+    activeRoomReservations.forEach(r => {
+      const s = Number.isInteger(r.slot) ? r.slot : -1
+      if (s >= 0 && s < ROOM_COUNT && slots[s].id === null) slots[s] = r
+      else overflow.push(r) // slot 未設定（旧データ）や衝突分は空きへ
+    })
+    overflow.forEach(r => {
+      const free = slots.findIndex(x => x.id === null)
+      if (free >= 0) slots[free] = r
+    })
+    return slots
   }, [activeRoomReservations, selectedKey])
 
   function scheduleRoomResSave(next) {
@@ -589,6 +599,7 @@ export default function WhiteboardView({ events, db = {} }) {
     } else {
       updated.id = crypto.randomUUID()
       updated.entryDate = selectedKey
+      updated.slot = i // 入力した段の位置を保持
       next = [...roomReservations, updated]
     }
     scheduleRoomResSave(next)
@@ -694,7 +705,7 @@ export default function WhiteboardView({ events, db = {} }) {
                   const goTo = field => () =>
                     document.querySelector(`input[data-room-cell="${i}-${field}"]`)?.focus()
                   return (
-                  <tr key={i} className="wb-row">
+                  <tr key={r.id || `slot-${i}`} className="wb-row">
                     <td className="wb-td">
                       <EditCell value={r.place} onChange={v => updateRoom(i, 'place', v)} options={db.rooms || []} onNext={goTo('month')} cellKey={`${i}-place`} />
                     </td>
