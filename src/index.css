@@ -1576,9 +1576,20 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   .wb-left .wb-section:nth-child(1),
   .wb-left .wb-section:nth-child(2),
   .wb-left .wb-section:nth-child(3) { flex: none; overflow: visible; }
-  /* 横に広い表は横スクロールで（列・行は崩さない） */
-  .wb-section { overflow-x: auto; }
-  .wb-table { min-width: 520px; }
+  /* 全列を画面幅に収める（固定幅・横スクロールをやめる）。
+     セル内の文字は自動縮小機能で各列に合わせて縮む */
+  .wb-section { overflow-x: hidden; }
+  .wb-table { min-width: 0; width: 100%; }
+  /* 大きい固定文字・行高をスマホ用に縮小（特別教室・出張） */
+  .wb-left .wb-section:nth-child(1) .wb-input,
+  .wb-left .wb-section:nth-child(2) .wb-input { font-size: 12px; height: 26px; line-height: 26px; padding-left: 2px; }
+  .wb-left .wb-section:nth-child(1) .wb-row,
+  .wb-left .wb-section:nth-child(2) .wb-row { height: 26px; }
+  .wb-table { font-size: 10px; }
+  .wb-th { font-size: 9px; padding: 2px 1px; }
+  .wb-time-input { font-size: 11px; }
+  .wb-left .wb-section:nth-child(1) .wb-tilde,
+  .wb-left .wb-section:nth-child(2) .wb-tilde { font-size: 10px; }
 }
 
 /* ── Sticky Notes ── */
