@@ -203,7 +203,7 @@ function TableItem({ note, onUpdate, onDelete, onDuplicate, onDrag, onResize }) 
   return (
     <div className="sn-note sn-table-item" style={{ left: note.x, top: note.y, width: note.width, height: note.height, background: '#fff', zIndex: note.inPanel ? 1001 : 1002 }}
       onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
-      onMouseDown={e => { if (!e.target.closest('.sn-resize') && !e.target.closest('.sn-toolbar') && !e.target.closest('table') && !e.target.closest('.sn-table-ctrl')) onDrag(e, note) }}>
+      onMouseDown={e => { if (!e.target.closest('.sn-resize') && !e.target.closest('.sn-toolbar') && !e.target.closest('input') && !e.target.closest('.sn-table-ctrl')) onDrag(e, note) }}>
       <ItemToolbar hovered={hovered} inPanel={note.inPanel} onStore={() => onUpdate(note.id, { inPanel: true })} onDelete={onDelete} onDuplicate={onDuplicate}
         extra={hovered ? (
           <div className="sn-table-ctrl">
