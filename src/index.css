@@ -1673,9 +1673,11 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   justify-content: center;
   gap: 2px;
   height: 26px;
-  background: rgba(30,41,59,0.88);
+  background: rgba(255,255,255,0.95);
+  border: 1px solid #cbd5e1;
   border-radius: 5px;
   padding: 2px 5px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
   width: fit-content;
   transition: opacity 0.1s;
 }
