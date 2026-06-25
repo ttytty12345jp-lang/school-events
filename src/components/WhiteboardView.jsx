@@ -845,7 +845,7 @@ export default function WhiteboardView({ events, db = {} }) {
                   onChange={e => updateTeamToday(e.target.value)}
                   placeholder="□"
                 />
-                <span className="wb-duty-label">班　看護当番</span>
+                <span className="wb-duty-label">班　当番</span>
                 <EditCell value={data.dutyToday} onChange={v => updateField('dutyToday', v)}
                   placeholder="" className="wb-duty-input" listId="wb-duty-today-list" />
               </span>
@@ -876,7 +876,7 @@ export default function WhiteboardView({ events, db = {} }) {
                   onChange={e => updateTeamTomorrow(e.target.value)}
                   placeholder="□"
                 />
-                <span className="wb-duty-label">班　看護当番</span>
+                <span className="wb-duty-label">班　当番</span>
                 <EditCell value={data.dutyTomorrow} onChange={v => updateField('dutyTomorrow', v)}
                   placeholder="" className="wb-duty-input" listId="wb-duty-tomorrow-list" />
               </span>
