@@ -81,26 +81,22 @@ function NoteItem({ note, onUpdate, onDelete, onDuplicate, onDrag, onResize }) {
 }
 
 // ── リンクアイコン ─────────────────────────────────────────
-function iconUrl(url) {
+const DRIVE_SVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 87.3 78'%3E%3Cpath d='M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3L27.5 53H0c0 1.55.4 3.1 1.2 4.5z' fill='%230066da'/%3E%3Cpath d='M43.65 25L29.9 1.2C28.55 2 27.4 3.1 26.6 4.5L1.2 47.5C.4 48.9 0 50.45 0 52h27.5z' fill='%2300ac47'/%3E%3Cpath d='M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5H59.55z' fill='%23ea4335'/%3E%3Cpath d='M43.65 25L57.4 1.2C56.05.4 54.5 0 52.9 0H34.4c-1.6 0-3.15.45-4.5 1.2z' fill='%2300832d'/%3E%3Cpath d='M59.8 52H27.5L13.75 75.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z' fill='%232684fc'/%3E%3Cpath d='M73.4 26.5L60.75 4.7c-1.35-.8-2.9-1.2-4.5-1.2h-.85c1.6 0 3.15.45 4.5 1.2L72.55 26.5 87.1 52.5c.8-1.4 1.2-2.95 1.2-4.5 0-1.55-.4-3.1-1.2-4.5z' fill='%23ffba00'/%3E%3C/svg%3E`
+
+function iconSrc(url) {
   try {
     const host = new URL(url).hostname
-    if (host.includes('google.com')) {
-      if (host.includes('drive')) return 'https://ssl.gstatic.com/images/branding/product/2x/drive_2020q4_48dp.png'
-      if (host.includes('docs')) return 'https://ssl.gstatic.com/images/branding/product/2x/docs_2020q4_48dp.png'
-      if (host.includes('sheets')) return 'https://ssl.gstatic.com/images/branding/product/2x/sheets_2020q4_48dp.png'
-      if (host.includes('slides')) return 'https://ssl.gstatic.com/images/branding/product/2x/slides_2020q4_48dp.png'
-    }
+    if (host.includes('drive.google')) return DRIVE_SVG
     return `https://www.google.com/s2/favicons?domain=${host}&sz=64`
   } catch { return '' }
 }
 
-function LinkItem({ note, onUpdate, onDelete, onDuplicate }) {
+function LinkItem({ note, onUpdate, onDelete }) {
   const [hovered, setHovered] = useState(false)
-  const [editingLabel, setEditingLabel] = useState(false)
   const [editingUrl, setEditingUrl] = useState(false)
-  const [label, setLabel] = useState(note.label)
-  const [url, setUrl] = useState(note.url)
+  const [urlDraft, setUrlDraft] = useState(note.url)
   const draggedRef = useRef(false)
+  const sz = note.width || 72
 
   function handleMouseDown(e) {
     if (e.button !== 0) return
@@ -120,43 +116,56 @@ function LinkItem({ note, onUpdate, onDelete, onDuplicate }) {
     document.addEventListener('mouseup', onUp)
   }
 
+  function handleResizeDown(e) {
+    e.stopPropagation()
+    e.preventDefault()
+    const startSz = note.width || 72
+    const startX = e.clientX
+    function onMove(ev) {
+      const delta = ev.clientX - startX
+      const next = Math.max(40, Math.min(200, startSz + delta))
+      onUpdate(note.id, { width: next })
+    }
+    function onUp() {
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+  }
+
   function handleIconClick(e) {
-    if (draggedRef.current) { e.preventDefault(); return }
+    if (draggedRef.current) return
     window.open(note.url, '_blank', 'noreferrer')
   }
 
   return (
-    <div className="sn-icon-item" style={{ left: note.x, top: note.y, zIndex: note.inPanel ? 1001 : 1002 }}
+    <div className="sn-icon-item" style={{ left: note.x, top: note.y, width: sz, height: sz, zIndex: note.inPanel ? 1001 : 1002 }}
       onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
       onMouseDown={handleMouseDown}>
 
-      {/* ホバー時ミニツールバー */}
-      <div className={`sn-icon-toolbar${hovered ? ' sn-icon-toolbar-visible' : ''}`}>
-        {!note.inPanel && <button className="sn-btn" title="しまう" onClick={() => onUpdate(note.id, { inPanel: true })}>◀</button>}
-        <button className="sn-btn" title="URL編集" onClick={() => setEditingUrl(true)}>✎</button>
-        <button className="sn-btn sn-btn-del" title="削除" onClick={onDelete}>×</button>
-      </div>
+      {/* ツールバー */}
+      {hovered && (
+        <div className="sn-icon-toolbar" onMouseDown={e => e.stopPropagation()}>
+          {!note.inPanel && <button className="sn-btn" title="しまう" onMouseDown={e => e.stopPropagation()} onClick={() => onUpdate(note.id, { inPanel: true })}>◀</button>}
+          <button className="sn-btn" title="URL編集" onMouseDown={e => e.stopPropagation()} onClick={() => { setUrlDraft(note.url); setEditingUrl(true) }}>✎</button>
+          <button className="sn-btn sn-btn-del" title="削除" onMouseDown={e => e.stopPropagation()} onClick={onDelete}>×</button>
+        </div>
+      )}
 
-      {/* アイコン本体 */}
-      <div className="sn-icon-link" onClick={handleIconClick} title={note.url}>
-        <img className="sn-icon-img" src={iconUrl(note.url)} alt={note.label}
-          onError={e => { e.target.src = ''; e.target.style.background = '#e2e8f0' }} />
-      </div>
+      {/* アイコン画像 */}
+      <img className="sn-icon-img" src={iconSrc(note.url)} alt="" onClick={handleIconClick}
+        style={{ width: sz, height: sz, borderRadius: sz * 0.15 }}
+        onError={e => { e.target.src = ''; e.target.style.background = '#e2e8f0' }} />
 
-      {/* ラベル */}
-      {editingLabel
-        ? <input className="sn-icon-label-edit" autoFocus value={label}
-            onChange={e => setLabel(e.target.value)}
-            onBlur={() => { onUpdate(note.id, { label }); setEditingLabel(false) }}
-            onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }}
-            onMouseDown={e => e.stopPropagation()} />
-        : <div className="sn-icon-label" onDoubleClick={() => setEditingLabel(true)}>{note.label}</div>}
+      {/* リサイズハンドル */}
+      {hovered && <div className="sn-icon-resize" onMouseDown={handleResizeDown} />}
 
       {/* URL編集 */}
       {editingUrl && (
-        <input className="sn-icon-url-edit" autoFocus value={url}
-          onChange={e => setUrl(e.target.value)}
-          onBlur={() => { onUpdate(note.id, { url }); setEditingUrl(false) }}
+        <input className="sn-icon-url-edit" autoFocus value={urlDraft}
+          onChange={e => setUrlDraft(e.target.value)}
+          onBlur={() => { onUpdate(note.id, { url: urlDraft }); setEditingUrl(false) }}
           onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }}
           onMouseDown={e => e.stopPropagation()} />
       )}
