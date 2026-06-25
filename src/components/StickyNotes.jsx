@@ -12,7 +12,7 @@ function newNote(inPanel = true) {
   return { id: crypto.randomUUID(), type: 'note', text: '', x: 200, y: 200, width: 180, height: 140, color: COLORS[0], fontSize: 14, inPanel }
 }
 function newLink(inPanel = true) {
-  return { id: crypto.randomUUID(), type: 'link', label: 'Google Drive', url: 'https://drive.google.com', x: 200, y: 200, width: 200, height: 80, inPanel }
+  return { id: crypto.randomUUID(), type: 'link', label: 'Google Drive', url: 'https://drive.google.com', x: 200, y: 200, inPanel }
 }
 function newTable(inPanel = true) {
   return { id: crypto.randomUUID(), type: 'table', cells: [['','',''],['','',''],['','','']], x: 200, y: 200, width: 240, height: 120, inPanel }
@@ -80,39 +80,55 @@ function NoteItem({ note, onUpdate, onDelete, onDuplicate, onDrag, onResize }) {
   )
 }
 
-// ── リンクアイテム ─────────────────────────────────────────
-const DRIVE_ICON = 'https://ssl.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png'
+// ── リンクアイコン ─────────────────────────────────────────
+function faviconUrl(url) {
+  try { return `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=64` } catch { return '' }
+}
 
-function LinkItem({ note, onUpdate, onDelete, onDuplicate, onDrag, onResize }) {
+function LinkItem({ note, onUpdate, onDelete, onDuplicate, onDrag }) {
   const [hovered, setHovered] = useState(false)
   const [editingLabel, setEditingLabel] = useState(false)
   const [editingUrl, setEditingUrl] = useState(false)
   const [label, setLabel] = useState(note.label)
   const [url, setUrl] = useState(note.url)
 
-  const isDrive = url.includes('drive.google') || url.includes('docs.google') || url.includes('sheets.google') || url.includes('slides.google')
-  const favicon = isDrive ? DRIVE_ICON : `https://www.google.com/s2/favicons?domain=${(() => { try { return new URL(url).hostname } catch { return '' } })()}&sz=32`
+  const iconSrc = faviconUrl(note.url)
 
   return (
-    <div className="sn-note sn-link-item" style={{ left: note.x, top: note.y, width: note.width, height: note.height, background: '#f0f9ff', zIndex: note.inPanel ? 1001 : 1002 }}
+    <div className="sn-icon-item" style={{ left: note.x, top: note.y, zIndex: note.inPanel ? 1001 : 1002 }}
       onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
-      onMouseDown={e => { if (!e.target.closest('.sn-resize') && !e.target.closest('.sn-toolbar') && !e.target.closest('.sn-link-edit')) onDrag(e, note) }}>
-      <ItemToolbar hovered={hovered} inPanel={note.inPanel} onStore={() => onUpdate(note.id, { inPanel: true })} onDelete={onDelete} onDuplicate={onDuplicate} />
-      <div className="sn-link-body" onDoubleClick={e => e.stopPropagation()}>
-        <img className="sn-link-icon" src={favicon} alt="" onError={e => { e.target.style.display = 'none' }} />
-        {editingLabel
-          ? <input className="sn-link-edit" autoFocus value={label} onChange={e => setLabel(e.target.value)}
-              onBlur={() => { onUpdate(note.id, { label }); setEditingLabel(false) }}
-              onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }} />
-          : <span className="sn-link-label" onDoubleClick={() => setEditingLabel(true)}>{note.label}</span>}
-        <a className="sn-link-open" href={url} target="_blank" rel="noreferrer" title={url}>↗</a>
+      onMouseDown={e => { if (!e.target.closest('.sn-icon-toolbar') && !e.target.closest('.sn-link-edit')) onDrag(e, note) }}>
+
+      {/* ホバー時ミニツールバー */}
+      <div className={`sn-icon-toolbar${hovered ? ' sn-icon-toolbar-visible' : ''}`}>
+        {!note.inPanel && <button className="sn-btn" title="しまう" onClick={() => onUpdate(note.id, { inPanel: true })}>◀</button>}
+        <button className="sn-btn" title="URL編集" onClick={() => setEditingUrl(true)}>✎</button>
+        <button className="sn-btn sn-btn-del" title="削除" onClick={onDelete}>×</button>
       </div>
-      {editingUrl
-        ? <input className="sn-link-edit sn-link-url-input" autoFocus value={url} onChange={e => setUrl(e.target.value)}
-            onBlur={() => { onUpdate(note.id, { url }); setEditingUrl(false) }}
-            onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }} />
-        : <div className="sn-link-url" onDoubleClick={() => setEditingUrl(true)} title="ダブルクリックでURL編集">{url}</div>}
-      <div className="sn-resize" onMouseDown={e => onResize(e, note)} />
+
+      {/* アイコン本体 */}
+      <a className="sn-icon-link" href={note.url} target="_blank" rel="noreferrer"
+        onMouseDown={e => e.stopPropagation()}>
+        <img className="sn-icon-img" src={iconSrc} alt={note.label} onError={e => { e.target.src = ''; e.target.style.background = '#e2e8f0' }} />
+      </a>
+
+      {/* ラベル（ダブルクリックで編集） */}
+      {editingLabel
+        ? <input className="sn-icon-label-edit" autoFocus value={label}
+            onChange={e => setLabel(e.target.value)}
+            onBlur={() => { onUpdate(note.id, { label }); setEditingLabel(false) }}
+            onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }}
+            onMouseDown={e => e.stopPropagation()} />
+        : <div className="sn-icon-label" onDoubleClick={() => setEditingLabel(true)}>{note.label}</div>}
+
+      {/* URL編集ポップアップ */}
+      {editingUrl && (
+        <input className="sn-icon-url-edit" autoFocus value={url}
+          onChange={e => setUrl(e.target.value)}
+          onBlur={() => { onUpdate(note.id, { url }); setEditingUrl(false) }}
+          onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }}
+          onMouseDown={e => e.stopPropagation()} />
+      )}
     </div>
   )
 }
@@ -223,16 +239,25 @@ export default function StickyNotes() {
       )}
 
       {/* パネル内アイテム */}
-      {panelOpen && panelItems.map((item, i) => {
-        const x = window.innerWidth - panelWidth + 5
-        const y = headerH + i * (itemH + itemGap)
-        return (
-          <AnyItem key={item.id}
-            note={{ ...item, x, y, width: panelWidth - 10, height: itemH }}
-            onUpdate={update} onDelete={() => remove(item.id)} onDuplicate={() => duplicate(item.id)}
-            onDrag={onDrag} onResize={onResize} />
-        )
-      })}
+      {panelOpen && (() => {
+        let yOffset = headerH
+        return panelItems.map((item) => {
+          const x = window.innerWidth - panelWidth + 5
+          const y = yOffset
+          const isLink = item.type === 'link'
+          const h = isLink ? 80 : itemH
+          yOffset += h + itemGap
+          const positioned = isLink
+            ? { ...item, x, y }
+            : { ...item, x, y, width: panelWidth - 10, height: h }
+          return (
+            <AnyItem key={item.id}
+              note={positioned}
+              onUpdate={update} onDelete={() => remove(item.id)} onDuplicate={() => duplicate(item.id)}
+              onDrag={onDrag} onResize={onResize} />
+          )
+        })
+      })()}
 
       {/* フリーアイテム */}
       {freeItems.map(item => (
