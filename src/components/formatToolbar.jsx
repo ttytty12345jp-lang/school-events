@@ -1,7 +1,7 @@
 // 行ごとの書式（大きさ・色・取り消し線）の共通モデルとツールバー。
 // 朝会記録簿の「行事予定」「諸連絡」「配付物」で共有する。
 
-export const TEXT_SIZES = [16, 20, 24, 28, 32, 38] // px
+export const TEXT_SIZES = [10, 12, 14, 16, 20, 24, 28, 32, 38] // px
 export const DEFAULT_SIZE = 28
 export const TEXT_COLORS = ['#1e293b', '#dc2626', '#2563eb', '#16a34a', '#ea580c']
 

@@ -458,7 +458,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .hours-th-label { width: 52px; }
 .hours-th-grade { text-align: center; font-weight: 600; padding: 2px 0; }
 .hours-td-label { font-size: 11px; color: var(--text-muted); white-space: nowrap; padding-right: 4px; }
-.hours-td-cell { text-align: center; padding: 2px 1px; }
+.hours-td-cell { text-align: center; padding: 2px 1px; white-space: nowrap; }
 .hours-input {
   width: 100%; text-align: center; border: 1px solid var(--border);
   border-radius: 4px; padding: 2px 0; font-size: 12px;
