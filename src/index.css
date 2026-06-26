@@ -1574,6 +1574,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   /* 明日以降の予定 */
   .upcoming-day { font-size: 18px; }
   .upcoming-day-label { font-size: 16px; min-width: 92px; }
+  .upcoming-chip { font-size: 18px; }
   .upcoming-time { font-size: 14px; }
   .upcoming-empty { font-size: 15px; }
 
