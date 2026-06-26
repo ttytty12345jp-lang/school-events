@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect, useRef } from 'react'
 import { supabase, USE_SUPABASE } from '../lib/supabase'
 import { useNotice } from '../hooks/useNotice'
 import MorningAgenda from './MorningAgenda'
+import NoteLines from './NoteLines'
 import { loadJijiMaster, thirdsDisplay } from './SchoolJijiView'
 import { useHeaderControls } from '../HeaderControlsContext'
 import { DAYS_JA, dateKey as toDateKey, monthKey } from '../utils/date'
@@ -37,7 +38,7 @@ function TodaySection({ date, events, dateKey, spanEvents = [] }) {
           placeholder=""
         />
       </div>
-      <MorningAgenda dateKey={dateKey} calendarEvents={events} />
+      <MorningAgenda dateKey={dateKey} calendarEvents={events} rich />
     </div>
   )
 }
@@ -51,13 +52,8 @@ function NoticeSection({ date }) {
         <span>諸連絡</span>
         {saving && <span className="ttv-saving">保存中…</span>}
       </div>
-      <div className="ttv-body ttv-textarea-body">
-        <textarea
-          className="notice-textarea"
-          value={content}
-          onChange={e => handleChange(e.target.value)}
-          placeholder=""
-        />
+      <div className="ttv-body ttv-notelines-body">
+        <NoteLines content={content} onChange={handleChange} />
       </div>
     </div>
   )
@@ -72,13 +68,8 @@ function DistributionSection({ date }) {
         <span>配付物</span>
         {saving && <span className="ttv-saving">保存中…</span>}
       </div>
-      <div className="ttv-body ttv-textarea-body">
-        <textarea
-          className="notice-textarea"
-          value={content}
-          onChange={e => handleChange(e.target.value)}
-          placeholder=""
-        />
+      <div className="ttv-body ttv-notelines-body">
+        <NoteLines content={content} onChange={handleChange} />
       </div>
     </div>
   )

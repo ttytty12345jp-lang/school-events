@@ -1,5 +1,6 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react'
 import { supabase, USE_SUPABASE } from '../lib/supabase'
+import { FormatToolbar, lineStyle } from './formatToolbar'
 
 function lsGet(date) {
   try { return JSON.parse(localStorage.getItem(`agenda_${date}`) || 'null') } catch { return null }
@@ -42,16 +43,18 @@ function mergeWithCalendar(saved, calendarEvents) {
   return items
 }
 
-export default function MorningAgenda({ dateKey, calendarEvents }) {
+export default function MorningAgenda({ dateKey, calendarEvents, rich = false }) {
   const [items, setItems] = useState(null)
   const [saving, setSaving] = useState(false)
   const [dragOverId, setDragOverId] = useState(null) // ドロップ先のid
+  const [focusId, setFocusId] = useState(null)
   const debounceRef = useRef(null)
   const inputRefs = useRef({})
   const dragIdRef = useRef(null)
   const bodyRef = useRef(null)
 
-  useLayoutEffect(() => { autoScaleContainer(bodyRef.current) }, [items])
+  // rich モード（朝会記録簿）は行ごとに大きさを変えるので自動縮小しない
+  useLayoutEffect(() => { if (!rich) autoScaleContainer(bodyRef.current) }, [items, rich])
 
   useEffect(() => {
     setItems(null)
@@ -82,6 +85,10 @@ export default function MorningAgenda({ dateKey, calendarEvents }) {
 
   function setTitle(id, value) {
     update(items.map(it => it.id === id ? { ...it, title: value } : it))
+  }
+
+  function setFormat(id, patch) {
+    update(items.map(it => it.id === id ? { ...it, ...patch } : it))
   }
 
   function addAfter(index) {
@@ -145,7 +152,7 @@ export default function MorningAgenda({ dateKey, calendarEvents }) {
   if (items === null) return <div className="ttv-body" style={{ color: 'var(--text-muted)', padding: 16 }}>読み込み中…</div>
 
   return (
-    <div className="agenda-body" ref={bodyRef}>
+    <div className={`agenda-body${rich ? ' agenda-rich' : ''}`} ref={bodyRef}>
       {saving && <div className="agenda-saving">保存中…</div>}
       {items.map((item, i) => (
         <div
@@ -165,11 +172,17 @@ export default function MorningAgenda({ dateKey, calendarEvents }) {
           <input
             ref={el => { inputRefs.current[item.id] = el }}
             className="agenda-title-input"
+            style={rich ? lineStyle(item) : undefined}
             value={item.title}
             onChange={e => setTitle(item.id, e.target.value)}
             onKeyDown={e => handleKeyDown(e, item.id, i)}
+            onFocus={rich ? () => setFocusId(item.id) : undefined}
+            onBlur={rich ? () => setTimeout(() => setFocusId(f => (f === item.id ? null : f)), 150) : undefined}
             placeholder="行事・連絡を入力"
           />
+          {rich && focusId === item.id && (
+            <FormatToolbar item={item} onChange={patch => setFormat(item.id, patch)} />
+          )}
           <button className="agenda-add-btn" title="下に行を追加" onClick={() => addAfter(i)}>＋</button>
           <button className="agenda-del-btn" title="削除" onClick={() => remove(item.id)}>✕</button>
         </div>

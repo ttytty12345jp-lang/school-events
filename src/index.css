@@ -431,7 +431,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 
 .ttv-header-today    { background: var(--primary); }
 .ttv-week-event-row { padding: 2px 6px; border-bottom: 1px solid var(--border); flex-shrink: 0; display: flex; align-items: center; gap: 6px; }
-.ttv-week-event-input { flex: 1; min-width: 0; border: none; background: transparent; font-size: 14px; color: #7c3aed; outline: none; height: 26px; font-family: inherit; }
+.ttv-week-event-input { flex: 1; min-width: 0; border: none; background: transparent; font-size: 18px; color: #7c3aed; outline: none; height: 30px; font-family: inherit; }
 .ttv-header-notice   { background: #475569; }
 .ttv-header-dist     { background: #0891b2; }
 .ttv-header-hours    { background: #7c3aed; }
@@ -676,6 +676,47 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 }
 .agenda-title-input:focus { border-bottom-color: var(--primary); background: var(--primary-light); border-radius: 4px; }
 .agenda-title-input::placeholder { color: var(--text-light); }
+
+/* rich モード（朝会記録簿）の行：フォーカス中だけツールバー位置を確保 */
+.agenda-rich .agenda-row { position: relative; }
+
+/* ── 行ごと書式ツールバー（行事予定・諸連絡・配付物 共通） ── */
+.fmt-toolbar {
+  display: inline-flex; align-items: center; gap: 3px;
+  background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px;
+  padding: 2px 5px; box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+}
+.agenda-rich .fmt-toolbar {
+  position: absolute; right: 56px; top: 50%; transform: translateY(-50%); z-index: 50;
+}
+.fmt-btn {
+  font-size: 13px; min-width: 24px; height: 24px; line-height: 1;
+  border: 1px solid #cbd5e1; background: #fff; border-radius: 4px;
+  cursor: pointer; color: #1e293b; padding: 0 5px;
+}
+.fmt-btn.sel { background: #1e293b; color: #fff; border-color: #1e293b; }
+.fmt-color {
+  width: 18px; height: 18px; border-radius: 50%; border: 2px solid #fff;
+  box-shadow: 0 0 0 1px #cbd5e1; cursor: pointer; padding: 0;
+}
+.fmt-color.sel { box-shadow: 0 0 0 2px #1e293b; }
+.fmt-sep { width: 1px; height: 16px; background: #cbd5e1; margin: 0 2px; }
+.fmt-del { color: #dc2626; }
+
+/* ── 諸連絡・配付物（書式付き行リスト） ── */
+.ttv-notelines-body { flex: 1; overflow-y: auto; padding: 6px 10px; }
+.notelines-body { display: flex; flex-direction: column; gap: 1px; }
+.notelines-row { position: relative; display: flex; align-items: center; }
+.notelines-input {
+  flex: 1; border: none; border-bottom: 1px solid transparent; outline: none;
+  background: transparent; padding: 3px 6px; width: 100%; font-family: inherit;
+}
+.notelines-input:focus { border-bottom-color: var(--primary); background: var(--primary-light); border-radius: 4px; }
+.notelines-input::placeholder { color: var(--text-light); }
+.notelines-tools {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%); z-index: 50;
+  display: flex; align-items: center; gap: 4px;
+}
 
 
 .agenda-add-btn,
@@ -1548,10 +1589,11 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   /* 朝会記録簿：高さ固定を解除 */
   .ttv-wrap { height: auto; }
 
-  /* 朝会記録簿の行事予定リスト（日付のすぐ下）：文字を小さく
-     高詳細度＋!importantで基準の22pxを確実に上書き */
+  /* 朝会記録簿の各記入欄：スマホでは小さめに固定（PCの行ごとサイズは上書き） */
   .ttv-left .agenda-title-input,
   .ttv-right .agenda-title-input { font-size: 12px !important; padding: 2px 6px !important; }
+  .notelines-input { font-size: 12px !important; }
+  .ttv-week-event-input { font-size: 12px !important; height: 22px !important; }
   .agenda-row { padding: 1px 2px; }
 
 /* 月中行事：全列を1画面に収める */
