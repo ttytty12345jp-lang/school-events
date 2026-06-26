@@ -542,8 +542,24 @@ export default function TodayTomorrowView({ events }) {
     return () => setControls(null)
   }, [selectedKey, isToday])
 
+  // 固定サイズページをウィンドウに収まるよう一律縮小（スクロールなし・PC差なし）
+  const wrapRef = useRef(null)
+  useLayoutEffect(() => {
+    const el = wrapRef.current
+    if (!el) return
+    function rescale() {
+      const parent = el.parentElement
+      if (!parent) return
+      const s = Math.min(1, parent.clientWidth / 1080, parent.clientHeight / 760)
+      el.style.zoom = s > 0 ? s : 1
+    }
+    rescale()
+    window.addEventListener('resize', rescale)
+    return () => window.removeEventListener('resize', rescale)
+  }, [])
+
   return (
-    <div className="ttv-wrap">
+    <div className="ttv-wrap" ref={wrapRef}>
       <div className="ttv-layout">
         {/* 左2/3 */}
         <div className="ttv-left">
