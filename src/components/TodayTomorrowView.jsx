@@ -179,6 +179,7 @@ function UpcomingSection({ todayDate, events }) {
     const ro = new ResizeObserver(fit)
     ro.observe(el)
     window.addEventListener('resize', fit)
+    if (document.fonts?.ready) document.fonts.ready.then(fit)
     return () => { ro.disconnect(); window.removeEventListener('resize', fit) }
   }, [days, allOverrides])
 
@@ -549,11 +550,15 @@ export default function TodayTomorrowView({ events }) {
     if (!el) return
     function rescale() {
       const parent = el.parentElement
-      if (!parent || !parent.clientHeight) return
-      el.style.zoom = parent.clientHeight / 760
+      if (!parent) return
+      const cs = getComputedStyle(parent)
+      const avail = parent.clientHeight - parseFloat(cs.paddingTop || 0) - parseFloat(cs.paddingBottom || 0)
+      if (avail > 0) el.style.zoom = avail / 760
     }
     rescale()
     window.addEventListener('resize', rescale)
+    // Webフォント読み込み完了で文字幅が変わるため再調整
+    if (document.fonts?.ready) document.fonts.ready.then(rescale)
     return () => window.removeEventListener('resize', rescale)
   }, [])
 
