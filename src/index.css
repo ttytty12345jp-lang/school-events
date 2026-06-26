@@ -1558,8 +1558,9 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
     page-break-inside: avoid;
   }
   .ttv-wrap {
-    padding-bottom: 8mm;
-    margin-bottom: 8mm;
+    /* 上下2段の間のスペースを1.3倍に（8mm→10.4mm） */
+    padding-bottom: 10.4mm;
+    margin-bottom: 10.4mm;
   }
 }
 
@@ -1567,7 +1568,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
    （スマホは対象外） */
 @media (min-width: 601px) {
   .ttv-header { font-size: 19px; padding: 9px 16px; }
-  .ttv-header-date-large { font-size: 23px; }
+  .ttv-header-date-large { font-size: 32px; }
   .ttv-header-date { font-size: 17px; }
   .ttv-saving { font-size: 13px; }
 
