@@ -1539,10 +1539,13 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   }
   .main-content:has(.calendar-grid) .calendar-cell { min-height: 0; height: 14mm; }
   .main-content:has(.monthly-table-wrap) .monthly-table-wrap {
-    zoom: 0.78;
+    zoom: 0.78; /* JSで実測倍率をインライン指定して上書き（フォールバック値） */
     max-height: none;
     overflow: visible;
   }
+  /* 印刷時は「今日」のハイライトを消す */
+  .monthly-row.row-today td { background: transparent !important; }
+  .monthly-row.row-today .col-date { color: inherit !important; font-weight: normal !important; }
   .monthly-print-header {
     display: flex;
     justify-content: space-between;

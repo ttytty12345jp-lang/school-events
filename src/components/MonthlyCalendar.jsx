@@ -509,7 +509,20 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
           style.id = 'monthly-print-override'
           style.textContent = '@page { size: A4 portrait; margin: 6mm; }'
           document.head.appendChild(style)
+          // 表の実寸を測り、A4縦1枚（余白6mm）に収まる倍率を計算（全バージョン対応）
+          const wrap = document.querySelector('.monthly-table-wrap')
+          const table = wrap?.querySelector('.monthly-table')
+          let prevZoom
+          if (wrap && table) {
+            const mm = n => n / 25.4 * 96
+            const pageW = mm(210 - 12)       // 印刷可能幅
+            const pageH = mm(297 - 12) - 34  // 印刷可能高さ − 見出し帯ぶん
+            const z = Math.min(1, pageW / table.scrollWidth, pageH / table.scrollHeight)
+            prevZoom = wrap.style.zoom
+            wrap.style.zoom = String(z)
+          }
           window.print()
+          if (wrap) wrap.style.zoom = prevZoom || ''
           document.getElementById('monthly-print-override')?.remove()
         }}>🖨️ 印刷</button>
         <button className="hc-btn" onClick={() => setSpanModal('new')}>＋ 期間行事</button>
