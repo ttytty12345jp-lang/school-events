@@ -165,9 +165,12 @@ function UpcomingSection({ todayDate, events }) {
     const el = bodyRef.current
     if (!el) return
     function fit() {
+      const rows = Array.from(el.querySelectorAll('.upcoming-day'))
+      if (!rows.length) return
       let size = 30
       el.style.fontSize = size + 'px'
-      while (el.scrollHeight > el.clientHeight && size > 9) {
+      const overflows = () => rows.some(r => r.scrollHeight > r.clientHeight + 1)
+      while (overflows() && size > 9) {
         size -= 1
         el.style.fontSize = size + 'px'
       }
