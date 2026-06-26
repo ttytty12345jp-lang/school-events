@@ -1563,8 +1563,9 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
     margin-bottom: 10.4mm;
   }
   /* 「明日以降の予定」：印刷でも7等分固定（各セル縦中央）。
-     フォントは画面で実測した統一値がzoomで一緒に縮むのでそのまま使う */
-  .ttv-upcoming-body { display: grid !important; grid-auto-rows: 1fr !important; overflow: hidden !important; }
+     フォントは画面(ウィンドウ高さ)依存の実測値だとPCごとに変わるため、
+     印刷はA4固定なので一定の固定サイズを使う */
+  .ttv-upcoming-body { display: grid !important; grid-auto-rows: 1fr !important; overflow: hidden !important; font-size: 20px !important; }
   .upcoming-day { align-items: center !important; overflow: hidden !important; }
 }
 
