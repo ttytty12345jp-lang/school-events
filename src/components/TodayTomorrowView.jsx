@@ -3,6 +3,7 @@ import { supabase, USE_SUPABASE } from '../lib/supabase'
 import { useNotice } from '../hooks/useNotice'
 import MorningAgenda from './MorningAgenda'
 import NoteLines from './NoteLines'
+import { loadLifeGoals } from '../lib/lifeGoals'
 import { loadJijiMaster, thirdsDisplay } from './SchoolJijiView'
 import { useHeaderControls } from '../HeaderControlsContext'
 import { DAYS_JA, dateKey as toDateKey, monthKey } from '../utils/date'
@@ -55,6 +56,19 @@ function NoticeSection({ date }) {
       <div className="ttv-body ttv-notelines-body">
         <NoteLines content={content} onChange={handleChange} />
       </div>
+    </div>
+  )
+}
+
+// 諸連絡の下：今月の生活目標（データベースの月別表から表示）
+function LifeGoalSection({ date }) {
+  const month = new Date(date + 'T00:00:00').getMonth() + 1
+  const [goal, setGoal] = useState('')
+  useEffect(() => { loadLifeGoals().then(g => setGoal(g?.[month] || '')) }, [month])
+  return (
+    <div className="ttv-panel ttv-goal-panel">
+      <div className="ttv-header ttv-header-goal"><span>{month}月の生活目標</span></div>
+      <div className="ttv-body ttv-goal-body">{goal}</div>
     </div>
   )
 }
@@ -569,6 +583,7 @@ export default function TodayTomorrowView({ events }) {
         <div className="ttv-left">
           <TodaySection date={selectedDate} events={selectedEvents} dateKey={selectedKey} spanEvents={spanEvents} />
           <NoticeSection date={selectedKey} />
+          <LifeGoalSection date={selectedKey} />
         </div>
         {/* 右1/3 */}
         <div className="ttv-right">

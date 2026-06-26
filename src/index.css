@@ -408,8 +408,9 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   min-height: 0;
 }
 
-.ttv-left .ttv-panel:first-child { flex: 3; }
-.ttv-left .ttv-panel:last-child  { flex: 2; }
+.ttv-left .ttv-panel:nth-child(1) { flex: 3; }   /* 行事予定 */
+.ttv-left .ttv-panel:nth-child(2) { flex: 2; }   /* 諸連絡 */
+.ttv-left .ttv-panel.ttv-goal-panel { flex: none; height: 96px; }  /* 生活目標 */
 
 /* 右1/3 */
 .ttv-right {
@@ -452,6 +453,8 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .ttv-header-dist     { background: #0891b2; }
 .ttv-header-hours    { background: #7c3aed; }
 .ttv-header-upcoming { background: var(--accent); }
+.ttv-header-goal     { background: #059669; }
+.ttv-goal-body { flex: 1; min-height: 0; overflow: auto; padding: 8px 14px; font-size: 17px; line-height: 1.5; white-space: pre-wrap; }
 
 .hours-body { padding: 6px; }
 .hours-table { width: 100%; border-collapse: collapse; font-size: 12px; }
@@ -501,6 +504,14 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .db-nursing-td { border: 1px solid var(--border); padding: 2px 4px; }
 .db-nursing-input { border: none; outline: none; background: transparent; font-size: 13px; width: 80px; padding: 2px 4px; }
 .db-nursing-input:focus { background: var(--primary-light); border-radius: 3px; }
+
+/* ── 生活目標タブ ── */
+.db-saving { font-size: 12px; font-weight: 400; color: var(--text-muted); }
+.db-goals-table { border-collapse: collapse; width: 100%; max-width: 700px; }
+.db-goals-month { border: 1px solid var(--border); padding: 4px 12px; background: #f3f4f6; font-size: 14px; font-weight: 600; text-align: center; white-space: nowrap; width: 56px; }
+.db-goals-table td:not(.db-goals-month) { border: 1px solid var(--border); padding: 2px; }
+.db-goals-input { width: 100%; border: none; outline: none; background: transparent; font-size: 14px; padding: 4px 6px; resize: vertical; font-family: inherit; box-sizing: border-box; }
+.db-goals-input:focus { background: var(--primary-light); border-radius: 3px; }
 
 /* ── 学校行事タブ ── */
 .jiji-wrap { padding: 20px; max-width: 900px; }
