@@ -159,10 +159,11 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 
 /* ── Main content ── */
 .main-content { flex: 1; padding: 16px; max-width: 1200px; width: 100%; margin: 0 auto; }
-/* 朝会記録簿は固定サイズのページを、ウィンドウに収まるよう縮小して中央表示（スクロールなし） */
+/* 朝会記録簿は固定サイズページの「高さ」を画面に合わせて表示（縦スクロールなし・幅は可変） */
 .main-content:has(.ttv-wrap) {
   max-width: none;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   display: flex;
   justify-content: center;
   align-items: flex-start;
