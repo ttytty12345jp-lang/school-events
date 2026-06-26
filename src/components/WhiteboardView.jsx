@@ -222,7 +222,7 @@ function autoScaleWidth(el) {
 }
 
 // ── Inline editable cell ───────────────────────────────────
-function EditCell({ value, onChange, placeholder = '', className = '', align, listId, options, live = false, onNext, cellKey, tripKey }) {
+function EditCell({ value, onChange, placeholder = '', className = '', align, listId, options, live = false, onNext, cellKey, tripKey, noTab = false }) {
   const [local, setLocal] = useState(value)
   const [dropPos, setDropPos] = useState(null) // { top, left, width } or null
   const ref = useRef(null)
@@ -286,6 +286,7 @@ function EditCell({ value, onChange, placeholder = '', className = '', align, li
         style={align ? { textAlign: align } : undefined}
         list={hasOpts ? undefined : (listId || undefined)}
         autoComplete="off"
+        {...(noTab ? { tabIndex: -1 } : {})}
         {...(cellKey ? { 'data-room-cell': cellKey } : {})}
         {...(tripKey ? { 'data-trip-cell': tripKey } : {})}
       />
@@ -690,7 +691,7 @@ export default function WhiteboardView({ events, db = {} }) {
                       <EditCell value={r.day} onChange={v => updateRoom(i, 'day', v)} align="center" onNext={goTo('time-start')} cellKey={`${i}-day`} />
                     </td>
                     <td className="wb-td wb-td-center">
-                      <EditCell value={r.dow} onChange={v => updateRoom(i, 'dow', v)} align="center" cellKey={`${i}-dow`} />
+                      <EditCell value={r.dow} onChange={v => updateRoom(i, 'dow', v)} align="center" cellKey={`${i}-dow`} noTab />
                     </td>
                     <td className="wb-td">
                       <TimeRange
