@@ -9,6 +9,8 @@ const HIGHLIGHTS_TYPE = 'row_highlights'
 const SPAN_COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#64748b']
 
 const CATEGORIES = ['学校行事', '教職員関係行事', 'その他']
+const GRADES = ['1年', '2年', '3年', '4年', '5年', '6年']
+const WATCH_TYPE = 'watch_team' // 見守り隊バージョンの学年別入力
 
 function SpanEventModal({ span, onSave, onDelete, onClose }) {
   const [title, setTitle] = useState(span?.title || '')
@@ -305,6 +307,12 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
   const highlightDebounce = useRef(null)
   const monthKey = `${year}-${String(month).padStart(2, '0')}`
 
+  // 表示バージョン: 'normal' | 'pta' | 'watch'
+  const [viewMode, setViewMode] = useState('normal')
+  // 見守り隊バージョンの学年別入力: { dateKey: { '1年': text, ... } }
+  const [watchData, setWatchData] = useState({})
+  const watchDebounce = useRef(null)
+
   // 期間行事
   const [spanEvents, setSpanEvents] = useState([])
   const [spanModal, setSpanModal] = useState(null) // null | 'new' | {span object}
@@ -380,6 +388,35 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
     return isWeekend
   }
 
+  // 見守り隊データを月ごとにロード
+  useEffect(() => {
+    if (!USE_SUPABASE) {
+      try { setWatchData(JSON.parse(localStorage.getItem(`watch_team_${monthKey}`) || '{}')) } catch { setWatchData({}) }
+      return
+    }
+    supabase.from('school_notices').select('content')
+      .eq('date', monthKey).eq('type', WATCH_TYPE).maybeSingle()
+      .then(({ data }) => setWatchData(data?.content ? JSON.parse(data.content) : {}))
+  }, [monthKey])
+
+  function saveWatch(next) {
+    const json = JSON.stringify(next)
+    if (!USE_SUPABASE) { localStorage.setItem(`watch_team_${monthKey}`, json); return }
+    if (watchDebounce.current) clearTimeout(watchDebounce.current)
+    watchDebounce.current = setTimeout(() => {
+      supabase.from('school_notices')
+        .upsert({ date: monthKey, type: WATCH_TYPE, content: json, updated_at: new Date().toISOString() }, { onConflict: 'date,type' })
+    }, 600)
+  }
+
+  function updateWatch(dateKey, grade, val) {
+    setWatchData(prev => {
+      const next = { ...prev, [dateKey]: { ...prev[dateKey], [grade]: val } }
+      saveWatch(next)
+      return next
+    })
+  }
+
   const eventMap = useMemo(() => {
     const m = new Map()
     for (const ev of events) {
@@ -449,6 +486,11 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
   useEffect(() => {
     setControls(
       <div className="hc-row">
+        <select className="hc-select" value={viewMode} onChange={e => setViewMode(e.target.value)} title="表示バージョン">
+          <option value="normal">ノーマル</option>
+          <option value="pta">PTA用</option>
+          <option value="watch">見守り隊</option>
+        </select>
         <button className="hc-btn-nav" onClick={prevMonth}>‹</button>
         <span className="hc-label">{year}年{month}月</span>
         <button className="hc-btn-nav" onClick={nextMonth}>›</button>
@@ -474,7 +516,7 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
       </div>
     )
     return () => setControls(null)
-  }, [year, month])
+  }, [year, month, viewMode])
 
   async function handleImport(e) {
     const file = e.target.files?.[0]
@@ -492,6 +534,9 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
       addToast(`インポート失敗: ${err.message}`, 'error')
     }
   }
+
+  // PTA用は「教職員関係行事」列を除外
+  const visibleCats = viewMode === 'pta' ? CATEGORIES.filter(c => c !== '教職員関係行事') : CATEGORIES
 
   return (
     <div
@@ -511,14 +556,21 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
         <span>大阪市立北中島小学校</span>
       </div>
       <div className="monthly-table-wrap">
-        <table className="monthly-table">
+        <table className={`monthly-table${viewMode === 'watch' ? ' monthly-watch' : ''}`}>
           <thead>
             <tr>
               <th className="col-date">日付</th>
               <th className="col-day">曜日</th>
-              {CATEGORIES.map(cat => (
-                <th key={cat} className="col-cat">{cat}</th>
-              ))}
+              {viewMode === 'watch' ? (
+                <>
+                  <th className="col-cat">学校行事</th>
+                  {GRADES.map(g => <th key={g} className="col-grade">{g}</th>)}
+                </>
+              ) : (
+                visibleCats.map(cat => (
+                  <th key={cat} className="col-cat">{cat}</th>
+                ))
+              )}
             </tr>
           </thead>
           <tbody>
@@ -540,6 +592,30 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
                 backgroundRepeat: 'no-repeat',
                 paddingLeft: activeSpans.length * (BAR_W + BAR_GAP) + 6 + 'px',
               } : undefined
+              const renderCatCell = (cat, isFirst) => {
+                const cellKey = `${dateKey}__${cat}`
+                const cellEvents = eventMap.get(cellKey) || []
+                const isActive = activeCell?.date === dateKey && activeCell?.category === cat
+                const startSpans = isFirst ? spanEvents.filter(s => s.startDate === dateKey) : []
+                return (
+                  <DroppableCell
+                    key={cat}
+                    dateKey={dateKey}
+                    cat={cat}
+                    cellEvents={cellEvents}
+                    isActive={isActive}
+                    onCellClick={(close) => setActiveCell(close ? null : { date: dateKey, category: cat })}
+                    onAdd={onAdd}
+                    onUpdate={onUpdate}
+                    onDelete={onDelete}
+                    addToast={addToast}
+                    dragState={dragState}
+                    onDropToCell={(d, c, idx) => handleDrop(d, c, idx)}
+                    onDropBetween={(d, c, idx) => handleDrop(d, c, idx)}
+                    startSpans={startSpans}
+                  />
+                )
+              }
               return (
                 <tr key={day} className={[
                   'monthly-row',
@@ -558,32 +634,22 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
                     title="クリックで塗りつぶし切り替え"
                     onClick={() => toggleRowHighlight(dateKey, isWeekend)}
                   >{DAYS_JA[dow]}</td>
-                  {CATEGORIES.map((cat, catIdx) => {
-                    const cellKey = `${dateKey}__${cat}`
-                    const cellEvents = eventMap.get(cellKey) || []
-                    const isActive = activeCell?.date === dateKey && activeCell?.category === cat
-                    const startSpans = catIdx === 0
-                      ? spanEvents.filter(s => s.startDate === dateKey)
-                      : []
-                    return (
-                      <DroppableCell
-                        key={cat}
-                        dateKey={dateKey}
-                        cat={cat}
-                        cellEvents={cellEvents}
-                        isActive={isActive}
-                        onCellClick={(close) => setActiveCell(close ? null : { date: dateKey, category: cat })}
-                        onAdd={onAdd}
-                        onUpdate={onUpdate}
-                        onDelete={onDelete}
-                        addToast={addToast}
-                        dragState={dragState}
-                        onDropToCell={(d, c, idx) => handleDrop(d, c, idx)}
-                        onDropBetween={(d, c, idx) => handleDrop(d, c, idx)}
-                        startSpans={startSpans}
-                      />
-                    )
-                  })}
+                  {viewMode === 'watch' ? (
+                    <>
+                      {renderCatCell('学校行事', true)}
+                      {GRADES.map(g => (
+                        <td key={g} className="col-grade">
+                          <input
+                            className="watch-input"
+                            value={watchData[dateKey]?.[g] || ''}
+                            onChange={e => updateWatch(dateKey, g, e.target.value)}
+                          />
+                        </td>
+                      ))}
+                    </>
+                  ) : (
+                    visibleCats.map((cat, catIdx) => renderCatCell(cat, catIdx === 0))
+                  )}
                 </tr>
               )
             })}

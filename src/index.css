@@ -860,6 +860,16 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .monthly-table .col-day  { width: 36px; text-align: center; }
 .monthly-table .col-cat  { min-width: 180px; }
 
+/* 見守り隊バージョンの学年別列 */
+.monthly-table .col-grade { width: 110px; text-align: center; border: 1px solid var(--border); padding: 0; }
+.monthly-watch .col-cat { min-width: 200px; }
+.watch-input { width: 100%; border: none; outline: none; background: transparent; font-size: 13px; padding: 4px 6px; text-align: center; font-family: inherit; box-sizing: border-box; }
+.watch-input:focus { background: var(--primary-light); }
+
+/* ヘッダーのバージョン選択 */
+.hc-select { font-size: 12px; padding: 3px 6px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.5); background: rgba(255,255,255,0.15); color: #fff; }
+.hc-select option { color: #1e293b; }
+
 
 .span-label-chip {
   display: inline-block;
