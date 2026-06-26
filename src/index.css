@@ -1601,11 +1601,11 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   .upcoming-time { font-size: 0.7em; }
   .upcoming-empty { font-size: 0.85em; }
 
-  /* 学校行事時数 */
-  .hours-table { font-size: 16px; }
+  /* 学校行事時数（帯分数が隣と近いので少し小さく＋左右に余白） */
+  .hours-table { font-size: 13px; }
   .hours-th-label { width: 68px; }
-  .hours-td-label { font-size: 15px; padding-right: 6px; }
-  .hours-td-cell { padding: 3px 1px; }
+  .hours-td-label { font-size: 13px; padding-right: 6px; }
+  .hours-td-cell { padding: 3px 4px; }
 }
 
 /* ── Responsive ── */
