@@ -159,6 +159,8 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 
 /* ── Main content ── */
 .main-content { flex: 1; padding: 16px; max-width: 1200px; width: 100%; margin: 0 auto; }
+/* 朝会記録簿は固定サイズのページ表示。ウィンドウが小さければスクロール */
+.main-content:has(.ttv-wrap) { max-width: none; overflow: auto; }
 .main-full-width { max-width: none; }
 
 /* ── Toast ── */
@@ -361,10 +363,14 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .add-event-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
 
 /* ── Today/Tomorrow View ── */
+/* 編集画面を印刷と同じ固定サイズの「ページ」にする（WYSIWYG・PC差をなくす） */
 .ttv-wrap {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 80px);
+  width: 1080px;
+  height: 760px;
+  margin: 0 auto;
+  flex-shrink: 0;
 }
 
 .ttv-print-btn {
@@ -1543,30 +1549,30 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   @page { size: A3 landscape; margin: 8mm; }
 }
 
-/* 朝会記録簿 印刷: A4縦に2段 */
+/* 朝会記録簿 印刷: 編集画面と同じ固定サイズページをA4縦に2段で配置 */
 @media print {
   .app-header { display: none !important; }
   .main-content:has(.ttv-wrap) {
     padding: 0;
+    overflow: visible;
     display: flex;
     flex-direction: column;
+    align-items: center;
     height: 100vh;
   }
+  /* 編集画面と同じ固定サイズ(1080x760)のまま、A4幅に合わせて縮小して2段 */
   .ttv-wrap, .ttv-print-clone {
-    flex: 1;
-    zoom: 0.5;
+    flex: none;
+    width: 1080px;
+    height: 760px;
+    margin: 0 auto;
+    zoom: 0.68;
     page-break-inside: avoid;
   }
   .ttv-wrap {
-    /* 上下2段の間のスペースを1.3倍に（8mm→10.4mm） */
-    padding-bottom: 10.4mm;
-    margin-bottom: 10.4mm;
+    /* 上下2段の間のスペース */
+    margin-bottom: 14px;
   }
-  /* 「明日以降の予定」：印刷でも7等分固定（各セル縦中央）。
-     フォントは画面(ウィンドウ高さ)依存の実測値だとPCごとに変わるため、
-     印刷はA4固定なので一定の固定サイズを使う */
-  .ttv-upcoming-body { display: grid !important; grid-auto-rows: 1fr !important; overflow: hidden !important; font-size: 20px !important; }
-  .upcoming-day { align-items: center !important; overflow: hidden !important; }
 }
 
 /* PC版 朝会記録簿：見出し・明日以降の予定・学校行事時数を約2倍に拡大
