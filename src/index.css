@@ -1571,8 +1571,9 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   .ttv-header-date { font-size: 17px; }
   .ttv-saving { font-size: 13px; }
 
-  /* 明日以降の予定 */
-  .upcoming-day { font-size: 18px; }
+  /* 明日以降の予定：拡大したぶん枠内でスクロールして収める */
+  .ttv-upcoming-body { overflow-y: auto; }
+  .upcoming-day { font-size: 18px; flex: none; overflow: visible; align-items: flex-start; padding: 3px 0; }
   .upcoming-day-label { font-size: 16px; min-width: 92px; }
   .upcoming-chip { font-size: 18px; }
   .upcoming-time { font-size: 14px; }
