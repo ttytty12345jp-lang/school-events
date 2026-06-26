@@ -76,24 +76,30 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   overflow: hidden;
 }
 
+/* 上位ナビ（5ページ切替）：セグメント型で目立たせ、ページ内タブ（下線型）と区別 */
 .header-tabs {
   display: flex;
-  gap: 2px;
+  gap: 3px;
   flex-shrink: 0;
+  background: rgba(0,0,0,0.16);
+  padding: 3px;
+  border-radius: 11px;
 }
 
 .header-tab {
-  background: rgba(255,255,255,0.15);
-  color: rgba(255,255,255,0.85);
-  padding: 4px 11px;
-  border-radius: 16px;
-  font-size: 12px;
+  background: transparent;
+  color: rgba(255,255,255,0.92);
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
   border: none;
   white-space: nowrap;
+  cursor: pointer;
 }
 
-.header-tab:hover { background: rgba(255,255,255,0.25); }
-.header-tab.active { background: #fff; color: var(--primary); font-weight: 600; }
+.header-tab:hover { background: rgba(255,255,255,0.2); }
+.header-tab.active { background: #fff; color: var(--primary); box-shadow: 0 2px 6px rgba(0,0,0,0.28); }
 
 .header-controls { display: flex; align-items: center; margin-left: 8px; flex: 1; min-width: 0; overflow: hidden; }
 
@@ -861,7 +867,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .monthly-table .col-cat  { min-width: 180px; }
 
 /* 見守り隊バージョンの学年別列 */
-.monthly-table .col-grade { width: 110px; text-align: center; border: 1px solid var(--border); padding: 0; }
+.monthly-table .col-grade { width: 72px; text-align: center; border: 1px solid var(--border); padding: 0; }
 .monthly-watch .col-cat { min-width: 200px; }
 .watch-input { width: 100%; border: none; outline: none; background: transparent; font-size: 13px; padding: 4px 6px; text-align: center; font-family: inherit; box-sizing: border-box; }
 .watch-input:focus { background: var(--primary-light); }
