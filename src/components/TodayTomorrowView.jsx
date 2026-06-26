@@ -549,11 +549,11 @@ export default function TodayTomorrowView({ events }) {
     const el = wrapRef.current
     if (!el) return
     function rescale() {
-      const parent = el.parentElement
-      if (!parent) return
-      const cs = getComputedStyle(parent)
-      const avail = parent.clientHeight - parseFloat(cs.paddingTop || 0) - parseFloat(cs.paddingBottom || 0)
-      if (avail > 0) el.style.zoom = avail / 760
+      // zoomを一旦1に戻して実際の開始位置を測り、ウィンドウ高に収まる倍率を計算
+      el.style.zoom = '1'
+      const top = el.getBoundingClientRect().top
+      const avail = window.innerHeight - top - 6
+      if (avail > 0) el.style.zoom = String(avail / 760)
     }
     rescale()
     window.addEventListener('resize', rescale)
