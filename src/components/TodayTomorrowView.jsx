@@ -485,6 +485,17 @@ export default function TodayTomorrowView({ events }) {
   const [spanEvents, setSpanEvents] = useState([])
   useEffect(() => { loadSpanEvents().then(setSpanEvents) }, [])
 
+  // 朝会記録簿の印刷はデフォルトでA4縦
+  useEffect(() => {
+    if (!document.getElementById('ttv-print-override')) {
+      const s = document.createElement('style')
+      s.id = 'ttv-print-override'
+      s.textContent = '@page { size: A4 portrait; margin: 8mm; }'
+      document.head.appendChild(s)
+    }
+    return () => { document.getElementById('ttv-print-override')?.remove() }
+  }, [])
+
   // jiji_master が変更されたら全期間の school_hours を再計算
   useEffect(() => {
     if (!USE_SUPABASE) return
