@@ -201,11 +201,6 @@ async function saveWhiteboard(dateKey, data) {
     .upsert({ date: dateKey, type: 'whiteboard', content: json, updated_at: new Date().toISOString() }, { onConflict: 'date,type' })
 }
 
-function detectDow(month, day) {
-  const m = parseInt(month), d = parseInt(day)
-  if (!m || !d || m < 1 || m > 12 || d < 1 || d > 31) return ''
-  return DAYS_JA[new Date(new Date().getFullYear(), m - 1, d).getDay()]
-}
 
 function formatShort(d) {
   return `${d.getMonth() + 1}月${d.getDate()}日（${DAYS_JA[d.getDay()]}）`
@@ -564,8 +559,14 @@ export default function WhiteboardView({ events, db = {} }) {
     const v = (field === 'month' || field === 'day') ? toHalf(val) : val
     const row = displayedRooms[i]
     const updated = { ...row, [field]: v }
-    if (field === 'month' || field === 'day')
-      updated.dow = detectDow(field === 'month' ? v : row.month, field === 'day' ? v : row.day)
+    if (field === 'month' || field === 'day') {
+      // 年度管理：1〜3月は翌年。getTargetDateKey が「entryより前なら翌年」で
+      // 正しい暦年を返すので、その日付から曜日を決定する
+      const m = field === 'month' ? v : row.month
+      const d = field === 'day' ? v : row.day
+      const targetKey = getTargetDateKey(m, d, row.entryDate || selectedKey)
+      updated.dow = targetKey ? DAYS_JA[new Date(targetKey + 'T00:00:00').getDay()] : ''
+    }
     let next
     if (row.id) {
       next = roomReservations.map(r => r.id === row.id ? updated : r)
