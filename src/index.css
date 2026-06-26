@@ -454,7 +454,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .ttv-header-hours    { background: #7c3aed; }
 .ttv-header-upcoming { background: var(--accent); }
 .ttv-header-goal     { background: #059669; }
-.ttv-goal-body { flex: 1; min-height: 0; overflow: auto; padding: 8px 14px; font-size: 17px; line-height: 1.5; white-space: pre-wrap; }
+.ttv-goal-body { flex: 1; min-height: 0; overflow: auto; padding: 8px 14px; font-size: 17px; line-height: 1.5; white-space: pre-wrap; display: flex; align-items: center; justify-content: center; text-align: center; }
 
 .hours-body { padding: 6px; }
 .hours-table { width: 100%; border-collapse: collapse; font-size: 12px; }
