@@ -562,25 +562,8 @@ export default function TodayTomorrowView({ events }) {
     return () => window.removeEventListener('resize', rescale)
   }, [])
 
-  // 一時的な診断表示（PC間の差の原因特定用）
-  const [diag, setDiag] = useState('')
-  useLayoutEffect(() => {
-    function upd() {
-      const z = wrapRef.current ? (wrapRef.current.style.zoom || '1') : '?'
-      const fonts = ['BIZ UDPGothic', 'UD Digi Kyokasho NP-R', 'Yu Gothic UI', 'Meiryo']
-      const have = fonts.filter(f => document.fonts?.check?.(`16px "${f}"`)).join(',') || '不明'
-      const build = (typeof __BUILD_ID__ !== 'undefined' ? __BUILD_ID__ : 'dev')
-      setDiag(`win ${window.innerWidth}x${window.innerHeight} dpr${window.devicePixelRatio} zoom${(+z).toFixed(2)} | font:${have} | v:${String(build).slice(-5)}`)
-    }
-    upd()
-    window.addEventListener('resize', upd)
-    if (document.fonts?.ready) document.fonts.ready.then(upd)
-    return () => window.removeEventListener('resize', upd)
-  }, [])
-
   return (
     <div className="ttv-wrap" ref={wrapRef}>
-      <div style={{ position: 'fixed', bottom: 2, left: 4, zIndex: 9999, fontSize: 11, color: '#dc2626', background: 'rgba(255,255,255,0.85)', padding: '1px 6px', borderRadius: 4, pointerEvents: 'none' }}>{diag}</div>
       <div className="ttv-layout">
         {/* 左2/3 */}
         <div className="ttv-left">

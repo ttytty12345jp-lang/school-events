@@ -19,9 +19,7 @@
   --radius: 8px;
   --radius-lg: 12px;
 
-  /* Webフォント(BIZ UDPGothic)を先頭にして全PCで同一の見た目に固定。
-     読み込めない場合は従来のUD教科書体/Yu Gothic等にフォールバック */
-  font-family: 'BIZ UDPGothic', 'UD Digi Kyokasho NP-R', 'UDデジタル教科書体 NP-R', 'UD デジタル 教科書体 NP-R', 'Hiragino Sans', 'Yu Gothic UI', 'Meiryo', system-ui, sans-serif;
+  font-family: 'UD Digi Kyokasho NP-R', 'UDデジタル教科書体 NP-R', 'UD デジタル 教科書体 NP-R', 'Hiragino Sans', 'Yu Gothic UI', 'Meiryo', system-ui, sans-serif;
   font-size: 14px;
   color: var(--text);
   background: var(--bg);
