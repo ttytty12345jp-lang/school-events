@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useRef } from 'react'
+import { useMemo, useState, useEffect, useLayoutEffect, useRef } from 'react'
 import { supabase, USE_SUPABASE } from '../lib/supabase'
 import { useNotice } from '../hooks/useNotice'
 import MorningAgenda from './MorningAgenda'
@@ -159,16 +159,22 @@ function UpcomingSection({ todayDate, events }) {
   }
 
   const bodyRef = useRef(null)
-  useEffect(() => {
+  // 枠に収まる最大サイズまでフォントを実測縮小（PCはCSSでem連動、子要素も一緒に拡縮）
+  useLayoutEffect(() => {
     const el = bodyRef.current
     if (!el) return
-    const rows = Array.from(el.querySelectorAll('.upcoming-day'))
-    if (!rows.length) return
-    // 最大イベント数に応じてフォントサイズを段階的に縮小
-    const maxEvents = Math.max(...days.map(d => d.events.length))
-    const size = maxEvents >= 4 ? 9 : maxEvents >= 3 ? 11 : maxEvents >= 2 ? 13 : 14
-    rows.forEach(r => { r.style.fontSize = size + 'px' })
-  }, [days])
+    function fit() {
+      let size = 22
+      el.style.fontSize = size + 'px'
+      while (el.scrollHeight > el.clientHeight && size > 8) {
+        size -= 1
+        el.style.fontSize = size + 'px'
+      }
+    }
+    fit()
+    window.addEventListener('resize', fit)
+    return () => window.removeEventListener('resize', fit)
+  }, [days, allOverrides])
 
   return (
     <div className="ttv-panel">
