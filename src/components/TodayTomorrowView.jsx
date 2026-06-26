@@ -159,17 +159,19 @@ function UpcomingSection({ todayDate, events }) {
   }
 
   const bodyRef = useRef(null)
-  // 枠に収まる最大サイズまでフォントを実測縮小（PCはCSSでem連動、子要素も一緒に拡縮）
+  // 各日を均等高さ(7等分)に割り当て、行ごとに内容量へ合わせてフォントを実測縮小
   useLayoutEffect(() => {
     const el = bodyRef.current
     if (!el) return
     function fit() {
-      let size = 22
-      el.style.fontSize = size + 'px'
-      while (el.scrollHeight > el.clientHeight && size > 8) {
-        size -= 1
-        el.style.fontSize = size + 'px'
-      }
+      el.querySelectorAll('.upcoming-day').forEach(r => {
+        let size = 24
+        r.style.fontSize = size + 'px'
+        while (r.scrollHeight > r.clientHeight && size > 7) {
+          size -= 1
+          r.style.fontSize = size + 'px'
+        }
+      })
     }
     fit()
     window.addEventListener('resize', fit)

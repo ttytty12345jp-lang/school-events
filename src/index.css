@@ -1562,12 +1562,10 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
     padding-bottom: 10.4mm;
     margin-bottom: 10.4mm;
   }
-  /* 「明日以降の予定」：画面用の自動縮小インライン値を打ち消し、印刷では固定サイズで自然に流す */
-  .ttv-upcoming-body { overflow: visible !important; font-size: 20px !important; }
-  .upcoming-day { font-size: 1em !important; flex: none !important; overflow: visible !important; }
-  .upcoming-day-label { font-size: 0.82em !important; }
-  .upcoming-chip { font-size: 1em !important; }
-  .upcoming-time { font-size: 0.7em !important; }
+  /* 「明日以降の予定」：印刷でも7等分の均等高さを維持（上寄り防止）。
+     行ごとのフォントは画面で実測した値がzoomで一緒に縮むのでそのまま使う */
+  .ttv-upcoming-body { overflow: hidden !important; }
+  .upcoming-day { flex: 1 !important; min-height: 0 !important; overflow: hidden !important; }
 }
 
 /* PC版 朝会記録簿：見出し・明日以降の予定・学校行事時数を約2倍に拡大
@@ -1578,9 +1576,9 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   .ttv-header-date { font-size: 17px; }
   .ttv-saving { font-size: 13px; }
 
-  /* 明日以降の予定：JSで枠に収まる最大サイズへ実測縮小。子要素はem連動 */
+  /* 明日以降の予定：7等分の均等高さ。行ごとにJSで内容量に合わせてフォント縮小 */
   .ttv-upcoming-body { overflow: hidden; }
-  .upcoming-day { font-size: 1em; flex: none; overflow: visible; align-items: flex-start; padding: 2px 0; }
+  .upcoming-day { flex: 1; min-height: 0; overflow: hidden; align-items: flex-start; padding: 2px 0; }
   .upcoming-day-label { font-size: 0.82em; min-width: 5em; }
   .upcoming-chip { font-size: 1em; }
   .upcoming-time { font-size: 0.7em; }
