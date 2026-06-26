@@ -1562,6 +1562,12 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
     padding-bottom: 10.4mm;
     margin-bottom: 10.4mm;
   }
+  /* 「明日以降の予定」：画面用の自動縮小インライン値を打ち消し、印刷では固定サイズで自然に流す */
+  .ttv-upcoming-body { overflow: visible !important; font-size: 20px !important; }
+  .upcoming-day { font-size: 1em !important; flex: none !important; overflow: visible !important; }
+  .upcoming-day-label { font-size: 0.82em !important; }
+  .upcoming-chip { font-size: 1em !important; }
+  .upcoming-time { font-size: 0.7em !important; }
 }
 
 /* PC版 朝会記録簿：見出し・明日以降の予定・学校行事時数を約2倍に拡大
