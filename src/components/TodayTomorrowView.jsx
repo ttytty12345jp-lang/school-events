@@ -159,21 +159,24 @@ function UpcomingSection({ todayDate, events }) {
   }
 
   const bodyRef = useRef(null)
-  // 全体を統一サイズで、枠に収まる最大まで実測縮小（行ごとのばらつきをなくす）
+  // 全体を統一サイズで、枠に収まる最大まで実測拡大（行ごとのばらつきをなくす）。
+  // パネル高さが確定してから測れるよう ResizeObserver でも再調整する。
   useLayoutEffect(() => {
     const el = bodyRef.current
     if (!el) return
     function fit() {
-      let size = 26
+      let size = 30
       el.style.fontSize = size + 'px'
-      while (el.scrollHeight > el.clientHeight && size > 8) {
+      while (el.scrollHeight > el.clientHeight && size > 9) {
         size -= 1
         el.style.fontSize = size + 'px'
       }
     }
     fit()
+    const ro = new ResizeObserver(fit)
+    ro.observe(el)
     window.addEventListener('resize', fit)
-    return () => window.removeEventListener('resize', fit)
+    return () => { ro.disconnect(); window.removeEventListener('resize', fit) }
   }, [days, allOverrides])
 
   return (
