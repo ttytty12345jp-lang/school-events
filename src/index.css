@@ -1654,14 +1654,18 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   .header-controls { margin-left: 0; width: 100%; overflow: visible; }
   .hc-row { flex-wrap: wrap; gap: 2px; }
 
-  /* 朝会記録簿：縦積み */
+  /* 朝会記録簿：全パネルを縦一列に（左右カラムを解除） */
   .ttv-layout { flex-direction: column; height: auto; min-height: 0; }
-  .ttv-left { flex: none; min-height: 0; }
-  .ttv-right { flex: none; min-height: 0; }
+  .ttv-left, .ttv-right { display: contents; }
   .ttv-left .ttv-panel:first-child,
   .ttv-left .ttv-panel:last-child,
   .ttv-right .ttv-panel:first-child,
   .ttv-right .ttv-panel:last-child { flex: none; min-height: 120px; }
+
+  /* 生活目標：一番下に移動＋小さく */
+  .ttv-left .ttv-panel.ttv-goal-panel { order: 100; flex: none; height: auto; min-height: 0; }
+  .ttv-goal-body { font-size: 12px; padding: 4px 10px; }
+  .ttv-header-goal { font-size: 13px; padding: 4px 10px; }
 
   /* 朝会記録簿：スマホでは固定サイズページ(PC用)を解除して画面幅に収める */
   .main-content:has(.ttv-wrap) { height: auto; padding: 8px; overflow: visible; display: block; }
