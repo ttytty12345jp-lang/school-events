@@ -1663,8 +1663,9 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   .ttv-right .ttv-panel:first-child,
   .ttv-right .ttv-panel:last-child { flex: none; min-height: 120px; }
 
-  /* 朝会記録簿：高さ固定を解除 */
-  .ttv-wrap { height: auto; }
+  /* 朝会記録簿：スマホでは固定サイズページ(PC用)を解除して画面幅に収める */
+  .main-content:has(.ttv-wrap) { height: auto; padding: 8px; overflow: visible; display: block; }
+  .ttv-wrap { width: 100% !important; height: auto; margin: 0; zoom: 1 !important; }
 
   /* 朝会記録簿の各記入欄：スマホでは小さめに固定（PCの行ごとサイズは上書き） */
   .ttv-left .agenda-title-input,
