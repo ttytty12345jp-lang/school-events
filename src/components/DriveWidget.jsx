@@ -5,9 +5,10 @@ const PREFIX = 'dw3_'
 function urlKey(panelId) { return PREFIX + 'url_' + panelId }
 function visKey(panelId, dateKey) { return PREFIX + 'vis_' + panelId + '_' + (dateKey || 'global') }
 
+const DEFAULT_URL = 'https://drive.google.com/drive/folders/1F4P52HsK3hJMAGxwxjZ3sLT3lMeVovfv'
 function loadUrl(panelId) {
-  try { return JSON.parse(localStorage.getItem(urlKey(panelId)) ?? 'null') ?? 'https://drive.google.com' }
-  catch { return 'https://drive.google.com' }
+  try { return JSON.parse(localStorage.getItem(urlKey(panelId)) ?? 'null') ?? DEFAULT_URL }
+  catch { return DEFAULT_URL }
 }
 function saveUrl(panelId, val) { localStorage.setItem(urlKey(panelId), JSON.stringify(val)) }
 
