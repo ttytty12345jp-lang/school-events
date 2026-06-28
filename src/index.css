@@ -921,6 +921,10 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .db-wt-del-btn { background: none; border: none; cursor: pointer; color: #9ca3af; font-size: 13px; padding: 2px 4px; }
 .db-wt-del-btn:hover { color: #ef4444; }
 .db-wt-empty { padding: 10px; text-align: center; color: var(--text-muted); font-size: 13px; border: 1px solid var(--border); }
+/* 文字列ルール表は列が多いので、狭い画面でははみ出さず横スクロール */
+.db-wt-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.db-watch-rule-table { min-width: 560px; }
+.db-watch-rule-table .db-wt-input-text { min-width: 96px; }
 .db-section-note { font-size: 12px; color: var(--text-muted); margin: 4px 0 8px; }
 
 /* ヘッダーのバージョン選択 */

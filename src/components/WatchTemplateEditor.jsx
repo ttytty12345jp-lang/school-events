@@ -75,6 +75,7 @@ export default function WatchTemplateEditor() {
         {saving && <span className="db-saving"> 保存中…</span>}
       </div>
       <p className="db-section-note">ここで設定した時刻が月中行事（見守り隊用）に自動で挿入されます。変更がある日のみ月中行事側で上書きしてください。</p>
+      <div className="db-wt-scroll">
       <table className="db-watch-template-table">
         <thead>
           <tr>
@@ -100,11 +101,13 @@ export default function WatchTemplateEditor() {
           ))}
         </tbody>
       </table>
+      </div>
 
       {/* 文字列ルール */}
       <div className="db-section-title" style={{ marginTop: 18 }}>文字列ルール（特定の行事名で時刻を上書き）</div>
       <p className="db-section-note">左の「学校行事」欄に登録した文字列が含まれる日は、曜日テンプレートの代わりにこの下校時刻が使われます。曜日を指定するとその曜日だけに適用されます（上の行から順に判定）。</p>
-      <table className="db-watch-template-table">
+      <div className="db-wt-scroll">
+      <table className="db-watch-template-table db-watch-rule-table">
         <thead>
           <tr>
             <th className="db-wt-th-rule">含まれる文字列</th>
@@ -154,6 +157,7 @@ export default function WatchTemplateEditor() {
           ))}
         </tbody>
       </table>
+      </div>
       <button className="hc-btn" style={{ marginTop: 8 }} onClick={addRule}>＋ ルールを追加</button>
     </div>
   )
