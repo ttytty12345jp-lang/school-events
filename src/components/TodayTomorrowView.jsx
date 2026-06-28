@@ -42,7 +42,7 @@ function TodaySection({ date, events, dateKey, spanEvents = [] }) {
         />
       </div>
       <MorningAgenda dateKey={dateKey} calendarEvents={events} rich />
-      <DriveWidget storeId="ttv" dateKey={dateKey} />
+      <DriveWidget key={`dw-ttv-${dateKey}`} storeId="ttv" dateKey={dateKey} />
     </div>
   )
 }
