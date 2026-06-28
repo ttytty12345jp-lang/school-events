@@ -1,30 +1,52 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 
 const PREFIX = 'dw3_'
+
+function urlKey(panelId) { return PREFIX + 'url_' + panelId }
+function visKey(panelId, dateKey) { return PREFIX + 'vis_' + panelId + '_' + (dateKey || 'global') }
+
 function loadUrl(panelId) {
-  try { return JSON.parse(localStorage.getItem(PREFIX + 'url_' + panelId) ?? 'null') ?? 'https://drive.google.com' } catch { return 'https://drive.google.com' }
+  try { return JSON.parse(localStorage.getItem(urlKey(panelId)) ?? 'null') ?? 'https://drive.google.com' }
+  catch { return 'https://drive.google.com' }
 }
-function saveUrl(panelId, val) { localStorage.setItem(PREFIX + 'url_' + panelId, JSON.stringify(val)) }
-function loadShown(panelId, dateKey, inheritFrom) {
-  // 日付ごとに show/hide を保持。なければ inheritFrom パネルの同日付を参照
-  const key = PREFIX + 'vis_' + panelId + '_' + (dateKey || 'global')
-  const v = localStorage.getItem(key)
-  if (v !== null) return v === '1'
-  if (inheritFrom) {
-    const fallback = localStorage.getItem(PREFIX + 'vis_' + inheritFrom + '_' + (dateKey || 'global'))
-    if (fallback !== null) return fallback === '1'
+function saveUrl(panelId, val) { localStorage.setItem(urlKey(panelId), JSON.stringify(val)) }
+
+// 表示/非表示を決定:
+//   1. この日付に明示的な値があればそれを使う
+//   2. なければ「過去で最も新しい明示値」を引き継ぐ（＝最後に選んだ状態が以後の日にも続く）
+//   3. それも無ければデフォルト表示
+// これにより、ある日「非表示」にすると、それ以降の日もずっと非表示になる。
+// ホワイトボードは today/tomorrow が同じ panelId を共有し dateKey だけ違うので、
+// 「明日」で設定した状態が翌日「今日」になったとき自動的に引き継がれる。
+function loadShown(panelId, dateKey) {
+  const exact = localStorage.getItem(visKey(panelId, dateKey))
+  if (exact !== null) return exact === '1'
+
+  if (dateKey) {
+    const prefix = PREFIX + 'vis_' + panelId + '_'
+    let bestDate = null, bestVal = null
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i)
+      if (!k || !k.startsWith(prefix)) continue
+      const d = k.slice(prefix.length)
+      // YYYY-MM-DD は辞書順＝時系列順。dateKey 以前で最も新しい設定を採用
+      if (d !== 'global' && d <= dateKey && (bestDate === null || d > bestDate)) {
+        bestDate = d
+        bestVal = localStorage.getItem(k)
+      }
+    }
+    if (bestVal !== null) return bestVal === '1'
   }
   return true
 }
 function saveShown(panelId, dateKey, val) {
-  const key = PREFIX + 'vis_' + panelId + '_' + (dateKey || 'global')
-  localStorage.setItem(key, val ? '1' : '0')
+  localStorage.setItem(visKey(panelId, dateKey), val ? '1' : '0')
 }
 
-// storeId: パネル識別子 (例: "wb_today", "ttv")
-// dateKey: 日付文字列 (例: "2026-06-28") — 表示/非表示の保持に使用
-export default function DriveWidget({ storeId = 'default', dateKey = '', inheritFrom = null }) {
-  const [shown, setShown] = useState(() => loadShown(storeId, dateKey, inheritFrom))
+// storeId: パネル識別子（ホワイトボードは today/tomorrow とも "wb" を共有）
+// dateKey: 日付文字列（"2026-06-28"）— 表示/非表示はこの日付に紐づく
+export default function DriveWidget({ storeId = 'default', dateKey = '' }) {
+  const [shown, setShown] = useState(() => loadShown(storeId, dateKey))
   const [url, setUrl] = useState(() => loadUrl(storeId))
 
   function toggle() {
@@ -42,10 +64,14 @@ export default function DriveWidget({ storeId = 'default', dateKey = '', inherit
     saveUrl(storeId, full)
   }
 
-  // 長押しで URL 変更 (モバイル向け)
-  let pressTimer = null
-  function onTouchStart(e) { pressTimer = setTimeout(() => { pressTimer = null; changeUrl(e) }, 700) }
-  function onTouchEnd() { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null } }
+  // 長押しで URL 変更（モバイル向け）
+  const pressTimer = useRef(null)
+  function onTouchStart(e) {
+    pressTimer.current = setTimeout(() => { pressTimer.current = null; changeUrl(e) }, 700)
+  }
+  function onTouchEnd() {
+    if (pressTimer.current) { clearTimeout(pressTimer.current); pressTimer.current = null }
+  }
 
   return (
     <div className="dw-widget">
