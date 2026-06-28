@@ -305,13 +305,13 @@ function EditCell({ value, onChange, placeholder = '', className = '', align, li
 }
 
 // ── 自由テキスト＋時計ボタンでネイティブピッカー ─────────
-function TimeInput({ val, onChange, cellKey, tripCellKey, onNext }) {
+function TimeInput({ val, onChange, cellKey, tripCellKey, onNext, inputClass = '' }) {
   const [text, setText] = useState(val)
   const pickerRef = useRef(null)
   useEffect(() => { setText(val) }, [val])
   return (
     <span className="wb-time-combo">
-      <input type="text" className="wb-time-input" value={text}
+      <input type="text" className={`wb-time-input${inputClass ? ' ' + inputClass : ''}`} value={text}
         onChange={e => { setText(e.target.value); onChange(e.target.value) }}
         onKeyDown={e => { if (e.key === 'Enter') { e.currentTarget.blur(); if (onNext) setTimeout(onNext, 0) } }}
         onDoubleClick={() => pickerRef.current?.showPicker()}
@@ -335,7 +335,7 @@ function TimeRange({ startVal, endVal, onStartChange, onEndChange, startCellKey,
       <TimeInput val={startVal} onChange={onStartChange} cellKey={startCellKey} tripCellKey={startTripKey}
         onNext={endAttr ? () => document.querySelector(endAttr)?.focus() : undefined} />
       <span className="wb-tilde">～</span>
-      <TimeInput val={endVal} onChange={onEndChange} cellKey={endCellKey} tripCellKey={endTripKey} onNext={onEndNext} />
+      <TimeInput val={endVal} onChange={onEndChange} cellKey={endCellKey} tripCellKey={endTripKey} onNext={onEndNext} inputClass="wb-time-input-end" />
     </div>
   )
 }
