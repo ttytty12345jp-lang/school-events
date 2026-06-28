@@ -929,6 +929,8 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   opacity: 0.92;
   vertical-align: middle;
 }
+.span-label-chip-edit { cursor: pointer; }
+.span-label-chip-edit:hover { opacity: 1; filter: brightness(1.1); }
 .wb-week-event .span-label-chip {
   font-size: 16px;
   padding: 2px 10px;

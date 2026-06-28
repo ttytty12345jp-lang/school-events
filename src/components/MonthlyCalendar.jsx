@@ -255,7 +255,8 @@ function DroppableCell({ dateKey, cat, cellEvents, isActive, onCellClick, onAdd,
       onDrop={handleCellDrop}
     >
       {startSpans.map(s => (
-        <span key={s.id} className="span-label-chip" style={{ background: s.color }}>
+        <span key={s.id} className="span-label-chip span-label-chip-edit" style={{ background: s.color }}
+          onClick={e => { e.stopPropagation(); setSpanModal(s) }}>
           {s.title}
         </span>
       ))}
