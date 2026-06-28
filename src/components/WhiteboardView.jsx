@@ -333,9 +333,10 @@ function TimeRange({ startVal, endVal, onStartChange, onEndChange, startCellKey,
   return (
     <div className="wb-time-range">
       <TimeInput val={startVal} onChange={onStartChange} cellKey={startCellKey} tripCellKey={startTripKey}
-        onNext={endAttr ? () => document.querySelector(endAttr)?.focus() : undefined} />
+        onNext={endAttr ? () => document.querySelector(endAttr)?.focus() : undefined}
+        inputClass="wb-time-input-c" comboClass="wb-time-combo-c" />
       <span className="wb-tilde">～</span>
-      <TimeInput val={endVal} onChange={onEndChange} cellKey={endCellKey} tripCellKey={endTripKey} onNext={onEndNext} inputClass="wb-time-input-end" comboClass="wb-time-combo-end" />
+      <TimeInput val={endVal} onChange={onEndChange} cellKey={endCellKey} tripCellKey={endTripKey} onNext={onEndNext} inputClass="wb-time-input-c" comboClass="wb-time-combo-c" />
     </div>
   )
 }
