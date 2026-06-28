@@ -448,21 +448,19 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
   }
 
   // テンプレート値と上書きデータから表示値を取得
-  // 戻り値: { displayValue, isTemplate, isCleared }
-  // isCleared: 明示的に消去（null）→ 斜線表示
-  // isTemplate: テンプレートから自動挿入
-  function getWatchCellInfo(dateKey, grade, dow) {
-    const dayName = DAYS_JA[dow]
+  // skipTemplate=true のときテンプレートを使わず空欄扱い（土日祝用）
+  function getWatchCellInfo(dateKey, grade, dow, skipTemplate = false) {
     const explicit = watchData[dateKey]?.[grade]
     if (explicit === null) return { displayValue: '', isTemplate: false, isCleared: true }
     if (explicit !== undefined) return { displayValue: explicit, isTemplate: false, isCleared: false }
-    const tplVal = watchTemplate[dayName]?.[grade] || ''
+    if (skipTemplate) return { displayValue: '', isTemplate: false, isCleared: false }
+    const tplVal = watchTemplate[DAYS_JA[dow]]?.[grade] || ''
     return { displayValue: tplVal, isTemplate: true, isCleared: false }
   }
 
   // 学年配列のセル結合グループを計算
-  function computeWatchGroups(dateKey, dow) {
-    const infos = GRADES.map(g => ({ grade: g, ...getWatchCellInfo(dateKey, g, dow) }))
+  function computeWatchGroups(dateKey, dow, skipTemplate = false) {
+    const infos = GRADES.map(g => ({ grade: g, ...getWatchCellInfo(dateKey, g, dow, skipTemplate) }))
     const groups = []
     let i = 0
     while (i < infos.length) {
@@ -686,9 +684,6 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
                   />
                 )
               }
-              // 見守り隊用では塗りつぶし行（土日・祝日等）を非表示
-              if (viewMode === 'watch' && gray) return null
-
               const isWatchEditing = viewMode === 'watch' && watchRowEdit === dateKey
 
               return (
@@ -721,7 +716,7 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
                         // 編集モード: 全学年を個別 input で表示
                         GRADES.map((g, idx) => {
                           const explicit = watchData[dateKey]?.[g]
-                          const inputVal = explicit === null ? '' : explicit !== undefined ? explicit : (watchTemplate[DAYS_JA[dow]]?.[g] || '')
+                          const inputVal = explicit === null ? '' : explicit !== undefined ? explicit : (gray ? '' : (watchTemplate[DAYS_JA[dow]]?.[g] || ''))
                           return (
                             <td key={g} className="col-grade">
                               <input
@@ -736,8 +731,8 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
                           )
                         })
                       ) : (
-                        // 表示モード: 結合表示
-                        computeWatchGroups(dateKey, dow).map(group => {
+                        // 表示モード: 結合表示（グレー行はテンプレート非表示）
+                        computeWatchGroups(dateKey, dow, gray).map(group => {
                           const groupKey = group.grades.join(',')
                           if (group.isCleared) {
                             return (
