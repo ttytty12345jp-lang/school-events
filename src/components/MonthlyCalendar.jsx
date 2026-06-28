@@ -4,7 +4,7 @@ import { exportMonthlyExcel, downloadMonthlyTemplate, parseImportExcel } from '.
 import { useHeaderControls } from '../HeaderControlsContext'
 import { DAYS_JA, ymdKey as toDateKey } from '../utils/date'
 import { loadSpanEvents, saveSpanEvents, getActiveSpans } from '../lib/spanEvents'
-import { loadWatchTemplate } from '../lib/watchTemplate'
+import { loadWatchTemplate, watchTemplateKey } from '../lib/watchTemplate'
 import { subscribeSchoolNotices, markPending, onVisibilityReload } from '../lib/schoolNoticesRealtime'
 
 const HIGHLIGHTS_TYPE = 'row_highlights'
@@ -532,8 +532,14 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
     if (explicit === null) return { displayValue: '', isTemplate: false, isCleared: true }
     if (explicit !== undefined) return { displayValue: explicit, isTemplate: false, isCleared: false }
     if (skipTemplate) return { displayValue: '', isTemplate: false, isCleared: false }
-    const tplVal = watchTemplate[DAYS_JA[dow]]?.[grade] || ''
+    const tplKey = watchTemplateKey(DAYS_JA[dow], schoolEventText(dateKey))
+    const tplVal = watchTemplate[tplKey]?.[grade] || ''
     return { displayValue: tplVal, isTemplate: true, isCleared: false }
+  }
+
+  // 当日の「学校行事」欄のテキスト（全イベントタイトルを連結）
+  function schoolEventText(dateKey) {
+    return (eventMap.get(`${dateKey}__学校行事`) || []).map(e => e.title || '').join(' ')
   }
 
   // 学年配列のセル結合グループを計算
@@ -801,7 +807,7 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
                         // 編集モード: 全学年を個別 input で表示
                         GRADES.map((g, idx) => {
                           const explicit = watchData[dateKey]?.[g]
-                          const inputVal = explicit === null ? '' : explicit !== undefined ? explicit : (gray ? '' : (watchTemplate[DAYS_JA[dow]]?.[g] || ''))
+                          const inputVal = explicit === null ? '' : explicit !== undefined ? explicit : (gray ? '' : (watchTemplate[watchTemplateKey(DAYS_JA[dow], schoolEventText(dateKey))]?.[g] || ''))
                           return (
                             <td key={g} className="col-grade">
                               <input
