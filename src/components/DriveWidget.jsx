@@ -55,19 +55,24 @@ export default function DriveWidget({ storeId = 'default', dateKey = '' }) {
 
   return (
     <div className="dw-widget">
-      <button className="dw-vis-btn" onClick={toggle} title={shown ? '非表示' : '表示'}>
-        {shown ? '▾' : '◂'}
-      </button>
-      {shown && (
-        <a href={url} target="_blank" rel="noopener noreferrer"
-          className="dw-drive-link"
-          onContextMenu={changeUrl}
-          onTouchStart={onTouchStart}
-          onTouchEnd={onTouchEnd}
-          onTouchMove={onTouchEnd}
-          title="Google Drive（右クリック / 長押しで URL 変更）">
-          <DriveIcon size={46} />
-        </a>
+      {shown ? (
+        <>
+          <a href={url} target="_blank" rel="noopener noreferrer"
+            className="dw-drive-link"
+            onContextMenu={changeUrl}
+            onTouchStart={onTouchStart}
+            onTouchEnd={onTouchEnd}
+            onTouchMove={onTouchEnd}
+            title="Google Drive（右クリック / 長押しで URL 変更）">
+            <DriveIcon size={46} />
+          </a>
+          <button className="dw-vis-btn" onClick={toggle} title="非表示にする">✕</button>
+        </>
+      ) : (
+        // 非表示のときも薄い Drive アイコンを残し、タップで表示できるようにする
+        <button className="dw-show-btn" onClick={toggle} title="Google Drive を表示">
+          <DriveIcon size={30} />
+        </button>
       )}
     </div>
   )
