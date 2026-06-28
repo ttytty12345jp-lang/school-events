@@ -868,6 +868,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 
 /* 見守り隊バージョンの学年別列 */
 .monthly-table .col-grade { width: 72px; text-align: center; border: 1px solid var(--border); padding: 0; vertical-align: middle; }
+.monthly-watch .row-gray .col-grade { border-left: none; border-right: none; }
 .monthly-watch .col-cat { min-width: 200px; }
 .watch-input { width: 100%; border: none; outline: none; background: transparent; font-size: 13px; padding: 0; text-align: center; font-family: inherit; box-sizing: border-box; height: 100%; display: block; }
 .watch-input:focus { background: var(--primary-light); }
