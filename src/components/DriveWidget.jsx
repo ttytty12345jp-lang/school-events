@@ -1,33 +1,46 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 
 const PREFIX = 'dw3_'
-function load(id, key, def) {
-  try { return JSON.parse(localStorage.getItem(PREFIX + key + '_' + id) ?? 'null') ?? def } catch { return def }
+function loadUrl(panelId) {
+  try { return JSON.parse(localStorage.getItem(PREFIX + 'url_' + panelId) ?? 'null') ?? 'https://drive.google.com' } catch { return 'https://drive.google.com' }
 }
-function save(id, key, val) { localStorage.setItem(PREFIX + key + '_' + id, JSON.stringify(val)) }
+function saveUrl(panelId, val) { localStorage.setItem(PREFIX + 'url_' + panelId, JSON.stringify(val)) }
+function loadShown(panelId, dateKey) {
+  // 日付ごとに show/hide を保持
+  const key = PREFIX + 'vis_' + panelId + '_' + (dateKey || 'global')
+  const v = localStorage.getItem(key)
+  return v === null ? true : v === '1'
+}
+function saveShown(panelId, dateKey, val) {
+  const key = PREFIX + 'vis_' + panelId + '_' + (dateKey || 'global')
+  localStorage.setItem(key, val ? '1' : '0')
+}
 
-export default function DriveWidget({ storeId = 'default' }) {
-  const [shown, setShown] = useState(() => load(storeId, 'shown', true))
-  const [url, setUrl] = useState(() => load(storeId, 'url', 'https://drive.google.com'))
+// storeId: パネル識別子 (例: "wb_today", "ttv")
+// dateKey: 日付文字列 (例: "2026-06-28") — 表示/非表示の保持に使用
+export default function DriveWidget({ storeId = 'default', dateKey = '' }) {
+  const [shown, setShown] = useState(() => loadShown(storeId, dateKey))
+  const [url, setUrl] = useState(() => loadUrl(storeId))
 
   function toggle() {
     const next = !shown
     setShown(next)
-    save(storeId, 'shown', next)
+    saveShown(storeId, dateKey, next)
   }
 
-  function setLink() {
+  function changeUrl(e) {
+    e.preventDefault()
     const next = window.prompt('Google Drive の URL:', url)
     if (next === null) return
     const full = next.trim().startsWith('http') ? next.trim() : 'https://' + next.trim()
     setUrl(full)
-    save(storeId, 'url', full)
+    saveUrl(storeId, full)
   }
 
   // 長押しで URL 変更 (モバイル向け)
-  const tRef = useRef(null)
-  function onTouchStart() { tRef.current = setTimeout(setLink, 700) }
-  function onTouchEnd() { clearTimeout(tRef.current) }
+  let pressTimer = null
+  function onTouchStart(e) { pressTimer = setTimeout(() => { pressTimer = null; changeUrl(e) }, 700) }
+  function onTouchEnd() { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null } }
 
   return (
     <div className="dw-widget">
@@ -37,24 +50,29 @@ export default function DriveWidget({ storeId = 'default' }) {
       {shown && (
         <a href={url} target="_blank" rel="noopener noreferrer"
           className="dw-drive-link"
-          onContextMenu={e => { e.preventDefault(); setLink() }}
+          onContextMenu={changeUrl}
           onTouchStart={onTouchStart}
           onTouchEnd={onTouchEnd}
           onTouchMove={onTouchEnd}
           title="Google Drive（右クリック / 長押しで URL 変更）">
-          <DriveIcon size={44} />
+          <DriveIcon size={46} />
         </a>
       )}
     </div>
   )
 }
 
-function DriveIcon({ size = 44 }) {
+// 公式 Google Drive アイコン SVG
+function DriveIcon({ size = 46 }) {
+  const h = size * (78 / 87.3)
   return (
-    <svg width={size} height={size * 0.87} viewBox="0 0 87 78" fill="none" aria-hidden="true">
-      <polygon points="0,78 29,78 43.5,52 14.5,0" fill="#4285F4" />
-      <polygon points="29,78 87,78 72.5,52 43.5,52" fill="#34A853" />
-      <polygon points="14.5,0 43.5,52 72.5,52 43.5,0" fill="#FBBC04" />
+    <svg width={size} height={h} viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+      <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0-1.2 4.5h27.5z" fill="#00ac47"/>
+      <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
+      <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+      <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+      <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
     </svg>
   )
 }
