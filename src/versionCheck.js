@@ -7,6 +7,8 @@ const TRIES_KEY = 'vcheck_tries'
 const MAX_TRIES = 2 // 念のためリロードループを防ぐ上限
 
 let busy = false
+let lastChecked = 0
+const CHECK_INTERVAL = 60_000 // 同一ウィンドウで60秒以内の重複チェックを抑制
 
 async function fetchLatestId() {
   try {
@@ -23,6 +25,9 @@ async function fetchLatestId() {
 
 async function check() {
   if (busy) return
+  const now = Date.now()
+  if (now - lastChecked < CHECK_INTERVAL) return
+  lastChecked = now
   busy = true
   try {
     const latest = await fetchLatestId()
