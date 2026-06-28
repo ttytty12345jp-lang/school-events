@@ -661,13 +661,7 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
               const gray = isRowGray(dateKey, isWeekend)
               const activeSpans = getActiveSpans(spanEvents, dateKey)
               const BAR_W = 4, BAR_GAP = 2
-              const spanStyle = activeSpans.length ? {
-                backgroundImage: activeSpans.map(s => `linear-gradient(${s.color},${s.color})`).join(','),
-                backgroundSize: activeSpans.map((_, i) => `${BAR_W}px 100%`).join(','),
-                backgroundPosition: activeSpans.map((_, i) => `${i * (BAR_W + BAR_GAP)}px 0`).join(','),
-                backgroundRepeat: 'no-repeat',
-                paddingLeft: activeSpans.length * (BAR_W + BAR_GAP) + 6 + 'px',
-              } : undefined
+              const spanPadding = activeSpans.length ? activeSpans.length * (BAR_W + BAR_GAP) + 4 : undefined
               const renderCatCell = (cat, isFirst) => {
                 const cellKey = `${dateKey}__${cat}`
                 const cellEvents = eventMap.get(cellKey) || []
@@ -706,10 +700,15 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
                 ].filter(Boolean).join(' ')}>
                   <td
                     className="col-date"
-                    style={spanStyle}
-                    title={activeSpans.map(s => s.title).join(' / ') || undefined}
-                    onClick={activeSpans.length ? () => setSpanModal(activeSpans[0]) : undefined}
-                  >{month}/{day}</td>
+                    style={spanPadding ? { paddingLeft: spanPadding } : undefined}
+                  >
+                    {activeSpans.map((s, i) => (
+                      <span key={s.id} className="span-bar" title={s.title}
+                        style={{ left: i * (BAR_W + BAR_GAP), background: s.color }}
+                        onClick={e => { e.stopPropagation(); setSpanModal(s) }} />
+                    ))}
+                    {month}/{day}
+                  </td>
                   <td
                     className="col-day col-day-toggle"
                     title="クリックで塗りつぶし切り替え"

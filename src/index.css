@@ -931,6 +931,17 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 }
 .span-label-chip-edit { cursor: pointer; }
 .span-label-chip-edit:hover { opacity: 1; filter: brightness(1.1); }
+
+/* 期間行事: 日付列の個別クリッカブルバー */
+.col-date { position: relative; }
+.span-bar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  cursor: pointer;
+}
+.span-bar:hover { filter: brightness(1.25); }
 .wb-week-event .span-label-chip {
   font-size: 16px;
   padding: 2px 10px;
