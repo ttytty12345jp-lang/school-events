@@ -1,47 +1,27 @@
-import { useState, useRef } from 'react'
-
-const PREFIX = 'dw3_'
-
-function urlKey(panelId) { return PREFIX + 'url_' + panelId }
-function visKey(panelId, dateKey) { return PREFIX + 'vis_' + panelId + '_' + (dateKey || 'global') }
-
-const DEFAULT_URL = 'https://drive.google.com/drive/folders/1F4P52HsK3hJMAGxwxjZ3sLT3lMeVovfv'
-function loadUrl(panelId) {
-  try { return JSON.parse(localStorage.getItem(urlKey(panelId)) ?? 'null') ?? DEFAULT_URL }
-  catch { return DEFAULT_URL }
-}
-function saveUrl(panelId, val) { localStorage.setItem(urlKey(panelId), JSON.stringify(val)) }
-
-// 表示/非表示を決定（既定は非表示・日ごとに独立）:
-//   その日付に「表示」を明示的に設定したときだけ表示。引き継ぎ・過去参照は一切しない。
-// ホワイトボードは today/tomorrow が同じ panelId("wb") を共有し dateKey だけ違うので、
-// 「明日」でONにした日が翌日「今日」になったとき自動的にONとして表示される。
-function loadShown(panelId, dateKey) {
-  return localStorage.getItem(visKey(panelId, dateKey)) === '1'
-}
-function saveShown(panelId, dateKey, val) {
-  localStorage.setItem(visKey(panelId, dateKey), val ? '1' : '0')
-}
+import { useEffect, useReducer, useRef } from 'react'
+import { ensureLoaded, subscribe, getShown, setShown, getUrl, setUrl } from '../lib/driveWidgetStore'
 
 // storeId: パネル識別子（ホワイトボードは today/tomorrow とも "wb" を共有）
 // dateKey: 日付文字列（"2026-06-28"）— 表示/非表示はこの日付に紐づく
+// 状態は Supabase 上の共有ストアに保存され、全端末で同期される。
 export default function DriveWidget({ storeId = 'default', dateKey = '' }) {
-  const [shown, setShown] = useState(() => loadShown(storeId, dateKey))
-  const [url, setUrl] = useState(() => loadUrl(storeId))
+  const [, force] = useReducer(x => x + 1, 0)
+  useEffect(() => {
+    ensureLoaded()
+    return subscribe(force)
+  }, [])
 
-  function toggle() {
-    const next = !shown
-    setShown(next)
-    saveShown(storeId, dateKey, next)
-  }
+  const shown = getShown(storeId, dateKey)
+  const url = getUrl(storeId)
+
+  function toggle() { setShown(storeId, dateKey, !shown) }
 
   function changeUrl(e) {
     e.preventDefault()
     const next = window.prompt('Google Drive の URL:', url)
     if (next === null) return
     const full = next.trim().startsWith('http') ? next.trim() : 'https://' + next.trim()
-    setUrl(full)
-    saveUrl(storeId, full)
+    setUrl(storeId, full)
   }
 
   // 長押しで URL 変更（モバイル向け）
@@ -55,24 +35,19 @@ export default function DriveWidget({ storeId = 'default', dateKey = '' }) {
 
   return (
     <div className="dw-widget">
-      {shown ? (
-        <>
-          <a href={url} target="_blank" rel="noopener noreferrer"
-            className="dw-drive-link"
-            onContextMenu={changeUrl}
-            onTouchStart={onTouchStart}
-            onTouchEnd={onTouchEnd}
-            onTouchMove={onTouchEnd}
-            title="Google Drive（右クリック / 長押しで URL 変更）">
-            <DriveIcon size={46} />
-          </a>
-          <button className="dw-vis-btn" onClick={toggle} title="非表示にする">✕</button>
-        </>
-      ) : (
-        // 非表示のときも薄い Drive アイコンを残し、タップで表示できるようにする
-        <button className="dw-show-btn" onClick={toggle} title="Google Drive を表示">
-          <DriveIcon size={30} />
-        </button>
+      <button className="dw-vis-btn" onClick={toggle} title={shown ? '非表示' : '表示'}>
+        {shown ? '▾' : '◂'}
+      </button>
+      {shown && (
+        <a href={url} target="_blank" rel="noopener noreferrer"
+          className="dw-drive-link"
+          onContextMenu={changeUrl}
+          onTouchStart={onTouchStart}
+          onTouchEnd={onTouchEnd}
+          onTouchMove={onTouchEnd}
+          title="Google Drive（右クリック / 長押しで URL 変更）">
+          <DriveIcon size={46} />
+        </a>
       )}
     </div>
   )
