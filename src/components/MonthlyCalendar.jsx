@@ -487,9 +487,9 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
     setControls(
       <div className="hc-row">
         <select className="hc-select" value={viewMode} onChange={e => setViewMode(e.target.value)} title="表示バージョン">
-          <option value="normal">ノーマル</option>
+          <option value="normal">標準</option>
           <option value="pta">PTA用</option>
-          <option value="watch">見守り隊</option>
+          <option value="watch">見守り隊用</option>
         </select>
         <button className="hc-btn-nav" onClick={prevMonth}>‹</button>
         <span className="hc-label">{year}年{month}月</span>
