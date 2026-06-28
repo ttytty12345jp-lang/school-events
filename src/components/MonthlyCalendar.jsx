@@ -356,19 +356,24 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
     await saveSpanEvents(next)
   }
 
-  // 月が変わったら対応するオーバーライドをロード
+  // 月が変わったら対応するオーバーライドをロード・編集状態リセット
   useEffect(() => {
+    setWatchRowEdit(null)
+    setActiveCell(null)
     if (!USE_SUPABASE) {
       try {
         const saved = JSON.parse(localStorage.getItem(`row_highlights_${monthKey}`) || '{}')
-        setRowOverrides(saved)
+        setRowOverrides(Array.isArray(saved) || !saved ? {} : saved)
       } catch { setRowOverrides({}) }
       return
     }
     supabase.from('school_notices').select('content')
       .eq('date', monthKey).eq('type', HIGHLIGHTS_TYPE).maybeSingle()
       .then(({ data }) => {
-        setRowOverrides(data?.content ? JSON.parse(data.content) : {})
+        try {
+          const parsed = data?.content ? JSON.parse(data.content) : {}
+          setRowOverrides(Array.isArray(parsed) || !parsed ? {} : parsed)
+        } catch { setRowOverrides({}) }
       })
   }, [monthKey])
 
@@ -419,7 +424,12 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
     }
     supabase.from('school_notices').select('content')
       .eq('date', monthKey).eq('type', WATCH_TYPE).maybeSingle()
-      .then(({ data }) => setWatchData(data?.content ? JSON.parse(data.content) : {}))
+      .then(({ data }) => {
+        try {
+          const parsed = data?.content ? JSON.parse(data.content) : {}
+          setWatchData(Array.isArray(parsed) || !parsed ? {} : parsed)
+        } catch { setWatchData({}) }
+      })
   }, [monthKey])
 
   function saveWatch(next) {
@@ -706,7 +716,7 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
                         style={{ left: i * (BAR_W + BAR_GAP), background: s.color }}
                         onClick={e => { e.stopPropagation(); setSpanModal(s) }} />
                     ))}
-                    {month}/{day}
+                    <span className="col-date-text">{month}/{day}</span>
                   </td>
                   <td
                     className="col-day col-day-toggle"
@@ -736,8 +746,9 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
                         })
                       ) : (
                         // 表示モード: 結合表示（グレー行はテンプレート非表示）
+                        // key は先頭学年で固定し、編集モードと揃えることで React が再利用可能に
                         computeWatchGroups(dateKey, dow, gray).map(group => {
-                          const groupKey = group.grades.join(',')
+                          const groupKey = group.grades[0]
                           if (group.isCleared) {
                             return (
                               <td key={groupKey} className="col-grade watch-cell-cleared" colSpan={group.colspan}
