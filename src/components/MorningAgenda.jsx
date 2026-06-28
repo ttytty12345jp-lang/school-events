@@ -49,6 +49,7 @@ export default function MorningAgenda({ dateKey, calendarEvents, rich = false })
   const [saving, setSaving] = useState(false)
   const [dragOverId, setDragOverId] = useState(null) // ドロップ先のid
   const [focusId, setFocusId] = useState(null)
+  const [fmtOpenId, setFmtOpenId] = useState(null) // 書式ツールバーを開いている行のid
   const debounceRef = useRef(null)
   const inputRefs = useRef({})
   const dragIdRef = useRef(null)
@@ -125,6 +126,7 @@ export default function MorningAgenda({ dateKey, calendarEvents, rich = false })
   }
 
   function remove(id) {
+    if (fmtOpenId === id) setFmtOpenId(null)
     const next = items.filter(it => it.id !== id)
     update(next.length === 0 ? [newItem()] : next)
   }
@@ -205,8 +207,16 @@ export default function MorningAgenda({ dateKey, calendarEvents, rich = false })
             onBlur={rich ? () => setTimeout(() => setFocusId(f => (f === item.id ? null : f)), 150) : undefined}
             placeholder="行事・連絡を入力"
           />
-          {rich && focusId === item.id && (
+          {rich && fmtOpenId === item.id && (
             <FormatToolbar item={item} onChange={patch => setFormat(item.id, patch)} />
+          )}
+          {rich && (
+            <button
+              className={`agenda-fmt-btn${fmtOpenId === item.id ? ' active' : ''}`}
+              title="書式"
+              onMouseDown={e => e.preventDefault()}
+              onClick={() => setFmtOpenId(id => id === item.id ? null : item.id)}
+            >Aa</button>
           )}
           <button className="agenda-add-btn" title="下に行を追加" onClick={() => addAfter(i)}>＋</button>
           <button className="agenda-del-btn" title="削除" onClick={() => remove(item.id)}>✕</button>
