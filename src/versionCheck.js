@@ -51,9 +51,6 @@ async function check() {
 
 export function startVersionCheck() {
   // 開発時（dev）は version.json が無いので何も起きない
+  // 起動時のみチェック。focus/visibilitychange は頻繁すぎてリロードループを引き起こすため除外。
   check()
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') check()
-  })
-  window.addEventListener('focus', check)
 }
