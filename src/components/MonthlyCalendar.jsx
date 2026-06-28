@@ -4,6 +4,7 @@ import { exportMonthlyExcel, downloadMonthlyTemplate, parseImportExcel } from '.
 import { useHeaderControls } from '../HeaderControlsContext'
 import { DAYS_JA, ymdKey as toDateKey } from '../utils/date'
 import { loadSpanEvents, saveSpanEvents, getActiveSpans } from '../lib/spanEvents'
+import { loadWatchTemplate } from '../lib/watchTemplate'
 
 const HIGHLIGHTS_TYPE = 'row_highlights'
 const SPAN_COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#64748b']
@@ -293,6 +294,32 @@ function DroppableCell({ dateKey, cat, cellEvents, isActive, onCellClick, onAdd,
   )
 }
 
+// ── 見守り隊セル編集用インプット ─────────────────────────
+function WatchEditInput({ value, onCommit, onCancel, isLast }) {
+  const [val, setVal] = useState(value)
+  const ref = useRef(null)
+  useEffect(() => { ref.current?.select() }, [])
+
+  function commit() { onCommit(val) }
+  function handleKeyDown(e) {
+    if (e.key === 'Enter') { e.preventDefault(); commit() }
+    if (e.key === 'Escape') { e.preventDefault(); onCancel() }
+    if (e.key === 'Tab' && isLast) { e.preventDefault(); commit() }
+  }
+
+  return (
+    <input
+      ref={ref}
+      type="time"
+      className="watch-input watch-input-edit"
+      value={val}
+      onChange={e => setVal(e.target.value)}
+      onBlur={commit}
+      onKeyDown={handleKeyDown}
+    />
+  )
+}
+
 // ── メインカレンダー ──────────────────────────────────────
 export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, addToast }) {
   const today = new Date()
@@ -310,14 +337,19 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
   // 表示バージョン: 'normal' | 'pta' | 'watch'
   const [viewMode, setViewMode] = useState('normal')
   // 見守り隊バージョンの学年別入力: { dateKey: { '1年': text, ... } }
+  // null = 明示的に消去（斜線表示）、undefined = テンプレート使用
   const [watchData, setWatchData] = useState({})
   const watchDebounce = useRef(null)
+  // 曜日別テンプレート: { '月': { '1年': '14:50', ... }, ... }
+  const [watchTemplate, setWatchTemplate] = useState({})
+  const [watchEditGroup, setWatchEditGroup] = useState(null) // { dateKey, grades } 編集中グループ
 
   // 期間行事
   const [spanEvents, setSpanEvents] = useState([])
   const [spanModal, setSpanModal] = useState(null) // null | 'new' | {span object}
 
   useEffect(() => { loadSpanEvents().then(setSpanEvents) }, [])
+  useEffect(() => { loadWatchTemplate().then(t => setWatchTemplate(t || {})) }, [])
 
   async function handleSaveSpan(entry) {
     const next = spanEvents.some(s => s.id === entry.id)
@@ -415,6 +447,49 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
       saveWatch(next)
       return next
     })
+  }
+
+  function updateWatchGrades(dateKey, grades, val) {
+    setWatchData(prev => {
+      const dayData = { ...prev[dateKey] }
+      for (const g of grades) dayData[g] = val
+      const next = { ...prev, [dateKey]: dayData }
+      saveWatch(next)
+      return next
+    })
+  }
+
+  // テンプレート値と上書きデータから表示値を取得
+  // 戻り値: { displayValue, isTemplate, isCleared }
+  // isCleared: 明示的に消去（null）→ 斜線表示
+  // isTemplate: テンプレートから自動挿入
+  function getWatchCellInfo(dateKey, grade, dow) {
+    const dayName = DAYS_JA[dow]
+    const explicit = watchData[dateKey]?.[grade]
+    if (explicit === null) return { displayValue: '', isTemplate: false, isCleared: true }
+    if (explicit !== undefined) return { displayValue: explicit, isTemplate: false, isCleared: false }
+    const tplVal = watchTemplate[dayName]?.[grade] || ''
+    return { displayValue: tplVal, isTemplate: true, isCleared: false }
+  }
+
+  // 学年配列のセル結合グループを計算
+  function computeWatchGroups(dateKey, dow) {
+    const infos = GRADES.map(g => ({ grade: g, ...getWatchCellInfo(dateKey, g, dow) }))
+    const groups = []
+    let i = 0
+    while (i < infos.length) {
+      const cur = infos[i]
+      if (!cur.isCleared && cur.displayValue) {
+        let j = i + 1
+        while (j < infos.length && !infos[j].isCleared && infos[j].displayValue === cur.displayValue) j++
+        groups.push({ grades: infos.slice(i, j).map(x => x.grade), colspan: j - i, ...cur })
+        i = j
+      } else {
+        groups.push({ grades: [cur.grade], colspan: 1, ...cur })
+        i++
+      }
+    }
+    return groups
   }
 
   const eventMap = useMemo(() => {
@@ -650,15 +725,41 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
                   {viewMode === 'watch' ? (
                     <>
                       {renderCatCell('学校行事', true)}
-                      {GRADES.map(g => (
-                        <td key={g} className="col-grade">
-                          <input
-                            className="watch-input"
-                            value={watchData[dateKey]?.[g] || ''}
-                            onChange={e => updateWatch(dateKey, g, e.target.value)}
-                          />
-                        </td>
-                      ))}
+                      {computeWatchGroups(dateKey, dow).map((group, gi) => {
+                        const groupKey = group.grades.join(',')
+                        const isEditing = watchEditGroup?.dateKey === dateKey && watchEditGroup?.grades.join(',') === groupKey
+                        if (isEditing) {
+                          return group.grades.map((g, idx) => (
+                            <td key={g} className="col-grade">
+                              <WatchEditInput
+                                value={watchData[dateKey]?.[g] ?? (watchTemplate[DAYS_JA[dow]]?.[g] || '')}
+                                onCommit={(val) => {
+                                  updateWatch(dateKey, g, val === '' ? null : val)
+                                  if (idx === group.grades.length - 1) setWatchEditGroup(null)
+                                }}
+                                onCancel={() => setWatchEditGroup(null)}
+                                isLast={idx === group.grades.length - 1}
+                              />
+                            </td>
+                          ))
+                        }
+                        if (group.isCleared) {
+                          return (
+                            <td key={groupKey} className="col-grade watch-cell-cleared" colSpan={group.colspan}
+                              title="クリックで編集（時刻を入力すると復元）"
+                              onClick={() => setWatchEditGroup({ dateKey, grades: group.grades })}>
+                            </td>
+                          )
+                        }
+                        return (
+                          <td key={groupKey} className={`col-grade watch-cell-merged${group.isTemplate ? ' watch-cell-template' : ''}`}
+                            colSpan={group.colspan}
+                            title={`${group.grades.join('・')} ${group.displayValue}　クリックで編集`}
+                            onClick={() => setWatchEditGroup({ dateKey, grades: group.grades })}>
+                            <span className="watch-merged-label">{group.displayValue}</span>
+                          </td>
+                        )
+                      })}
                     </>
                   ) : (
                     visibleCats.map((cat, catIdx) => renderCatCell(cat, catIdx === 0))

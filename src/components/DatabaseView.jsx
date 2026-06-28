@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import SchoolJijiView from './SchoolJijiView'
 import LifeGoalsEditor from './LifeGoalsEditor'
+import WatchTemplateEditor from './WatchTemplateEditor'
 import { NURSING_DAYS, NURSING_TEAMS } from '../hooks/useDatabaseLists'
 
 function TagListEditor({ label, items, onSave }) {
@@ -87,12 +88,15 @@ export default function DatabaseView({ rooms, names, nursing, saveRooms, saveNam
       <div className="db-tabs">
         <button className={`db-tab${tab === 'jiji' ? ' active' : ''}`} onClick={() => setTab('jiji')}>学校行事マスター</button>
         <button className={`db-tab${tab === 'goals' ? ' active' : ''}`} onClick={() => setTab('goals')}>生活目標</button>
+        <button className={`db-tab${tab === 'watch' ? ' active' : ''}`} onClick={() => setTab('watch')}>見守り隊</button>
         <button className={`db-tab${tab === 'lists' ? ' active' : ''}`} onClick={() => setTab('lists')}>リスト管理</button>
       </div>
 
       {tab === 'jiji' && <SchoolJijiView />}
 
       {tab === 'goals' && <LifeGoalsEditor />}
+
+      {tab === 'watch' && <WatchTemplateEditor />}
 
       {tab === 'lists' && (
         <div className="db-lists">
