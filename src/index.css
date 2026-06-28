@@ -1483,6 +1483,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   min-width: 0;
 }
 .wb-time-input:focus { background: #eff6ff; border-radius: 2px; }
+.wb-time-combo-end { flex: 1; justify-content: center; }
 .wb-time-input-end { text-align: center; }
 .wb-time-picker-hidden { position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0; }
 .wb-tilde { font-size: 10px; color: #6b7280; flex-shrink: 0; margin: 0 1px; }
