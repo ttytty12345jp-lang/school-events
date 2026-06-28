@@ -248,22 +248,40 @@ function AnyItem(props) {
 }
 
 // ── パネル ────────────────────────────────────────────────
-// tabTop: パネルタブボタンの上端位置（CSS値, デフォルト '50%'）
-// label:  パネルタイトル（複数パネルを区別するため）
-export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY, tabTop = '50%', label = '' }) {
+// tabTop:      パネルタブボタンの上端位置（CSS値, デフォルト '50%'）
+// label:       パネルタイトル（複数パネルを区別するため）
+// inheritFrom: このキーにデータがないとき、引き継ぎ元として参照するストレージキー
+export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY, tabTop = '50%', label = '', inheritFrom = null }) {
   const [items, setItems] = useState(() => {
     const saved = load(storageKey)
-    return saved.length > 0 ? saved : Array.from({ length: 3 }, (_, i) => ({ ...newNote(true), color: COLORS[i] }))
+    if (saved.length > 0) return saved
+    if (inheritFrom) {
+      const inh = load(inheritFrom)
+      if (inh.length > 0) { save(storageKey, inh); return inh }
+    }
+    return Array.from({ length: 3 }, (_, i) => ({ ...newNote(true), color: COLORS[i] }))
   })
   const [panelOpen, setPanelOpen] = useState(false)
 
   // storageKey が変わったとき（日付変更など）データを入れ替える
+  // データがなければ inheritFrom から引き継いで即保存（次の日付変更でも引き継ぎが機能するよう）
   const prevKeyRef = useRef(storageKey)
+  const inheritFromRef = useRef(inheritFrom)
+  useEffect(() => { inheritFromRef.current = inheritFrom }, [inheritFrom])
   useEffect(() => {
     if (prevKeyRef.current === storageKey) return
     prevKeyRef.current = storageKey
     const saved = load(storageKey)
-    setItems(saved.length > 0 ? saved : Array.from({ length: 3 }, (_, i) => ({ ...newNote(true), color: COLORS[i] })))
+    if (saved.length > 0) {
+      setItems(saved)
+    } else {
+      const inh = inheritFromRef.current ? load(inheritFromRef.current) : []
+      const next = inh.length > 0
+        ? inh
+        : Array.from({ length: 3 }, (_, i) => ({ ...newNote(true), color: COLORS[i] }))
+      setItems(next)
+      if (inh.length > 0) save(storageKey, next) // 即保存して次の日付変更にも繋げる
+    }
     setPanelOpen(false)
   }, [storageKey])
 
@@ -284,8 +302,10 @@ export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY, tabTop =
   const onDrag = useDrag(update)
   const onResize = useResize(update)
 
-  const panelItems = items.filter(n => n.inPanel)
-  const freeItems = items.filter(n => !n.inPanel)
+  // モバイルでは free アイテムを強制的にパネル内に表示（PC の絶対座標が画面外になるため）
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 600
+  const panelItems = isMobile ? items : items.filter(n => n.inPanel)
+  const freeItems = isMobile ? [] : items.filter(n => !n.inPanel)
 
   // portal で document.body 直下に描画し、zoom/overflow の影響を受けないようにする
   return createPortal(
