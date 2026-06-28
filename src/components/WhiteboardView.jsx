@@ -845,7 +845,7 @@ export default function WhiteboardView({ events, db = {} }) {
               <button className="wb-sync-btn" onClick={() => syncAgenda(selectedKey, setAgendaResetToday)} title="月中行事と同期">↺ 同期</button>
             </div>
             <div className="wb-schedule-list">
-              <MorningAgenda key={`today-${selectedKey}-${agendaResetToday}`} dateKey={selectedKey} calendarEvents={selEvents} />
+              <MorningAgenda key={`today-${selectedKey}-${agendaResetToday}`} dateKey={selectedKey} calendarEvents={selEvents} rich />
             </div>
           </div>
 
@@ -876,7 +876,7 @@ export default function WhiteboardView({ events, db = {} }) {
               <button className="wb-sync-btn" onClick={() => syncAgenda(tomorrowKey, setAgendaResetTomorrow)} title="月中行事と同期">↺ 同期</button>
             </div>
             <div className="wb-schedule-list">
-              <MorningAgenda key={`tomorrow-${tomorrowKey}-${agendaResetTomorrow}`} dateKey={tomorrowKey} calendarEvents={nextEvents} />
+              <MorningAgenda key={`tomorrow-${tomorrowKey}-${agendaResetTomorrow}`} dateKey={tomorrowKey} calendarEvents={nextEvents} rich />
             </div>
           </div>
 
