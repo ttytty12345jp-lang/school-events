@@ -1,126 +1,94 @@
-import { useState, useRef, useEffect } from 'react'
-import { createPortal } from 'react-dom'
+import { useState, useRef } from 'react'
 
-const PREFIX = 'dw_'
+const PREFIX = 'dw2_'
 function loadLinks(id) {
-  try { return JSON.parse(localStorage.getItem(PREFIX + id) || '[]') } catch { return [] }
+  try { return JSON.parse(localStorage.getItem(PREFIX + 'links_' + id) || '[]') } catch { return [] }
 }
-function saveLinks(id, links) { localStorage.setItem(PREFIX + id, JSON.stringify(links)) }
+function saveLinks(id, ls) { localStorage.setItem(PREFIX + 'links_' + id, JSON.stringify(ls)) }
+function loadVisible(id) {
+  const v = localStorage.getItem(PREFIX + 'vis_' + id)
+  return v === null ? true : v === '1'
+}
+function saveVisible(id, v) { localStorage.setItem(PREFIX + 'vis_' + id, v ? '1' : '0') }
 
 // ── DriveWidget ──────────────────────────────────────────────────────────────
-// storeId: ウィジェット配置ごとの識別子（"wb_today" / "wb_tomorrow" / "ttv" など）
-// リンクはグローバル保存なので日付が変わっても同じリンクが常に表示される
+// パネルの最下部 (右寄せ) に配置。
+// storeId ごとにリンク一覧・表示状態を localStorage に保存 (日付不問でグローバル)
 export default function DriveWidget({ storeId = 'default' }) {
   const [links, setLinks] = useState(() => loadLinks(storeId))
-  const [open, setOpen] = useState(false)
-  const [editing, setEditing] = useState(false)
-  const [newUrl, setNewUrl] = useState('')
-  const [newTitle, setNewTitle] = useState('')
-  const [pos, setPos] = useState(null)
-  const btnRef = useRef(null)
-  const popupRef = useRef(null)
+  const [visible, setVisible] = useState(() => loadVisible(storeId))
 
-  useEffect(() => { saveLinks(storeId, links) }, [storeId, links])
-
-  // 外クリックで閉じる
-  useEffect(() => {
-    if (!open) return
-    function onDown(e) {
-      if (!popupRef.current?.contains(e.target) && !btnRef.current?.contains(e.target)) {
-        setOpen(false); setEditing(false)
-      }
-    }
-    document.addEventListener('mousedown', onDown)
-    document.addEventListener('touchstart', onDown)
-    return () => {
-      document.removeEventListener('mousedown', onDown)
-      document.removeEventListener('touchstart', onDown)
-    }
-  }, [open])
-
-  function toggle() {
-    if (!open && btnRef.current) {
-      const r = btnRef.current.getBoundingClientRect()
-      setPos({ top: r.bottom + 6, right: window.innerWidth - r.right })
-    }
-    setOpen(o => !o)
-    if (open) setEditing(false)
+  function toggleVisible() {
+    const next = !visible
+    setVisible(next)
+    saveVisible(storeId, next)
   }
 
-  function add() {
-    const raw = newUrl.trim()
-    if (!raw) return
-    const url = raw.startsWith('http') ? raw : 'https://' + raw
-    setLinks(ls => [...ls, { id: crypto.randomUUID(), url, title: newTitle.trim() || 'Drive' }])
-    setNewUrl(''); setNewTitle('')
+  function addLink() {
+    const url = window.prompt('Google Drive の URL を入力してください:')
+    if (!url || !url.trim()) return
+    const fullUrl = url.trim().startsWith('http') ? url.trim() : 'https://' + url.trim()
+    const title = window.prompt('名前を入力してください (省略可):') || 'Drive'
+    const next = [...links, { id: crypto.randomUUID(), url: fullUrl, title: title.trim() || 'Drive' }]
+    setLinks(next)
+    saveLinks(storeId, next)
   }
 
-  function del(id) { setLinks(ls => ls.filter(l => l.id !== id)) }
+  function deleteLink(id) {
+    if (!window.confirm('このリンクを削除しますか？')) return
+    const next = links.filter(l => l.id !== id)
+    setLinks(next)
+    saveLinks(storeId, next)
+  }
 
-  const popup = open && pos && createPortal(
-    <div ref={popupRef} className="dw-popup" style={{ top: pos.top, right: pos.right }}>
-      <div className="dw-popup-header">
-        <span className="dw-popup-title">Drive ショートカット</span>
-        <button className="dw-close" onClick={() => { setOpen(false); setEditing(false) }}>✕</button>
-      </div>
-
-      <div className="dw-links">
-        {links.length === 0 && !editing && (
-          <p className="dw-empty">リンクがありません</p>
-        )}
-        {links.map(l => (
-          <div key={l.id} className="dw-link-row">
-            <a href={l.url} target="_blank" rel="noopener noreferrer" className="dw-link-a" title={l.url}>
-              <DriveIcon />
-              <span className="dw-link-name">{l.title}</span>
-            </a>
-            {editing && (
-              <button className="dw-del" onClick={() => del(l.id)} title="削除">✕</button>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {editing ? (
-        <div className="dw-form">
-          <input className="dw-input" placeholder="https://drive.google.com/..." value={newUrl}
-            onChange={e => setNewUrl(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') add() }} />
-          <input className="dw-input" placeholder="名前" value={newTitle}
-            onChange={e => setNewTitle(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') add() }} />
-          <div className="dw-form-row">
-            <button className="dw-add-btn" onClick={add}>追加</button>
-            <button className="dw-done-btn" onClick={() => setEditing(false)}>完了</button>
-          </div>
-        </div>
-      ) : (
-        <button className="dw-edit-btn" onClick={() => setEditing(true)}>＋ リンクを追加 / 編集</button>
-      )}
-    </div>,
-    document.body
-  )
+  // 長押し削除 (モバイル向け)
+  const pressRef = useRef(null)
+  function onTouchStart(id) {
+    pressRef.current = setTimeout(() => { pressRef.current = null; deleteLink(id) }, 700)
+  }
+  function onTouchEnd() {
+    if (pressRef.current) { clearTimeout(pressRef.current); pressRef.current = null }
+  }
 
   return (
-    <>
-      <button ref={btnRef} className={`dw-btn${open ? ' is-open' : ''}`}
-        onClick={toggle} title="Drive ショートカット">
-        <DriveIcon size={14} />
-        {links.length > 0 && <span className="dw-badge">{links.length}</span>}
+    <div className="dw-bar">
+      {/* 展開/折りたたみトグル */}
+      <button className="dw-toggle" onClick={toggleVisible}
+        title={visible ? 'Drive アイコンを非表示' : 'Drive アイコンを表示'}>
+        <DriveIcon size={18} />
+        <span className="dw-toggle-arrow">{visible ? '▾' : '◂'}</span>
       </button>
-      {popup}
-    </>
+
+      {visible && (
+        <div className="dw-icons">
+          {links.map(l => (
+            <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer"
+              className="dw-icon-link" title={l.title}
+              onContextMenu={e => { e.preventDefault(); deleteLink(l.id) }}
+              onTouchStart={() => onTouchStart(l.id)}
+              onTouchEnd={onTouchEnd}
+              onTouchMove={onTouchEnd}>
+              <DriveIcon size={30} />
+              <span className="dw-icon-label">{l.title}</span>
+            </a>
+          ))}
+          <button className="dw-add-icon" onClick={addLink} title="Drive リンクを追加">＋</button>
+        </div>
+      )}
+    </div>
   )
 }
 
-// Google Drive カラーの三角形アイコン（SVG）
-function DriveIcon({ size = 16 }) {
-  const h = size * 0.87
+// Google Drive カラーの三角形アイコン (SVG)
+function DriveIcon({ size = 24 }) {
   return (
-    <svg width={size} height={h} viewBox="0 0 24 21" fill="none" aria-hidden="true">
-      <polygon points="9,0 0,15.75 4.5,21 13.5,21 9,13.5" fill="#4285F4" />
-      <polygon points="9,0 18,0 24,10.5 19.5,21 13.5,21 9,13.5" fill="#34A853" />
-      <polygon points="0,15.75 4.5,21 19.5,21 24,10.5" fill="#FBBC04" />
+    <svg width={size} height={size * 0.87} viewBox="0 0 87 78" fill="none" aria-hidden="true">
+      {/* 左下 青 */}
+      <polygon points="0,78 29,78 43.5,52 14.5,0" fill="#4285F4" />
+      {/* 右下 緑 */}
+      <polygon points="29,78 87,78 72.5,52 43.5,52" fill="#34A853" />
+      {/* 上 黄 */}
+      <polygon points="14.5,0 43.5,52 72.5,52 43.5,0" fill="#FBBC04" />
     </svg>
   )
 }

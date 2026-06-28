@@ -29,7 +29,6 @@ function TodaySection({ date, events, dateKey, spanEvents = [] }) {
     <div className="ttv-panel">
       <div className="ttv-header ttv-header-today">
         <span className="ttv-header-date-large">{formatDateLong(date)}</span>
-        <DriveWidget storeId="ttv" />
       </div>
       <div className="ttv-week-event-row">
         {activeSpans.map(s => (
@@ -43,6 +42,7 @@ function TodaySection({ date, events, dateKey, spanEvents = [] }) {
         />
       </div>
       <MorningAgenda dateKey={dateKey} calendarEvents={events} rich />
+      <DriveWidget storeId="ttv" />
     </div>
   )
 }

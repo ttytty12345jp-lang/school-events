@@ -860,7 +860,6 @@ export default function WhiteboardView({ events, db = {} }) {
             <div className="wb-panel-title">
               <span className="wb-panel-label">今日</span>
               <span className="wb-panel-date">{formatShort(selectedDate)}</span>
-              <DriveWidget storeId="wb_today" />
               <span className="wb-duty-inline">
                 <input
                   className="wb-team-input"
@@ -885,6 +884,7 @@ export default function WhiteboardView({ events, db = {} }) {
             <div className="wb-schedule-list">
               <MorningAgenda key={`today-${selectedKey}-${agendaResetToday}`} dateKey={selectedKey} calendarEvents={selEvents} rich />
             </div>
+            <DriveWidget storeId="wb_today" />
           </div>
 
           {/* 明日 */}
@@ -892,7 +892,6 @@ export default function WhiteboardView({ events, db = {} }) {
             <div className="wb-panel-title">
               <span className="wb-panel-label">明日</span>
               <span className="wb-panel-date">{formatShort(tomorrowDate)}</span>
-              <DriveWidget storeId="wb_tomorrow" />
               <span className="wb-duty-inline">
                 <input
                   className="wb-team-input"
@@ -917,6 +916,7 @@ export default function WhiteboardView({ events, db = {} }) {
             <div className="wb-schedule-list">
               <MorningAgenda key={`tomorrow-${tomorrowKey}-${agendaResetTomorrow}`} dateKey={tomorrowKey} calendarEvents={nextEvents} rich />
             </div>
+            <DriveWidget storeId="wb_tomorrow" />
           </div>
 
         </div>
