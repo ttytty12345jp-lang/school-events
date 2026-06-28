@@ -227,7 +227,7 @@ function DraggableChip({ ev, onDragStart }) {
 }
 
 // ── セル（ドロップターゲット） ────────────────────────────
-function DroppableCell({ dateKey, cat, cellEvents, isActive, onCellClick, onAdd, onUpdate, onDelete, addToast, dragState, onDropToCell, onDropBetween, startSpans = [] }) {
+function DroppableCell({ dateKey, cat, cellEvents, isActive, onCellClick, onAdd, onUpdate, onDelete, addToast, dragState, onDropToCell, onDropBetween, startSpans = [], onSpanEdit }) {
   const [cellOver, setCellOver] = useState(false)
   const [zoneOver, setZoneOver] = useState({}) // index → bool
 
@@ -256,7 +256,7 @@ function DroppableCell({ dateKey, cat, cellEvents, isActive, onCellClick, onAdd,
     >
       {startSpans.map(s => (
         <span key={s.id} className="span-label-chip span-label-chip-edit" style={{ background: s.color }}
-          onClick={e => { e.stopPropagation(); setSpanModal(s) }}>
+          onClick={e => { e.stopPropagation(); onSpanEdit?.(s) }}>
           {s.title}
         </span>
       ))}
@@ -681,6 +681,7 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
                     onDropToCell={(d, c, idx) => handleDrop(d, c, idx)}
                     onDropBetween={(d, c, idx) => handleDrop(d, c, idx)}
                     startSpans={startSpans}
+                    onSpanEdit={s => setSpanModal(s)}
                   />
                 )
               }
