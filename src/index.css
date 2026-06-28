@@ -720,17 +720,8 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   padding: 2px 5px; box-shadow: 0 2px 6px rgba(0,0,0,0.12);
 }
 .agenda-rich .fmt-toolbar {
-  position: absolute; right: 80px; top: 50%; transform: translateY(-50%); z-index: 50;
+  position: absolute; right: 56px; top: calc(100% + 2px); transform: none; z-index: 50;
 }
-.agenda-fmt-btn {
-  flex-shrink: 0; font-size: 11px; font-weight: 600; width: 24px; height: 24px;
-  border: 1px solid #cbd5e1; background: #fff; border-radius: 4px;
-  cursor: pointer; color: #64748b; padding: 0; line-height: 1;
-  opacity: 0; transition: opacity 0.15s;
-}
-.agenda-row:hover .agenda-fmt-btn,
-.agenda-fmt-btn.active { opacity: 1; }
-.agenda-fmt-btn.active { background: #1e293b; color: #fff; border-color: #1e293b; }
 .fmt-btn {
   font-size: 13px; min-width: 24px; height: 24px; line-height: 1;
   border: 1px solid #cbd5e1; background: #fff; border-radius: 4px;
@@ -1736,13 +1727,6 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   .ttv-right .agenda-title-input { font-size: 12px !important; padding: 2px 6px !important; }
   .notelines-input { font-size: 12px !important; }
 
-  /* スマホではホバーがないので Aa ボタンを常時表示・ツールバーは行の下に展開 */
-  .agenda-fmt-btn { opacity: 1; }
-  .agenda-rich .fmt-toolbar {
-    position: static; transform: none; display: flex;
-    width: 100%; box-sizing: border-box; margin-top: 2px;
-    flex-wrap: wrap;
-  }
   .ttv-week-event-input { font-size: 12px !important; height: 22px !important; }
   .agenda-row { padding: 1px 2px; }
 

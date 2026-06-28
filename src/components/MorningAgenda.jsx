@@ -49,7 +49,6 @@ export default function MorningAgenda({ dateKey, calendarEvents, rich = false })
   const [saving, setSaving] = useState(false)
   const [dragOverId, setDragOverId] = useState(null) // ドロップ先のid
   const [focusId, setFocusId] = useState(null)
-  const [fmtOpenId, setFmtOpenId] = useState(null) // 書式ツールバーを開いている行のid
   const debounceRef = useRef(null)
   const inputRefs = useRef({})
   const dragIdRef = useRef(null)
@@ -71,10 +70,13 @@ export default function MorningAgenda({ dateKey, calendarEvents, rich = false })
       })
   }, [dateKey])
 
-  // 他端末の変更をリアルタイムで受信
+  // 他端末の変更をリアルタイムで受信（自分が入力中は上書きしない）
+  const focusIdRef = useRef(null)
+  useEffect(() => { focusIdRef.current = focusId }, [focusId])
   useEffect(() => {
     return subscribeSchoolNotices(row => {
       if (row.type !== 'morning_agenda' || row.date !== dateKey) return
+      if (focusIdRef.current) return // 入力中は無視
       try {
         const saved = row.content ? JSON.parse(row.content) : null
         setItems(mergeWithCalendar(saved, calendarEvents))
@@ -82,10 +84,11 @@ export default function MorningAgenda({ dateKey, calendarEvents, rich = false })
     })
   }, [dateKey, calendarEvents])
 
-  // スマホ復帰時に再ロード
+  // スマホ復帰時に再ロード（入力中は無視）
   useEffect(() => {
     return onVisibilityReload(() => {
       if (!USE_SUPABASE) return
+      if (focusIdRef.current) return // 入力中は無視
       supabase.from('school_notices').select('content').eq('date', dateKey).eq('type', 'morning_agenda').maybeSingle()
         .then(({ data }) => {
           const saved = data?.content ? JSON.parse(data.content) : null
@@ -126,7 +129,6 @@ export default function MorningAgenda({ dateKey, calendarEvents, rich = false })
   }
 
   function remove(id) {
-    if (fmtOpenId === id) setFmtOpenId(null)
     const next = items.filter(it => it.id !== id)
     update(next.length === 0 ? [newItem()] : next)
   }
@@ -207,16 +209,8 @@ export default function MorningAgenda({ dateKey, calendarEvents, rich = false })
             onBlur={rich ? () => setTimeout(() => setFocusId(f => (f === item.id ? null : f)), 150) : undefined}
             placeholder="行事・連絡を入力"
           />
-          {rich && fmtOpenId === item.id && (
+          {rich && focusId === item.id && (
             <FormatToolbar item={item} onChange={patch => setFormat(item.id, patch)} />
-          )}
-          {rich && (
-            <button
-              className={`agenda-fmt-btn${fmtOpenId === item.id ? ' active' : ''}`}
-              title="書式"
-              onMouseDown={e => e.preventDefault()}
-              onClick={() => setFmtOpenId(id => id === item.id ? null : item.id)}
-            >Aa</button>
           )}
           <button className="agenda-add-btn" title="下に行を追加" onClick={() => addAfter(i)}>＋</button>
           <button className="agenda-del-btn" title="削除" onClick={() => remove(item.id)}>✕</button>
