@@ -4,6 +4,7 @@ import { useNotice } from '../hooks/useNotice'
 import MorningAgenda from './MorningAgenda'
 import NoteLines from './NoteLines'
 import StickyNotes from './StickyNotes'
+import DriveWidget from './DriveWidget'
 import { loadLifeGoals } from '../lib/lifeGoals'
 import { loadJijiMaster, thirdsDisplay } from './SchoolJijiView'
 import { useHeaderControls } from '../HeaderControlsContext'
@@ -28,6 +29,7 @@ function TodaySection({ date, events, dateKey, spanEvents = [] }) {
     <div className="ttv-panel">
       <div className="ttv-header ttv-header-today">
         <span className="ttv-header-date-large">{formatDateLong(date)}</span>
+        <DriveWidget storeId="ttv" />
       </div>
       <div className="ttv-week-event-row">
         {activeSpans.map(s => (

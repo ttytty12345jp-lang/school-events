@@ -3,6 +3,7 @@ import { supabase, USE_SUPABASE } from '../lib/supabase'
 import { useHeaderControls } from '../HeaderControlsContext'
 import MorningAgenda from './MorningAgenda'
 import StickyNotes from './StickyNotes'
+import DriveWidget from './DriveWidget'
 import { DAYS_JA, dateKey as toDateKey, monthKey } from '../utils/date'
 import { loadSpanEvents, getActiveSpans } from '../lib/spanEvents'
 import { subscribeSchoolNotices, markPending, onVisibilityReload } from '../lib/schoolNoticesRealtime'
@@ -859,6 +860,7 @@ export default function WhiteboardView({ events, db = {} }) {
             <div className="wb-panel-title">
               <span className="wb-panel-label">今日</span>
               <span className="wb-panel-date">{formatShort(selectedDate)}</span>
+              <DriveWidget storeId="wb_today" />
               <span className="wb-duty-inline">
                 <input
                   className="wb-team-input"
@@ -890,6 +892,7 @@ export default function WhiteboardView({ events, db = {} }) {
             <div className="wb-panel-title">
               <span className="wb-panel-label">明日</span>
               <span className="wb-panel-date">{formatShort(tomorrowDate)}</span>
+              <DriveWidget storeId="wb_tomorrow" />
               <span className="wb-duty-inline">
                 <input
                   className="wb-team-input"
