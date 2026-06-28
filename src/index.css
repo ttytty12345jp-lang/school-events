@@ -1770,6 +1770,18 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   .wb-left .wb-section:nth-child(2) .wb-time-range { height: 26px; }
   .wb-left .wb-section:nth-child(1) .wb-tilde,
   .wb-left .wb-section:nth-child(2) .wb-tilde { font-size: 9px; margin: 0; }
+
+  /* 右パネル（今日・明日）：PC 向けの大きなフォントをスマホ用に縮小 */
+  .wb-panel-label { font-size: 14px; }
+  .wb-panel-date  { font-size: 13px; }
+  .wb-panel-title { padding: 4px 6px; gap: 4px; flex-wrap: wrap; }
+  .wb-duty-label  { font-size: 10px; }
+  .wb-duty-input  { font-size: 10px !important; width: 60px !important; }
+  .wb-event-item  { font-size: 13px; }
+  .wb-event-time  { font-size: 11px; }
+  .wb-event-note  { font-size: 11px; }
+  /* 朝会記録簿（rich モード）の行ごと書式サイズをスマホで上限制限 */
+  .wb-schedule-list .agenda-title-input { font-size: clamp(11px, 3.5vw, 16px) !important; }
 }
 
 /* ── Sticky Notes ── */
