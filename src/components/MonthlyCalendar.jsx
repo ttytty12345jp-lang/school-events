@@ -82,7 +82,12 @@ function CellPopover({ date, category, events, onAdd, onUpdate, onDelete, onClos
 
   useEffect(() => {
     function handler(e) {
-      if (ref.current && !ref.current.contains(e.target)) onClose()
+      if (ref.current && !ref.current.contains(e.target)) {
+        // 閉じる前にフォーカス中の input を blur して保存を確実に発火
+        const focused = ref.current.querySelector(':focus')
+        if (focused) focused.blur()
+        onClose()
+      }
     }
     setTimeout(() => document.addEventListener('mousedown', handler), 0)
     return () => document.removeEventListener('mousedown', handler)
@@ -169,20 +174,28 @@ function ExistingEventRow({ ev, onUpdate, onDelete }) {
 
   useEffect(() => { setTitle(ev.title); setTime(ev.start_time || ''); setNote(ev.note || '') }, [ev])
 
-  function blur(field, value) {
+  function save(field, value) {
     const cur = field === 'title' ? ev.title : field === 'start_time' ? (ev.start_time || '') : (ev.note || '')
     if (value !== cur) onUpdate(ev.id, field, value)
+  }
+
+  function handleKeyDown(e, field, value) {
+    if (e.key === 'Enter') { e.preventDefault(); save(field, value); e.currentTarget.blur() }
   }
 
   return (
     <div className="popover-existing-row">
       <ColorToggle color={ev.color || 'black'} onChange={c => onUpdate(ev.id, 'color', c)} />
       <input type="text" value={title} onChange={e => setTitle(e.target.value)}
-        onBlur={() => blur('title', title)} className="popover-input-title"
+        onBlur={() => save('title', title)}
+        onKeyDown={e => handleKeyDown(e, 'title', title)}
+        className="popover-input-title"
         style={{ color: ev.color === 'red' ? '#dc2626' : 'inherit' }} />
       <span className="time-clear-wrap">
         <input type="time" value={time} onChange={e => setTime(e.target.value)}
-          onBlur={() => blur('start_time', time)} className="popover-input-time" />
+          onBlur={() => save('start_time', time)}
+          onKeyDown={e => handleKeyDown(e, 'start_time', time)}
+          className="popover-input-time" />
         {time && (
           <button className="time-clear-btn" onMouseDown={e => {
             e.preventDefault()
@@ -192,7 +205,9 @@ function ExistingEventRow({ ev, onUpdate, onDelete }) {
         )}
       </span>
       <input type="text" placeholder="備考" value={note} onChange={e => setNote(e.target.value)}
-        onBlur={() => blur('note', note)} className="popover-input-note" />
+        onBlur={() => save('note', note)}
+        onKeyDown={e => handleKeyDown(e, 'note', note)}
+        className="popover-input-note" />
       <button className="btn-danger popover-del-btn" onClick={() => onDelete(ev.id)}>✕</button>
     </div>
   )
