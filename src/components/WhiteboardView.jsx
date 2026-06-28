@@ -393,9 +393,24 @@ function useNextSchoolDay(selectedKey) {
   }, [selectedKey, overrides])
 }
 
+// WBのStickyNotesは固定2キー。実カレンダー日付が変わったときだけ明日→今日へローテーション
+// useState初期化子内で実行することで、StickyNotesが初回マウントする前にデータを準備する
+function rotateStickyIfNeeded(todayKey) {
+  const last = localStorage.getItem('wb_sticky_last_date')
+  if (last && last !== todayKey) {
+    const t = localStorage.getItem('wb_sticky_tomorrow')
+    if (t) localStorage.setItem('wb_sticky_today', t)
+    localStorage.removeItem('wb_sticky_tomorrow')
+  }
+  localStorage.setItem('wb_sticky_last_date', todayKey)
+}
+
 export default function WhiteboardView({ events, db = {} }) {
   const todayKey = toDateKey(new Date())
-  const [selectedKey, setSelectedKey] = useState(() => sessionStorage.getItem('wb_date') || todayKey)
+  const [selectedKey, setSelectedKey] = useState(() => {
+    rotateStickyIfNeeded(todayKey)
+    return sessionStorage.getItem('wb_date') || todayKey
+  })
   function changeDate(k) { sessionStorage.setItem('wb_date', k); setSelectedKey(k) }
   const tomorrowKey = useNextSchoolDay(selectedKey)
 
@@ -913,9 +928,9 @@ export default function WhiteboardView({ events, db = {} }) {
 
         </div>
       </div>
-      {/* 今日・明日それぞれ日付キーで独立保存。明日→翌日の今日へ自動引き継ぎ */}
-      <StickyNotes storageKey={`wb_sticky_${selectedKey}`}  tabTop="25%" label="今日" />
-      <StickyNotes storageKey={`wb_sticky_${tomorrowKey}`} tabTop="75%" label="明日" />
+      {/* 固定キー: 日付ナビでは消えず、実カレンダー日付変更時のみ明日→今日へ自動ローテーション */}
+      <StickyNotes storageKey="wb_sticky_today"    tabTop="25%" label="今日" />
+      <StickyNotes storageKey="wb_sticky_tomorrow" tabTop="75%" label="明日" />
     </div>
   )
 }

@@ -1782,6 +1782,18 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   .wb-event-note  { font-size: 11px; }
   /* 朝会記録簿（rich モード）の行ごと書式サイズをスマホで上限制限 */
   .wb-schedule-list .agenda-title-input { font-size: clamp(11px, 3.5vw, 16px) !important; }
+
+  /* StickyNotes パネルタブ：スマホでは幅を広げてタップしやすく */
+  .sn-panel-tab {
+    width: 28px;
+    height: 80px;
+    font-size: 14px;
+    border-radius: 8px 0 0 8px;
+    /* iOS Safari での fixed 表示を確実にするため GPU レイヤーへ昇格。
+       !important でインラインスタイルの transform を上書きして translateZ(0) を強制する */
+    transform: translateZ(0) translateY(-50%) !important;
+    -webkit-transform: translateZ(0) translateY(-50%) !important;
+  }
 }
 
 /* ── Sticky Notes ── */
@@ -1878,6 +1890,9 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   cursor: pointer;
   padding: 0;
   transition: right 0.2s;
+  will-change: transform;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 .sn-panel-tab:hover { background: #1d4ed8; }
 
