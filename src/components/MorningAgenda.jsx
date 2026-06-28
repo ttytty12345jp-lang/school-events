@@ -1,7 +1,7 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react'
 import { supabase, USE_SUPABASE } from '../lib/supabase'
 import { FormatToolbar, lineStyle } from './formatToolbar'
-import { subscribeSchoolNotices, markPending } from '../lib/schoolNoticesRealtime'
+import { subscribeSchoolNotices, markPending, onVisibilityReload } from '../lib/schoolNoticesRealtime'
 
 function lsGet(date) {
   try { return JSON.parse(localStorage.getItem(`agenda_${date}`) || 'null') } catch { return null }
@@ -78,6 +78,18 @@ export default function MorningAgenda({ dateKey, calendarEvents, rich = false })
         const saved = row.content ? JSON.parse(row.content) : null
         setItems(mergeWithCalendar(saved, calendarEvents))
       } catch {}
+    })
+  }, [dateKey, calendarEvents])
+
+  // スマホ復帰時に再ロード
+  useEffect(() => {
+    return onVisibilityReload(() => {
+      if (!USE_SUPABASE) return
+      supabase.from('school_notices').select('content').eq('date', dateKey).eq('type', 'morning_agenda').maybeSingle()
+        .then(({ data }) => {
+          const saved = data?.content ? JSON.parse(data.content) : null
+          setItems(mergeWithCalendar(saved, calendarEvents))
+        })
     })
   }, [dateKey, calendarEvents])
 

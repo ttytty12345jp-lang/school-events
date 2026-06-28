@@ -5,7 +5,7 @@ import { useHeaderControls } from '../HeaderControlsContext'
 import { DAYS_JA, ymdKey as toDateKey } from '../utils/date'
 import { loadSpanEvents, saveSpanEvents, getActiveSpans } from '../lib/spanEvents'
 import { loadWatchTemplate } from '../lib/watchTemplate'
-import { subscribeSchoolNotices, markPending } from '../lib/schoolNoticesRealtime'
+import { subscribeSchoolNotices, markPending, onVisibilityReload } from '../lib/schoolNoticesRealtime'
 
 const HIGHLIGHTS_TYPE = 'row_highlights'
 const SPAN_COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#64748b']
@@ -498,6 +498,32 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
       } catch {}
     })
   }, [monthKey])
+
+  // スマホ復帰時に再ロード
+  const monthKeyRef = useRef(monthKey)
+  useEffect(() => { monthKeyRef.current = monthKey }, [monthKey])
+  useEffect(() => {
+    return onVisibilityReload(() => {
+      if (!USE_SUPABASE) return
+      const mk = monthKeyRef.current
+      supabase.from('school_notices').select('content')
+        .eq('date', mk).eq('type', HIGHLIGHTS_TYPE).maybeSingle()
+        .then(({ data }) => {
+          try {
+            const parsed = data?.content ? JSON.parse(data.content) : {}
+            setRowOverrides(Array.isArray(parsed) || !parsed ? {} : parsed)
+          } catch {}
+        })
+      supabase.from('school_notices').select('content')
+        .eq('date', mk).eq('type', WATCH_TYPE).maybeSingle()
+        .then(({ data }) => {
+          try {
+            const parsed = data?.content ? JSON.parse(data.content) : {}
+            setWatchData(Array.isArray(parsed) || !parsed ? {} : parsed)
+          } catch {}
+        })
+    })
+  }, [])
 
   // テンプレート値と上書きデータから表示値を取得
   // skipTemplate=true のときテンプレートを使わず空欄扱い（土日祝用）

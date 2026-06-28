@@ -34,6 +34,12 @@ export function useEvents() {
     load()
     if (!USE_SUPABASE) return
 
+    // スマホ復帰時に全件再ロード（WebSocket切断中のイベントを補う）
+    function handleVisibility() {
+      if (document.visibilityState === 'visible') load()
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+
     const channel = supabase
       .channel('school_events_changes')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'school_events' },
@@ -53,7 +59,10 @@ export function useEvents() {
         })
       .subscribe()
 
-    return () => { supabase.removeChannel(channel) }
+    return () => {
+      supabase.removeChannel(channel)
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
   }, [load])
 
   const addEvent = useCallback(async (ev) => {

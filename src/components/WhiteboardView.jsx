@@ -4,7 +4,7 @@ import { useHeaderControls } from '../HeaderControlsContext'
 import MorningAgenda from './MorningAgenda'
 import { DAYS_JA, dateKey as toDateKey, monthKey } from '../utils/date'
 import { loadSpanEvents, getActiveSpans } from '../lib/spanEvents'
-import { subscribeSchoolNotices, markPending } from '../lib/schoolNoticesRealtime'
+import { subscribeSchoolNotices, markPending, onVisibilityReload } from '../lib/schoolNoticesRealtime'
 
 const HIGHLIGHTS_TYPE = 'row_highlights'
 
@@ -453,6 +453,17 @@ export default function WhiteboardView({ events, db = {} }) {
       } else if (row.type === LONG_LEAVE_TYPE) {
         loadLongLeave().then(setLongLeave)
       }
+    })
+  }, [])
+
+  // スマホ復帰時に全データを再ロード
+  useEffect(() => {
+    return onVisibilityReload(() => {
+      loadWhiteboard(selectedKeyRef.current).then(saved => {
+        if (saved) setData({ ...emptyData(), ...saved })
+      })
+      loadRoomReservations().then(setRoomReservations)
+      loadLongLeave().then(setLongLeave)
     })
   }, [])
 
