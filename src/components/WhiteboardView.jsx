@@ -884,7 +884,7 @@ export default function WhiteboardView({ events, db = {} }) {
             <div className="wb-schedule-list">
               <MorningAgenda key={`today-${selectedKey}-${agendaResetToday}`} dateKey={selectedKey} calendarEvents={selEvents} rich />
             </div>
-            <DriveWidget storeId="wb_today" dateKey={selectedKey} />
+            <DriveWidget storeId="wb_today" dateKey={selectedKey} inheritFrom="wb_tomorrow" />
           </div>
 
           {/* 明日 */}

@@ -5,11 +5,16 @@ function loadUrl(panelId) {
   try { return JSON.parse(localStorage.getItem(PREFIX + 'url_' + panelId) ?? 'null') ?? 'https://drive.google.com' } catch { return 'https://drive.google.com' }
 }
 function saveUrl(panelId, val) { localStorage.setItem(PREFIX + 'url_' + panelId, JSON.stringify(val)) }
-function loadShown(panelId, dateKey) {
-  // 日付ごとに show/hide を保持
+function loadShown(panelId, dateKey, inheritFrom) {
+  // 日付ごとに show/hide を保持。なければ inheritFrom パネルの同日付を参照
   const key = PREFIX + 'vis_' + panelId + '_' + (dateKey || 'global')
   const v = localStorage.getItem(key)
-  return v === null ? true : v === '1'
+  if (v !== null) return v === '1'
+  if (inheritFrom) {
+    const fallback = localStorage.getItem(PREFIX + 'vis_' + inheritFrom + '_' + (dateKey || 'global'))
+    if (fallback !== null) return fallback === '1'
+  }
+  return true
 }
 function saveShown(panelId, dateKey, val) {
   const key = PREFIX + 'vis_' + panelId + '_' + (dateKey || 'global')
@@ -18,8 +23,8 @@ function saveShown(panelId, dateKey, val) {
 
 // storeId: パネル識別子 (例: "wb_today", "ttv")
 // dateKey: 日付文字列 (例: "2026-06-28") — 表示/非表示の保持に使用
-export default function DriveWidget({ storeId = 'default', dateKey = '' }) {
-  const [shown, setShown] = useState(() => loadShown(storeId, dateKey))
+export default function DriveWidget({ storeId = 'default', dateKey = '', inheritFrom = null }) {
+  const [shown, setShown] = useState(() => loadShown(storeId, dateKey, inheritFrom))
   const [url, setUrl] = useState(() => loadUrl(storeId))
 
   function toggle() {
