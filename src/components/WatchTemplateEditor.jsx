@@ -158,7 +158,7 @@ export default function WatchTemplateEditor() {
         </tbody>
       </table>
       </div>
-      <button className="hc-btn" style={{ marginTop: 8 }} onClick={addRule}>＋ ルールを追加</button>
+      <button className="db-wt-add-btn" onClick={addRule}>＋ ルールを追加</button>
     </div>
   )
 }

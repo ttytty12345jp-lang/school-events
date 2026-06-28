@@ -925,6 +925,12 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .db-wt-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .db-watch-rule-table { min-width: 560px; }
 .db-watch-rule-table .db-wt-input-text { min-width: 96px; }
+.db-wt-add-btn {
+  margin-top: 10px; padding: 7px 14px; font-size: 13px; cursor: pointer;
+  background: var(--primary, #2563eb); color: #fff; border: none; border-radius: 6px;
+  font-family: inherit; font-weight: 600;
+}
+.db-wt-add-btn:hover { filter: brightness(1.08); }
 .db-section-note { font-size: 12px; color: var(--text-muted); margin: 4px 0 8px; }
 
 /* ヘッダーのバージョン選択 */
