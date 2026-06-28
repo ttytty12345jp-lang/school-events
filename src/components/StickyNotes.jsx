@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 
-const STORAGE_KEY = 'sticky_notes'
+const DEFAULT_STORAGE_KEY = 'sticky_notes'
 const COLORS = ['#fef08a', '#bbf7d0', '#bfdbfe', '#fecaca', '#e9d5ff', '#fed7aa', '#ffffff']
 
-function load() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]') } catch { return [] }
+function load(key) {
+  try { return JSON.parse(localStorage.getItem(key) || '[]') } catch { return [] }
 }
-function save(items) { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)) }
+function save(key, items) { localStorage.setItem(key, JSON.stringify(items)) }
 
 function newNote(inPanel = true) {
   return { id: crypto.randomUUID(), type: 'note', text: '', x: 200, y: 200, width: 180, height: 140, color: COLORS[0], fontSize: 14, inPanel }
@@ -247,19 +247,29 @@ function AnyItem(props) {
 }
 
 // ── パネル ────────────────────────────────────────────────
-export default function StickyNotes() {
+export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY }) {
   const [items, setItems] = useState(() => {
-    const saved = load()
+    const saved = load(storageKey)
     return saved.length > 0 ? saved : Array.from({ length: 3 }, (_, i) => ({ ...newNote(true), color: COLORS[i] }))
   })
   const [panelOpen, setPanelOpen] = useState(false)
+
+  // storageKey が変わったとき（日付変更など）データを入れ替える
+  const prevKeyRef = useRef(storageKey)
+  useEffect(() => {
+    if (prevKeyRef.current === storageKey) return
+    prevKeyRef.current = storageKey
+    const saved = load(storageKey)
+    setItems(saved.length > 0 ? saved : Array.from({ length: 3 }, (_, i) => ({ ...newNote(true), color: COLORS[i] })))
+    setPanelOpen(false)
+  }, [storageKey])
 
   const panelWidth = 210
   const headerH = 72   // panel header height
   const itemH = 110
   const itemGap = 8
 
-  useEffect(() => { save(items) }, [items])
+  useEffect(() => { save(storageKey, items) }, [storageKey, items])
 
   const update = useCallback((id, patch) => setItems(ns => ns.map(n => n.id === id ? { ...n, ...patch } : n)), [])
   const remove = useCallback((id) => setItems(ns => ns.filter(n => n.id !== id)), [])

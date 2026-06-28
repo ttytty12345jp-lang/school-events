@@ -3,6 +3,7 @@ import { supabase, USE_SUPABASE } from '../lib/supabase'
 import { useNotice } from '../hooks/useNotice'
 import MorningAgenda from './MorningAgenda'
 import NoteLines from './NoteLines'
+import StickyNotes from './StickyNotes'
 import { loadLifeGoals } from '../lib/lifeGoals'
 import { loadJijiMaster, thirdsDisplay } from './SchoolJijiView'
 import { useHeaderControls } from '../HeaderControlsContext'
@@ -578,21 +579,24 @@ export default function TodayTomorrowView({ events }) {
   }, [])
 
   return (
-    <div className="ttv-wrap" ref={wrapRef}>
-      <div className="ttv-layout">
-        {/* 左2/3 */}
-        <div className="ttv-left">
-          <TodaySection date={selectedDate} events={selectedEvents} dateKey={selectedKey} spanEvents={spanEvents} />
-          <NoticeSection date={selectedKey} />
-          <LifeGoalSection date={selectedKey} />
-        </div>
-        {/* 右1/3 */}
-        <div className="ttv-right">
-          <DistributionSection date={selectedKey} />
-          <SchoolHoursSection date={selectedKey} calendarEvents={selectedEvents} />
-          <UpcomingSection todayDate={selectedDate} events={events} />
+    <>
+      <div className="ttv-wrap" ref={wrapRef}>
+        <div className="ttv-layout">
+          {/* 左2/3 */}
+          <div className="ttv-left">
+            <TodaySection date={selectedDate} events={selectedEvents} dateKey={selectedKey} spanEvents={spanEvents} />
+            <NoticeSection date={selectedKey} />
+            <LifeGoalSection date={selectedKey} />
+          </div>
+          {/* 右1/3 */}
+          <div className="ttv-right">
+            <DistributionSection date={selectedKey} />
+            <SchoolHoursSection date={selectedKey} calendarEvents={selectedEvents} />
+            <UpcomingSection todayDate={selectedDate} events={events} />
+          </div>
         </div>
       </div>
-    </div>
+      <StickyNotes storageKey={`ttv_sticky_${selectedKey}`} />
+    </>
   )
 }
