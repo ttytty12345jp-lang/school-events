@@ -5,6 +5,7 @@ import { useHeaderControls } from '../HeaderControlsContext'
 import { DAYS_JA, ymdKey as toDateKey } from '../utils/date'
 import { loadSpanEvents, saveSpanEvents, getActiveSpans } from '../lib/spanEvents'
 import { loadWatchTemplate } from '../lib/watchTemplate'
+import { subscribeSchoolNotices, markPending } from '../lib/schoolNoticesRealtime'
 
 const HIGHLIGHTS_TYPE = 'row_highlights'
 const SPAN_COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#64748b']
@@ -400,6 +401,7 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
 
   function saveHighlights(overrides) {
     const json = JSON.stringify(overrides)
+    markPending(monthKey, HIGHLIGHTS_TYPE)
     if (!USE_SUPABASE) {
       localStorage.setItem(`row_highlights_${monthKey}`, json)
       return
@@ -455,6 +457,7 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
 
   function saveWatch(next) {
     const json = JSON.stringify(next)
+    markPending(monthKey, WATCH_TYPE)
     if (!USE_SUPABASE) { localStorage.setItem(`watch_team_${monthKey}`, json); return }
     if (watchDebounce.current) clearTimeout(watchDebounce.current)
     watchDebounce.current = setTimeout(() => {
@@ -480,6 +483,21 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
       return next
     })
   }
+
+  // 他端末の変更をリアルタイムで受信
+  useEffect(() => {
+    return subscribeSchoolNotices(row => {
+      if (row.date !== monthKey) return
+      try {
+        const parsed = row.content ? JSON.parse(row.content) : {}
+        if (row.type === HIGHLIGHTS_TYPE) {
+          setRowOverrides(Array.isArray(parsed) || !parsed ? {} : parsed)
+        } else if (row.type === WATCH_TYPE) {
+          setWatchData(Array.isArray(parsed) || !parsed ? {} : parsed)
+        }
+      } catch {}
+    })
+  }, [monthKey])
 
   // テンプレート値と上書きデータから表示値を取得
   // skipTemplate=true のときテンプレートを使わず空欄扱い（土日祝用）

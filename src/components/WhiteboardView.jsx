@@ -4,6 +4,7 @@ import { useHeaderControls } from '../HeaderControlsContext'
 import MorningAgenda from './MorningAgenda'
 import { DAYS_JA, dateKey as toDateKey, monthKey } from '../utils/date'
 import { loadSpanEvents, getActiveSpans } from '../lib/spanEvents'
+import { subscribeSchoolNotices, markPending } from '../lib/schoolNoticesRealtime'
 
 const HIGHLIGHTS_TYPE = 'row_highlights'
 
@@ -440,6 +441,21 @@ export default function WhiteboardView({ events, db = {} }) {
   useEffect(() => { loadLongLeave().then(setLongLeave) }, [])
   useEffect(() => { loadRoomReservations().then(setRoomReservations) }, [])
 
+  // 他端末の変更をリアルタイムで受信
+  const selectedKeyRef = useRef(selectedKey)
+  useEffect(() => { selectedKeyRef.current = selectedKey }, [selectedKey])
+  useEffect(() => {
+    return subscribeSchoolNotices(row => {
+      if (row.type === 'whiteboard' && row.date === selectedKeyRef.current) {
+        try { setData({ ...emptyData(), ...JSON.parse(row.content) }) } catch {}
+      } else if (row.type === ROOM_RES_TYPE) {
+        loadRoomReservations().then(setRoomReservations)
+      } else if (row.type === LONG_LEAVE_TYPE) {
+        loadLongLeave().then(setLongLeave)
+      }
+    })
+  }, [])
+
   function getActiveLongLeave(leaveType) {
     return longLeave.filter(e => e.type === leaveType && e.startDate <= selectedKey && selectedKey <= e.endDate)
   }
@@ -494,6 +510,7 @@ export default function WhiteboardView({ events, db = {} }) {
 
   const scheduleSave = useCallback((next) => {
     setData(next)
+    markPending(selectedKey, 'whiteboard')
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(async () => {
       setSaving(true)
@@ -553,6 +570,7 @@ export default function WhiteboardView({ events, db = {} }) {
 
   function scheduleRoomResSave(next) {
     setRoomReservations(next)
+    markPending(ROOM_RES_DATE, ROOM_RES_TYPE)
     if (roomResDebounceRef.current) clearTimeout(roomResDebounceRef.current)
     roomResDebounceRef.current = setTimeout(() => saveRoomReservations(next), 800)
   }
