@@ -294,32 +294,6 @@ function DroppableCell({ dateKey, cat, cellEvents, isActive, onCellClick, onAdd,
   )
 }
 
-// ── 見守り隊セル編集用インプット ─────────────────────────
-function WatchEditInput({ value, onCommit, onCancel, isLast }) {
-  const [val, setVal] = useState(value)
-  const ref = useRef(null)
-  useEffect(() => { ref.current?.select() }, [])
-
-  function commit() { onCommit(val) }
-  function handleKeyDown(e) {
-    if (e.key === 'Enter') { e.preventDefault(); commit() }
-    if (e.key === 'Escape') { e.preventDefault(); onCancel() }
-    if (e.key === 'Tab' && isLast) { e.preventDefault(); commit() }
-  }
-
-  return (
-    <input
-      ref={ref}
-      type="time"
-      className="watch-input watch-input-edit"
-      value={val}
-      onChange={e => setVal(e.target.value)}
-      onBlur={commit}
-      onKeyDown={handleKeyDown}
-    />
-  )
-}
-
 // ── メインカレンダー ──────────────────────────────────────
 export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, addToast }) {
   const today = new Date()
@@ -342,7 +316,7 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
   const watchDebounce = useRef(null)
   // 曜日別テンプレート: { '月': { '1年': '14:50', ... }, ... }
   const [watchTemplate, setWatchTemplate] = useState({})
-  const [watchEditGroup, setWatchEditGroup] = useState(null) // { dateKey, grades } 編集中グループ
+  const [watchRowEdit, setWatchRowEdit] = useState(null) // 編集中の dateKey
 
   // 期間行事
   const [spanEvents, setSpanEvents] = useState([])
@@ -704,6 +678,11 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
                   />
                 )
               }
+              // 見守り隊用では塗りつぶし行（土日・祝日等）を非表示
+              if (viewMode === 'watch' && gray) return null
+
+              const isWatchEditing = viewMode === 'watch' && watchRowEdit === dateKey
+
               return (
                 <tr key={day} className={[
                   'monthly-row',
@@ -725,41 +704,45 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
                   {viewMode === 'watch' ? (
                     <>
                       {renderCatCell('学校行事', true)}
-                      {computeWatchGroups(dateKey, dow).map((group, gi) => {
-                        const groupKey = group.grades.join(',')
-                        const isEditing = watchEditGroup?.dateKey === dateKey && watchEditGroup?.grades.join(',') === groupKey
-                        if (isEditing) {
-                          return group.grades.map((g, idx) => (
+                      {isWatchEditing ? (
+                        // 編集モード: 全学年を個別 input で表示
+                        GRADES.map((g, idx) => {
+                          const explicit = watchData[dateKey]?.[g]
+                          const inputVal = explicit === null ? '' : explicit !== undefined ? explicit : (watchTemplate[DAYS_JA[dow]]?.[g] || '')
+                          return (
                             <td key={g} className="col-grade">
-                              <WatchEditInput
-                                value={watchData[dateKey]?.[g] ?? (watchTemplate[DAYS_JA[dow]]?.[g] || '')}
-                                onCommit={(val) => {
-                                  updateWatch(dateKey, g, val === '' ? null : val)
-                                  if (idx === group.grades.length - 1) setWatchEditGroup(null)
-                                }}
-                                onCancel={() => setWatchEditGroup(null)}
-                                isLast={idx === group.grades.length - 1}
+                              <input
+                                type="time"
+                                className="watch-input watch-input-edit"
+                                value={inputVal}
+                                autoFocus={idx === 0}
+                                onChange={e => updateWatch(dateKey, g, e.target.value === '' ? null : e.target.value)}
+                                onKeyDown={e => { if (e.key === 'Escape') setWatchRowEdit(null) }}
                               />
                             </td>
-                          ))
-                        }
-                        if (group.isCleared) {
+                          )
+                        })
+                      ) : (
+                        // 表示モード: 結合表示
+                        computeWatchGroups(dateKey, dow).map(group => {
+                          const groupKey = group.grades.join(',')
+                          if (group.isCleared) {
+                            return (
+                              <td key={groupKey} className="col-grade watch-cell-cleared" colSpan={group.colspan}
+                                title="クリックで編集"
+                                onClick={() => setWatchRowEdit(dateKey)} />
+                            )
+                          }
                           return (
-                            <td key={groupKey} className="col-grade watch-cell-cleared" colSpan={group.colspan}
-                              title="クリックで編集（時刻を入力すると復元）"
-                              onClick={() => setWatchEditGroup({ dateKey, grades: group.grades })}>
+                            <td key={groupKey} className={`col-grade watch-cell-merged${group.isTemplate ? ' watch-cell-template' : ''}`}
+                              colSpan={group.colspan}
+                              title="クリックで編集"
+                              onClick={() => setWatchRowEdit(dateKey)}>
+                              <span className="watch-merged-label">{group.displayValue}</span>
                             </td>
                           )
-                        }
-                        return (
-                          <td key={groupKey} className={`col-grade watch-cell-merged${group.isTemplate ? ' watch-cell-template' : ''}`}
-                            colSpan={group.colspan}
-                            title={`${group.grades.join('・')} ${group.displayValue}　クリックで編集`}
-                            onClick={() => setWatchEditGroup({ dateKey, grades: group.grades })}>
-                            <span className="watch-merged-label">{group.displayValue}</span>
-                          </td>
-                        )
-                      })}
+                        })
+                      )}
                     </>
                   ) : (
                     visibleCats.map((cat, catIdx) => renderCatCell(cat, catIdx === 0))

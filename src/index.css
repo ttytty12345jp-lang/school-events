@@ -880,13 +880,17 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   cursor: pointer;
   padding: 0 4px;
   vertical-align: middle;
+  text-align: center;
   transition: background 0.1s;
 }
 .watch-cell-merged:hover { background: #eff6ff; }
-.watch-merged-label { font-size: 13px; display: block; text-align: center; }
+.watch-merged-label { font-size: 13px; display: block; text-align: center; line-height: 1; }
 
 /* テンプレートから自動挿入された値（薄いグレー） */
 .watch-cell-template .watch-merged-label { color: #94a3b8; }
+
+/* 編集モードの input */
+.watch-input-edit { background: var(--primary-light) !important; }
 
 /* 明示的に消去したセル（登校なし等）→ 斜線 */
 .watch-cell-cleared {
