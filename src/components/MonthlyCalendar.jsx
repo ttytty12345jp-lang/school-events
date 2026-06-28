@@ -211,13 +211,14 @@ function DropZone({ onDrop, isOver, setIsOver }) {
 }
 
 // ── ドラッグ可能なイベントチップ ──────────────────────────
-function DraggableChip({ ev, onDragStart }) {
+function DraggableChip({ ev, onDragStart, onEdit }) {
   return (
     <div
       className="table-event-chip draggable-chip"
       draggable
       onDragStart={e => { e.stopPropagation(); onDragStart(e, ev) }}
-      style={{ color: ev.color === 'red' ? '#dc2626' : 'inherit' }}
+      onClick={e => { e.stopPropagation(); onEdit?.() }}
+      style={{ color: ev.color === 'red' ? '#dc2626' : 'inherit', cursor: 'pointer' }}
     >
       {ev.title}
       {ev.start_time && <span className="chip-time">　{ev.start_time}{ev.end_time ? `～${ev.end_time}` : ''}</span>}
@@ -270,7 +271,9 @@ function DroppableCell({ dateKey, cat, cellEvents, isActive, onCellClick, onAdd,
 
       {cellEvents.map((ev, i) => (
         <span key={ev.id} className="chip-wrapper">
-          <DraggableChip ev={ev} onDragStart={(e, ev) => { dragState.current = { ev, sourceDateKey: dateKey, sourceCat: cat } }} />
+          <DraggableChip ev={ev}
+            onDragStart={(e, ev) => { dragState.current = { ev, sourceDateKey: dateKey, sourceCat: cat } }}
+            onEdit={() => onCellClick()} />
           <DropZone
             isOver={!!zoneOver[i]}
             setIsOver={v => setZoneOver(z => ({ ...z, [i]: v }))}
