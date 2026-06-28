@@ -1867,8 +1867,6 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 
 .sn-panel-tab {
   position: fixed;
-  top: 50%;
-  transform: translateY(-50%);
   z-index: 1003;
   background: #374151;
   color: #fff;

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { supabase, USE_SUPABASE } from '../lib/supabase'
 import { useHeaderControls } from '../HeaderControlsContext'
 import MorningAgenda from './MorningAgenda'
+import StickyNotes from './StickyNotes'
 import { DAYS_JA, dateKey as toDateKey, monthKey } from '../utils/date'
 import { loadSpanEvents, getActiveSpans } from '../lib/spanEvents'
 import { subscribeSchoolNotices, markPending, onVisibilityReload } from '../lib/schoolNoticesRealtime'
@@ -912,6 +913,9 @@ export default function WhiteboardView({ events, db = {} }) {
 
         </div>
       </div>
+      {/* 今日・明日それぞれ日付キーで独立保存。明日→翌日の今日へ自動引き継ぎ */}
+      <StickyNotes storageKey={`wb_sticky_${selectedKey}`}  tabTop="25%" label="今日" />
+      <StickyNotes storageKey={`wb_sticky_${tomorrowKey}`} tabTop="75%" label="明日" />
     </div>
   )
 }

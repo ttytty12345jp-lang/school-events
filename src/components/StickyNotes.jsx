@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 
 const DEFAULT_STORAGE_KEY = 'sticky_notes'
 const COLORS = ['#fef08a', '#bbf7d0', '#bfdbfe', '#fecaca', '#e9d5ff', '#fed7aa', '#ffffff']
@@ -247,7 +248,9 @@ function AnyItem(props) {
 }
 
 // ── パネル ────────────────────────────────────────────────
-export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY }) {
+// tabTop: パネルタブボタンの上端位置（CSS値, デフォルト '50%'）
+// label:  パネルタイトル（複数パネルを区別するため）
+export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY, tabTop = '50%', label = '' }) {
   const [items, setItems] = useState(() => {
     const saved = load(storageKey)
     return saved.length > 0 ? saved : Array.from({ length: 3 }, (_, i) => ({ ...newNote(true), color: COLORS[i] }))
@@ -265,7 +268,7 @@ export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY }) {
   }, [storageKey])
 
   const panelWidth = 210
-  const headerH = 72   // panel header height
+  const headerH = 72
   const itemH = 110
   const itemGap = 8
 
@@ -284,11 +287,14 @@ export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY }) {
   const panelItems = items.filter(n => n.inPanel)
   const freeItems = items.filter(n => !n.inPanel)
 
-  return (
+  // portal で document.body 直下に描画し、zoom/overflow の影響を受けないようにする
+  return createPortal(
     <>
       {/* タブボタン */}
-      <button className="sn-panel-tab" style={{ right: panelOpen ? panelWidth - 6 : 0 }}
-        onClick={() => setPanelOpen(o => !o)} title={panelOpen ? 'パネルを閉じる' : 'パネルを開く'}>
+      <button className="sn-panel-tab"
+        style={{ right: panelOpen ? panelWidth - 6 : 0, top: tabTop, transform: 'translateY(-50%)' }}
+        onClick={() => setPanelOpen(o => !o)}
+        title={panelOpen ? 'パネルを閉じる' : 'パネルを開く'}>
         {panelOpen ? '▶' : '◀'}
       </button>
 
@@ -296,7 +302,7 @@ export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY }) {
       {panelOpen && (
         <div className="sn-panel" style={{ width: panelWidth }}>
           <div className="sn-panel-header">
-            <span className="sn-panel-title">ストック</span>
+            <span className="sn-panel-title">{label ? `ストック（${label}）` : 'ストック'}</span>
             <div className="sn-panel-add-btns">
               <button className="sn-btn" title="付箋を追加" onClick={() => setItems(ns => [...ns, newNote(true)])}>付箋</button>
               <button className="sn-btn" title="リンクを追加" onClick={() => setItems(ns => [...ns, newLink(true)])}>リンク</button>
@@ -333,6 +339,7 @@ export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY }) {
           onUpdate={update} onDelete={() => remove(item.id)} onDuplicate={() => duplicate(item.id)}
           onDrag={onDrag} onResize={onResize} />
       ))}
-    </>
+    </>,
+    document.body
   )
 }

@@ -9,8 +9,6 @@ import { ToastContainer, useToast } from './components/Toast'
 import { useEvents } from './hooks/useEvents'
 import { useDatabaseLists } from './hooks/useDatabaseLists'
 import { HeaderControlsContext } from './HeaderControlsContext'
-import StickyNotes from './components/StickyNotes'
-
 export default function App() {
   const [view, setView] = useState(() => sessionStorage.getItem('nav_view') || 'today')
   function changeView(v) { sessionStorage.setItem('nav_view', v); setView(v) }
@@ -44,7 +42,6 @@ export default function App() {
         )}
       </main>
       <ToastContainer toasts={toasts} />
-      {view === 'whiteboard' && <StickyNotes />}
     </HeaderControlsContext.Provider>
   )
 }
