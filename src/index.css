@@ -867,23 +867,19 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .monthly-table .col-cat  { min-width: 180px; }
 
 /* 見守り隊バージョンの学年別列 */
-.monthly-table .col-grade { width: 72px; text-align: center; border: 1px solid var(--border); padding: 0; }
+.monthly-table .col-grade { width: 72px; text-align: center; border: 1px solid var(--border); padding: 0; vertical-align: middle; }
 .monthly-watch .col-cat { min-width: 200px; }
-.watch-input { width: 100%; border: none; outline: none; background: transparent; font-size: 13px; padding: 4px 6px; text-align: center; font-family: inherit; box-sizing: border-box; height: 30px; }
+.watch-input { width: 100%; border: none; outline: none; background: transparent; font-size: 13px; padding: 0; text-align: center; font-family: inherit; box-sizing: border-box; height: 100%; display: block; }
 .watch-input:focus { background: var(--primary-light); }
 .watch-input-edit { background: var(--primary-light); }
 /* 見守り隊は列が少なく横に余裕があるぶん、行を高めにして縦を程よく埋める */
 .monthly-watch .monthly-row td { height: 32px; }
 
-/* 見守り隊セル: 結合表示 */
+/* 見守り隊セル: 結合表示（transition なし → 行ホバーと同期） */
 .watch-cell-merged {
   cursor: pointer;
   padding: 0 4px;
-  vertical-align: middle;
-  text-align: center;
-  transition: background 0.1s;
 }
-.watch-cell-merged:hover { background: #eff6ff; }
 .watch-merged-label { font-size: 13px; display: block; text-align: center; line-height: 1; }
 
 /* テンプレートから自動挿入された値（薄いグレー） */

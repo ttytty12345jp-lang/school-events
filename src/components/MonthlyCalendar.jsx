@@ -317,6 +317,7 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
   // 曜日別テンプレート: { '月': { '1年': '14:50', ... }, ... }
   const [watchTemplate, setWatchTemplate] = useState({})
   const [watchRowEdit, setWatchRowEdit] = useState(null) // 編集中の dateKey
+  const watchTableRef = useRef(null)
 
   // 期間行事
   const [spanEvents, setSpanEvents] = useState([])
@@ -324,6 +325,18 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
 
   useEffect(() => { loadSpanEvents().then(setSpanEvents) }, [])
   useEffect(() => { loadWatchTemplate().then(t => setWatchTemplate(t || {})) }, [])
+
+  // 見守り隊編集: テーブル外クリックで編集モードを閉じる
+  useEffect(() => {
+    if (!watchRowEdit) return
+    function handler(e) {
+      if (watchTableRef.current && !watchTableRef.current.contains(e.target)) {
+        setWatchRowEdit(null)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [watchRowEdit])
 
   async function handleSaveSpan(entry) {
     const next = spanEvents.some(s => s.id === entry.id)
@@ -617,7 +630,7 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
         <span>2026年度　{month}月　月中行事</span>
         <span>大阪市立北中島小学校</span>
       </div>
-      <div className="monthly-table-wrap">
+      <div className="monthly-table-wrap" ref={watchTableRef}>
         <table className={`monthly-table${viewMode === 'watch' ? ' monthly-watch' : ''}`}>
           <thead>
             <tr>
@@ -717,7 +730,7 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
                                 value={inputVal}
                                 autoFocus={idx === 0}
                                 onChange={e => updateWatch(dateKey, g, e.target.value === '' ? null : e.target.value)}
-                                onKeyDown={e => { if (e.key === 'Escape') setWatchRowEdit(null) }}
+                                onKeyDown={e => { if (e.key === 'Escape' || e.key === 'Enter') setWatchRowEdit(null) }}
                               />
                             </td>
                           )
