@@ -393,7 +393,8 @@ function useNextSchoolDay(selectedKey) {
 
 export default function WhiteboardView({ events, db = {} }) {
   const todayKey = toDateKey(new Date())
-  const [selectedKey, setSelectedKey] = useState(todayKey)
+  const [selectedKey, setSelectedKey] = useState(() => sessionStorage.getItem('wb_date') || todayKey)
+  function changeDate(k) { sessionStorage.setItem('wb_date', k); setSelectedKey(k) }
   const tomorrowKey = useNextSchoolDay(selectedKey)
 
   const selectedDate = dateFromKey(selectedKey)
@@ -505,11 +506,11 @@ export default function WhiteboardView({ events, db = {} }) {
   useEffect(() => {
     setControls(
       <div className="hc-row">
-        <button className="hc-btn-nav" onClick={() => setSelectedKey(k => navKey(k, -1))}>‹</button>
-        <input type="date" value={selectedKey} onChange={e => setSelectedKey(e.target.value)} className="hc-date-input" />
-        <button className="hc-btn-nav" onClick={() => setSelectedKey(k => navKey(k, 1))}>›</button>
+        <button className="hc-btn-nav" onClick={() => changeDate(navKey(selectedKey, -1))}>‹</button>
+        <input type="date" value={selectedKey} onChange={e => changeDate(e.target.value)} className="hc-date-input" />
+        <button className="hc-btn-nav" onClick={() => changeDate(navKey(selectedKey, 1))}>›</button>
         {selectedKey !== todayKey && (
-          <button className="hc-btn" onClick={() => setSelectedKey(todayKey)}>今日に戻る</button>
+          <button className="hc-btn" onClick={() => changeDate(todayKey)}>今日に戻る</button>
         )}
         {saving && <span className="hc-saving">保存中…</span>}
         <button className="hc-btn" onClick={() => window.print()}>🖨️ 印刷</button>

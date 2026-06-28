@@ -12,7 +12,8 @@ import { HeaderControlsContext } from './HeaderControlsContext'
 import StickyNotes from './components/StickyNotes'
 
 export default function App() {
-  const [view, setView] = useState('today')
+  const [view, setView] = useState(() => sessionStorage.getItem('nav_view') || 'today')
+  function changeView(v) { sessionStorage.setItem('nav_view', v); setView(v) }
   const [headerControls, setHeaderControls] = useState(null)
   const { toasts, addToast } = useToast()
   const { events, loading, addEvent, updateEvent, deleteEvent } = useEvents()
@@ -20,7 +21,7 @@ export default function App() {
 
   return (
     <HeaderControlsContext.Provider value={{ setControls: setHeaderControls }}>
-      <Header view={view} setView={setView} controls={headerControls} />
+      <Header view={view} setView={changeView} controls={headerControls} />
       <main className={`main-content${view === 'whiteboard' ? ' main-full-width' : ''}`}>
         {loading ? (
           <div style={{ textAlign: 'center', padding: 40, color: '#64748b' }}>読み込み中…</div>

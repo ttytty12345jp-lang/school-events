@@ -498,7 +498,8 @@ function SchoolHoursSection({ date, calendarEvents }) {
 export default function TodayTomorrowView({ events }) {
   const today = new Date()
   const todayKey = toDateKey(today)
-  const [selectedKey, setSelectedKey] = useState(todayKey)
+  const [selectedKey, setSelectedKey] = useState(() => sessionStorage.getItem('ttv_date') || todayKey)
+  function changeDate(k) { sessionStorage.setItem('ttv_date', k); setSelectedKey(k) }
   const { setControls } = useHeaderControls()
   const [spanEvents, setSpanEvents] = useState([])
   useEffect(() => { loadSpanEvents().then(setSpanEvents) }, [])
@@ -537,13 +538,13 @@ export default function TodayTomorrowView({ events }) {
     setControls(
       <div className="hc-row">
         <button className="hc-btn-nav" onClick={() => {
-          const d = new Date(selectedKey + 'T00:00:00'); d.setDate(d.getDate() - 1); setSelectedKey(toDateKey(d))
+          const d = new Date(selectedKey + 'T00:00:00'); d.setDate(d.getDate() - 1); changeDate(toDateKey(d))
         }}>‹</button>
-        <input type="date" value={selectedKey} onChange={e => setSelectedKey(e.target.value)} className="hc-date-input" />
+        <input type="date" value={selectedKey} onChange={e => changeDate(e.target.value)} className="hc-date-input" />
         <button className="hc-btn-nav" onClick={() => {
-          const d = new Date(selectedKey + 'T00:00:00'); d.setDate(d.getDate() + 1); setSelectedKey(toDateKey(d))
+          const d = new Date(selectedKey + 'T00:00:00'); d.setDate(d.getDate() + 1); changeDate(toDateKey(d))
         }}>›</button>
-        {!isToday && <button className="hc-btn" onClick={() => setSelectedKey(todayKey)}>今日に戻る</button>}
+        {!isToday && <button className="hc-btn" onClick={() => changeDate(todayKey)}>今日に戻る</button>}
         <button className="hc-btn" onClick={() => {
           const wrap = document.querySelector('.ttv-wrap')
           const clone = wrap.cloneNode(true)

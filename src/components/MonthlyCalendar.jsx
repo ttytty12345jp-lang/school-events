@@ -316,8 +316,14 @@ function DroppableCell({ dateKey, cat, cellEvents, isActive, onCellClick, onAdd,
 // ── メインカレンダー ──────────────────────────────────────
 export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, addToast }) {
   const today = new Date()
-  const [year, setYear] = useState(today.getFullYear())
-  const [month, setMonth] = useState(today.getMonth() + 1)
+  const [year, setYear] = useState(() => {
+    const s = sessionStorage.getItem('monthly_ym')
+    return s ? parseInt(s.split('-')[0]) : today.getFullYear()
+  })
+  const [month, setMonth] = useState(() => {
+    const s = sessionStorage.getItem('monthly_ym')
+    return s ? parseInt(s.split('-')[1]) : today.getMonth() + 1
+  })
   const [activeCell, setActiveCell] = useState(null)
   const dragState = useRef(null)
 
@@ -519,10 +525,16 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
   }, [events])
 
   function prevMonth() {
-    if (month === 1) { setYear(y => y - 1); setMonth(12) } else setMonth(m => m - 1)
+    const ny = month === 1 ? year - 1 : year
+    const nm = month === 1 ? 12 : month - 1
+    setYear(ny); setMonth(nm)
+    sessionStorage.setItem('monthly_ym', `${ny}-${nm}`)
   }
   function nextMonth() {
-    if (month === 12) { setYear(y => y + 1); setMonth(1) } else setMonth(m => m + 1)
+    const ny = month === 12 ? year + 1 : year
+    const nm = month === 12 ? 1 : month + 1
+    setYear(ny); setMonth(nm)
+    sessionStorage.setItem('monthly_ym', `${ny}-${nm}`)
   }
 
   // insertIndex: ドロップ先のセル内での挿入位置

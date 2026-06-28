@@ -12,7 +12,11 @@ function getFiscalYear(date) {
 
 export default function AnnualView({ events, onMonthClick }) {
   const today = new Date()
-  const [fiscalYear, setFiscalYear] = useState(getFiscalYear(today))
+  const [fiscalYear, setFiscalYear] = useState(() => {
+    const s = sessionStorage.getItem('annual_fy')
+    return s ? parseInt(s) : getFiscalYear(today)
+  })
+  function changeFiscalYear(y) { sessionStorage.setItem('annual_fy', String(y)); setFiscalYear(y) }
 
   // 4月〜翌3月の12ヶ月
   const months = useMemo(() => {
@@ -114,9 +118,9 @@ export default function AnnualView({ events, onMonthClick }) {
   useEffect(() => {
     setControls(
       <div className="hc-row">
-        <button className="hc-btn-nav" onClick={() => setFiscalYear(y => y - 1)}>‹</button>
+        <button className="hc-btn-nav" onClick={() => changeFiscalYear(fiscalYear - 1)}>‹</button>
         <span className="hc-label">{fiscalYear}年度</span>
-        <button className="hc-btn-nav" onClick={() => setFiscalYear(y => y + 1)}>›</button>
+        <button className="hc-btn-nav" onClick={() => changeFiscalYear(fiscalYear + 1)}>›</button>
         <button className="hc-btn" onClick={() => exportAnnualExcel(fiscalYear, eventsRef.current)}>📊 年間Excel出力</button>
         <button className="hc-btn" onClick={() => window.print()}>🖨️ 印刷</button>
       </div>
