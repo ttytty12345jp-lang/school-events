@@ -11,33 +11,12 @@ function loadUrl(panelId) {
 }
 function saveUrl(panelId, val) { localStorage.setItem(urlKey(panelId), JSON.stringify(val)) }
 
-// 表示/非表示を決定:
-//   1. この日付に明示的な値があればそれを使う
-//   2. なければ「過去で最も新しい明示値」を引き継ぐ（＝最後に選んだ状態が以後の日にも続く）
-//   3. それも無ければデフォルト表示
-// これにより、ある日「非表示」にすると、それ以降の日もずっと非表示になる。
-// ホワイトボードは today/tomorrow が同じ panelId を共有し dateKey だけ違うので、
-// 「明日」で設定した状態が翌日「今日」になったとき自動的に引き継がれる。
+// 表示/非表示を決定（既定は非表示・日ごとに独立）:
+//   その日付に「表示」を明示的に設定したときだけ表示。引き継ぎ・過去参照は一切しない。
+// ホワイトボードは today/tomorrow が同じ panelId("wb") を共有し dateKey だけ違うので、
+// 「明日」でONにした日が翌日「今日」になったとき自動的にONとして表示される。
 function loadShown(panelId, dateKey) {
-  const exact = localStorage.getItem(visKey(panelId, dateKey))
-  if (exact !== null) return exact === '1'
-
-  if (dateKey) {
-    const prefix = PREFIX + 'vis_' + panelId + '_'
-    let bestDate = null, bestVal = null
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i)
-      if (!k || !k.startsWith(prefix)) continue
-      const d = k.slice(prefix.length)
-      // YYYY-MM-DD は辞書順＝時系列順。dateKey 以前で最も新しい設定を採用
-      if (d !== 'global' && d <= dateKey && (bestDate === null || d > bestDate)) {
-        bestDate = d
-        bestVal = localStorage.getItem(k)
-      }
-    }
-    if (bestVal !== null) return bestVal === '1'
-  }
-  return true
+  return localStorage.getItem(visKey(panelId, dateKey)) === '1'
 }
 function saveShown(panelId, dateKey, val) {
   localStorage.setItem(visKey(panelId, dateKey), val ? '1' : '0')
