@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
+import { getCached, subscribe, resolveRemote, save as saveSticky, initStickyRealtime } from '../lib/stickyStore'
 
 const DEFAULT_STORAGE_KEY = 'sticky_notes'
 const COLORS = ['#fef08a', '#bbf7d0', '#bfdbfe', '#fecaca', '#e9d5ff', '#fed7aa', '#ffffff']
 
-function load(key) {
-  try { return JSON.parse(localStorage.getItem(key) || '[]') } catch { return [] }
-}
-function save(key, items) { localStorage.setItem(key, JSON.stringify(items)) }
+// 付箋は Supabase 共有ストア経由で永続化（全端末同期）。日付キーで保持するため
+// 「明日」に置いた付箋はその日付が「今日」になったとき自然に引き継がれる。
+const load = (key) => getCached(key)
+const save = (key, items) => saveSticky(key, items)
 
 function newNote(inPanel = true) {
   return { id: crypto.randomUUID(), type: 'note', text: '', x: 200, y: 200, width: 180, height: 140, color: COLORS[0], fontSize: 14, inPanel }
@@ -253,38 +254,38 @@ function AnyItem(props) {
 // inheritFrom: このキーにデータがないとき、引き継ぎ元として参照するストレージキー
 // region:      ストックパネルの表示領域。'top'=画面上半分 / 'bottom'=下半分 / null=全画面
 export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY, tabTop = '50%', label = '', inheritFrom = null, region = null }) {
+  const defaultItems = () => Array.from({ length: 3 }, (_, i) => ({ ...newNote(true), color: COLORS[i] }))
   const [items, setItems] = useState(() => {
     const saved = load(storageKey)
-    if (saved.length > 0) return saved
-    if (inheritFrom) {
-      const inh = load(inheritFrom)
-      if (inh.length > 0) { save(storageKey, inh); return inh }
-    }
-    return Array.from({ length: 3 }, (_, i) => ({ ...newNote(true), color: COLORS[i] }))
+    return saved.length > 0 ? saved : defaultItems()
   })
   const [panelOpen, setPanelOpen] = useState(false)
 
-  // storageKey が変わったとき（日付変更など）データを入れ替える
-  // データがなければ inheritFrom から引き継いで即保存（次の日付変更でも引き継ぎが機能するよう）
+  // 現在のキーを参照（保存はユーザー操作時のみ commit 経由で行う）
+  const storageKeyRef = useRef(storageKey)
+  useEffect(() => { storageKeyRef.current = storageKey }, [storageKey])
+
+  // storageKey が変わったとき（日付変更など）まずローカル/デフォルトを表示
   const prevKeyRef = useRef(storageKey)
-  const inheritFromRef = useRef(inheritFrom)
-  useEffect(() => { inheritFromRef.current = inheritFrom }, [inheritFrom])
   useEffect(() => {
     if (prevKeyRef.current === storageKey) return
     prevKeyRef.current = storageKey
     const saved = load(storageKey)
-    if (saved.length > 0) {
-      setItems(saved)
-    } else {
-      const inh = inheritFromRef.current ? load(inheritFromRef.current) : []
-      const next = inh.length > 0
-        ? inh
-        : Array.from({ length: 3 }, (_, i) => ({ ...newNote(true), color: COLORS[i] }))
-      setItems(next)
-      if (inh.length > 0) save(storageKey, next) // 即保存して次の日付変更にも繋げる
-    }
+    setItems(saved.length > 0 ? saved : defaultItems())
     setPanelOpen(false)
   }, [storageKey])
+
+  // Supabase 同期: リモート優先で解決（無ければ引き継ぎ）＋他端末変更を購読
+  useEffect(() => {
+    initStickyRealtime()
+    resolveRemote(storageKey, getCached(storageKey), inheritFrom).then(resolved => {
+      if (resolved) setItems(resolved)
+    })
+    const unsub = subscribe(storageKey, (remoteItems) => {
+      setItems(prev => JSON.stringify(prev) === JSON.stringify(remoteItems) ? prev : remoteItems)
+    })
+    return unsub
+  }, [storageKey, inheritFrom])
 
   const panelWidth = 210
   const headerH = 72
@@ -298,14 +299,19 @@ export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY, tabTop =
     : 0
   const panelHeightCss = isHalf ? '50vh' : '100vh'
 
-  useEffect(() => { save(storageKey, items) }, [storageKey, items])
+  // ユーザー操作による変更のみ保存（デフォルト付箋やリモート反映では保存しない＝他端末データを上書きしない）
+  const commit = useCallback((updater) => setItems(prev => {
+    const next = typeof updater === 'function' ? updater(prev) : updater
+    save(storageKeyRef.current, next)
+    return next
+  }), [])
 
-  const update = useCallback((id, patch) => setItems(ns => ns.map(n => n.id === id ? { ...n, ...patch } : n)), [])
-  const remove = useCallback((id) => setItems(ns => ns.filter(n => n.id !== id)), [])
-  const duplicate = useCallback((id) => setItems(ns => {
+  const update = useCallback((id, patch) => commit(ns => ns.map(n => n.id === id ? { ...n, ...patch } : n)), [commit])
+  const remove = useCallback((id) => commit(ns => ns.filter(n => n.id !== id)), [commit])
+  const duplicate = useCallback((id) => commit(ns => {
     const src = ns.find(n => n.id === id); if (!src) return ns
     return [...ns, { ...src, id: crypto.randomUUID(), x: src.x + 20, y: src.y + 20, inPanel: false }]
-  }), [])
+  }), [commit])
 
   const onDrag = useDrag(update)
   const onResize = useResize(update)
@@ -332,9 +338,9 @@ export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY, tabTop =
           <div className="sn-panel-header">
             <span className="sn-panel-title">{label ? `ストック（${label}）` : 'ストック'}</span>
             <div className="sn-panel-add-btns">
-              <button className="sn-btn" title="付箋を追加" onClick={() => setItems(ns => [...ns, newNote(true)])}>付箋</button>
-              <button className="sn-btn" title="リンクを追加" onClick={() => setItems(ns => [...ns, newLink(true)])}>リンク</button>
-              <button className="sn-btn" title="表を追加" onClick={() => setItems(ns => [...ns, newTable(true)])}>表</button>
+              <button className="sn-btn" title="付箋を追加" onClick={() => commit(ns => [...ns, newNote(true)])}>付箋</button>
+              <button className="sn-btn" title="リンクを追加" onClick={() => commit(ns => [...ns, newLink(true)])}>リンク</button>
+              <button className="sn-btn" title="表を追加" onClick={() => commit(ns => [...ns, newTable(true)])}>表</button>
             </div>
           </div>
         </div>
