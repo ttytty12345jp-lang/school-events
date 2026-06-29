@@ -44,7 +44,7 @@ function mergeWithCalendar(saved, calendarEvents) {
   return items
 }
 
-export default function MorningAgenda({ dateKey, calendarEvents, rich = false }) {
+export default function MorningAgenda({ dateKey, calendarEvents, rich = false, defaultSize }) {
   const [items, setItems] = useState(null)
   const [saving, setSaving] = useState(false)
   const [dragOverId, setDragOverId] = useState(null) // ドロップ先のid
@@ -201,7 +201,7 @@ export default function MorningAgenda({ dateKey, calendarEvents, rich = false })
           <input
             ref={el => { inputRefs.current[item.id] = el }}
             className="agenda-title-input"
-            style={rich ? lineStyle(item) : undefined}
+            style={rich ? lineStyle(item, defaultSize) : undefined}
             value={item.title}
             onChange={e => setTitle(item.id, e.target.value)}
             onKeyDown={e => handleKeyDown(e, item.id, i)}
@@ -210,7 +210,7 @@ export default function MorningAgenda({ dateKey, calendarEvents, rich = false })
             placeholder="行事・連絡を入力"
           />
           {rich && focusId === item.id && (
-            <FormatToolbar item={item} onChange={patch => setFormat(item.id, patch)} />
+            <FormatToolbar item={item} onChange={patch => setFormat(item.id, patch)} defaultSize={defaultSize} />
           )}
           <button className="agenda-add-btn" title="下に行を追加" onClick={() => addAfter(i)}>＋</button>
           <button className="agenda-del-btn" title="削除" onClick={() => remove(item.id)}>✕</button>

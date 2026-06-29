@@ -887,7 +887,7 @@ export default function WhiteboardView({ events, db = {} }) {
               <button className="wb-sync-btn" onClick={() => syncAgenda(selectedKey, setAgendaResetToday)} title="月中行事と同期">↺ 同期</button>
             </div>
             <div className="wb-schedule-list">
-              <MorningAgenda key={`today-${selectedKey}-${agendaResetToday}`} dateKey={selectedKey} calendarEvents={selEvents} rich />
+              <MorningAgenda key={`today-${selectedKey}-${agendaResetToday}`} dateKey={selectedKey} calendarEvents={selEvents} rich defaultSize={24} />
             </div>
             <DriveWidget key={`dw-today-${selectedKey}`} storeId="wb" dateKey={selectedKey} />
           </div>
@@ -919,7 +919,7 @@ export default function WhiteboardView({ events, db = {} }) {
               <button className="wb-sync-btn" onClick={() => syncAgenda(tomorrowKey, setAgendaResetTomorrow)} title="月中行事と同期">↺ 同期</button>
             </div>
             <div className="wb-schedule-list">
-              <MorningAgenda key={`tomorrow-${tomorrowKey}-${agendaResetTomorrow}`} dateKey={tomorrowKey} calendarEvents={nextEvents} rich />
+              <MorningAgenda key={`tomorrow-${tomorrowKey}-${agendaResetTomorrow}`} dateKey={tomorrowKey} calendarEvents={nextEvents} rich defaultSize={24} />
             </div>
             <DriveWidget key={`dw-tomorrow-${tomorrowKey}`} storeId="wb" dateKey={tomorrowKey} />
           </div>
@@ -930,8 +930,8 @@ export default function WhiteboardView({ events, db = {} }) {
       {/* 明日：日付キー。引き継ぎなし → 翌日の今日パネルに自然に現れる */}
       <StickyNotes storageKey={`wb_sticky_${selectedKey}`}
         inheritFrom={prevSelectedKey ? `wb_sticky_${prevSelectedKey}` : null}
-        tabTop="25%" label="今日" />
-      <StickyNotes storageKey={`wb_sticky_${tomorrowKey}`} tabTop="75%" label="明日" />
+        tabTop="25%" label="今日" region="top" />
+      <StickyNotes storageKey={`wb_sticky_${tomorrowKey}`} tabTop="75%" label="明日" region="bottom" />
     </div>
   )
 }

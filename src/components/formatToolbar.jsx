@@ -5,17 +5,17 @@ export const TEXT_SIZES = [10, 12, 14, 16, 20, 24, 28, 32, 38] // px
 export const DEFAULT_SIZE = 28
 export const TEXT_COLORS = ['#1e293b', '#dc2626', '#2563eb', '#16a34a', '#ea580c']
 
-// 1行ぶんのインラインスタイル
-export function lineStyle(item) {
+// 1行ぶんのインラインスタイル（defaultSize: size 未指定時の既定サイズ）
+export function lineStyle(item, defaultSize = DEFAULT_SIZE) {
   return {
-    fontSize: (item.size || DEFAULT_SIZE) + 'px',
+    fontSize: (item.size || defaultSize) + 'px',
     color: item.color || TEXT_COLORS[0],
     textDecoration: item.strike ? 'line-through' : 'none',
   }
 }
 
-function stepSize(cur, dir) {
-  const base = cur || DEFAULT_SIZE
+function stepSize(cur, dir, defaultSize = DEFAULT_SIZE) {
+  const base = cur || defaultSize
   // 現在値に最も近いインデックスを基準に増減
   let idx = TEXT_SIZES.reduce((best, s, i) =>
     Math.abs(s - base) < Math.abs(TEXT_SIZES[best] - base) ? i : best, 0)
@@ -24,11 +24,11 @@ function stepSize(cur, dir) {
 }
 
 // item: { size, color, strike }、onChange(patch) で部分更新
-export function FormatToolbar({ item, onChange }) {
+export function FormatToolbar({ item, onChange, defaultSize = DEFAULT_SIZE }) {
   return (
     <div className="fmt-toolbar" onMouseDown={e => e.preventDefault()}>
-      <button className="fmt-btn" title="小さく" onClick={() => onChange({ size: stepSize(item.size, -1) })}>A−</button>
-      <button className="fmt-btn" title="大きく" onClick={() => onChange({ size: stepSize(item.size, +1) })}>A＋</button>
+      <button className="fmt-btn" title="小さく" onClick={() => onChange({ size: stepSize(item.size, -1, defaultSize) })}>A−</button>
+      <button className="fmt-btn" title="大きく" onClick={() => onChange({ size: stepSize(item.size, +1, defaultSize) })}>A＋</button>
       <span className="fmt-sep" />
       {TEXT_COLORS.map(c => (
         <button key={c} className={`fmt-color${(item.color || TEXT_COLORS[0]) === c ? ' sel' : ''}`}

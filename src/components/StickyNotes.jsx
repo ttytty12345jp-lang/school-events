@@ -251,7 +251,8 @@ function AnyItem(props) {
 // tabTop:      パネルタブボタンの上端位置（CSS値, デフォルト '50%'）
 // label:       パネルタイトル（複数パネルを区別するため）
 // inheritFrom: このキーにデータがないとき、引き継ぎ元として参照するストレージキー
-export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY, tabTop = '50%', label = '', inheritFrom = null }) {
+// region:      ストックパネルの表示領域。'top'=画面上半分 / 'bottom'=下半分 / null=全画面
+export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY, tabTop = '50%', label = '', inheritFrom = null, region = null }) {
   const [items, setItems] = useState(() => {
     const saved = load(storageKey)
     if (saved.length > 0) return saved
@@ -290,6 +291,13 @@ export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY, tabTop =
   const itemH = 110
   const itemGap = 8
 
+  // region に応じてパネルの縦位置・高さを決める（上下半々表示用）
+  const isHalf = region === 'top' || region === 'bottom'
+  const regionTopPx = region === 'bottom'
+    ? Math.round((typeof window !== 'undefined' ? window.innerHeight : 800) / 2)
+    : 0
+  const panelHeightCss = isHalf ? '50vh' : '100vh'
+
   useEffect(() => { save(storageKey, items) }, [storageKey, items])
 
   const update = useCallback((id, patch) => setItems(ns => ns.map(n => n.id === id ? { ...n, ...patch } : n)), [])
@@ -320,7 +328,7 @@ export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY, tabTop =
 
       {/* パネル背景 */}
       {panelOpen && (
-        <div className="sn-panel" style={{ width: panelWidth }}>
+        <div className="sn-panel" style={{ width: panelWidth, top: regionTopPx, height: panelHeightCss }}>
           <div className="sn-panel-header">
             <span className="sn-panel-title">{label ? `ストック（${label}）` : 'ストック'}</span>
             <div className="sn-panel-add-btns">
@@ -334,7 +342,7 @@ export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY, tabTop =
 
       {/* パネル内アイテム */}
       {panelOpen && (() => {
-        let yOffset = headerH
+        let yOffset = regionTopPx + headerH
         return panelItems.map((item) => {
           const x = window.innerWidth - panelWidth + 5
           const y = yOffset
