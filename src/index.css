@@ -2042,3 +2042,11 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .sn-table-cell { width: 100%; border: none; outline: none; font-size: 11px; padding: 2px 4px; background: transparent; min-width: 30px; text-align: center; }
 .sn-table-ctrl { display: flex; gap: 2px; flex-wrap: wrap; }
 .sn-table-ctrl .sn-btn { font-size: 9px; padding: 1px 3px; }
+
+/* ブラウザ全画面（F11 など）時はヘッダーを隠して表示領域を最大化 */
+@media (display-mode: fullscreen) {
+  .app-header { display: none !important; }
+  /* ヘッダー(48px)前提で高さを計算している画面を全高に補正し、下部の余白を防ぐ */
+  .main-content:has(.ttv-wrap),
+  .wb-wrap { height: 100vh; }
+}
