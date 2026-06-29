@@ -1637,6 +1637,14 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
     max-height: none;
     overflow: visible;
   }
+  /* 全3パターン共通: 行高さを固定してA4縦にちょうど収め、セルを縦中央揃え */
+  .monthly-row td {
+    height: 8mm;
+    padding: 0 6px;
+    vertical-align: middle;
+  }
+  .monthly-watch .monthly-row td { height: 8mm; }
+  .col-cat-cell { vertical-align: middle; min-height: 0; }
   /* 印刷時は「今日」のハイライトを消す */
   .monthly-row.row-today td { background: transparent !important; }
   .monthly-row.row-today .col-date { color: inherit !important; font-weight: normal !important; }
@@ -1687,7 +1695,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    gap: 26px;                 /* 上下2段の間のスペース */
+    gap: 48px;                 /* 上下2段の間のスペース */
     height: 100vh;
   }
   /* 編集画面と同じ固定サイズ(1080x760)のまま、A4幅に合わせて縮小して2段。
