@@ -408,15 +408,20 @@ export default function WhiteboardView({ events, db = {} }) {
   const [selectedKey, setSelectedKey] = useState(() => sessionStorage.getItem('wb_date') || todayKey)
   const [prevSelectedKey, setPrevSelectedKey] = useState(null)
   function changeDate(k) {
-    // 前進かつ次の登校日へ移動するとき、明日の付箋y座標を今日エリア（上半分）へ補正
+    // 前進かつ次の登校日へ移動するとき、明日付箋を今日エリア（上半分）へ移動
     if (k === tomorrowKey) {
       const key = `wb_sticky_${tomorrowKey}`
       const items = getStickyCache(key)
-      if (items.some(item => !item.inPanel)) {
+      if (items.length > 0) {
         const halfH = Math.round(window.innerHeight / 2)
-        const adjusted = items.map(item =>
-          item.inPanel ? item : { ...item, y: Math.max(80, item.y - halfH) }
-        )
+        let xi = 0
+        const adjusted = items.map((item, i) => {
+          if (item.inPanel) {
+            // パネル内付箋 → 今日エリアに自由配置して見えるようにする
+            return { ...item, inPanel: false, x: 40 + xi++ * 20, y: 120 + i * 30 }
+          }
+          return { ...item, y: Math.max(80, item.y - halfH) }
+        })
         saveSticky(key, adjusted)
       }
     }

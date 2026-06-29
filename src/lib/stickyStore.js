@@ -41,6 +41,8 @@ async function fetchFromRemote(key) {
 //   それ以外（全部空）→ null（呼び出し側はデフォルト表示のまま・保存しない）
 export async function resolveRemote(key, localItems, inheritKey) {
   if (!USE_SUPABASE) return null
+  // ローカルに最新データがある（直前に save() 済み）場合はリモートで上書きしない
+  if (fetched[key] && localItems && localItems.length) return null
   const remote = await fetchFromRemote(key)
   fetched[key] = true
   if (remote && remote.length) { cache[key] = remote; lsSave(key, remote); return remote }
