@@ -248,57 +248,6 @@ function AnyItem(props) {
   return <NoteItem {...props} />
 }
 
-// ── モバイル用インラインカード（ドラッグ無し・常に縦並び表示） ──
-function MobileCard({ note, update, remove }) {
-  if (note.type === 'link') {
-    const isDrive = (note.url || '').includes('drive.google')
-    return (
-      <div className="sn-m-card sn-m-link">
-        <div className="sn-m-link-main" onClick={() => window.open(note.url, '_blank', 'noreferrer')}>
-          {isDrive ? <DriveIcon size={30} /> : <FaviconIcon url={note.url} size={30} />}
-          <span className="sn-m-link-label">{note.label || note.url}</span>
-        </div>
-        <input className="sn-m-url" value={note.url} onChange={e => update(note.id, { url: e.target.value })} />
-        <button className="sn-m-del" onClick={remove}>×</button>
-      </div>
-    )
-  }
-  if (note.type === 'table') {
-    const cells = note.cells
-    const setCell = (r, c, v) => update(note.id, { cells: cells.map((row, ri) => row.map((cell, ci) => ri === r && ci === c ? v : cell)) })
-    return (
-      <div className="sn-m-card">
-        <div className="sn-m-bar">
-          <button className="sn-btn" onClick={() => update(note.id, { cells: [...cells, Array(cells[0].length).fill('')] })}>+行</button>
-          <button className="sn-btn" onClick={() => update(note.id, { cells: cells.map(r => [...r, '']) })}>+列</button>
-          <button className="sn-btn" onClick={() => cells.length > 1 && update(note.id, { cells: cells.slice(0, -1) })}>-行</button>
-          <button className="sn-btn" onClick={() => cells[0].length > 1 && update(note.id, { cells: cells.map(r => r.slice(0, -1)) })}>-列</button>
-          <button className="sn-m-del" onClick={remove}>×</button>
-        </div>
-        <table className="sn-table"><tbody>
-          {cells.map((row, r) => (
-            <tr key={r}>{row.map((cell, c) => (
-              <td key={c}><input className="sn-table-cell" value={cell} onChange={e => setCell(r, c, e.target.value)} /></td>
-            ))}</tr>
-          ))}
-        </tbody></table>
-      </div>
-    )
-  }
-  return (
-    <div className="sn-m-card sn-m-note" style={{ background: note.color }}>
-      <div className="sn-m-bar">
-        {COLORS.map(c => <button key={c} className="sn-color-btn" style={{ background: c, outline: c === note.color ? '2px solid #333' : 'none' }} onClick={() => update(note.id, { color: c })} />)}
-        <button className="sn-btn" onClick={() => update(note.id, { fontSize: Math.max(10, note.fontSize - 2) })}>A-</button>
-        <button className="sn-btn" onClick={() => update(note.id, { fontSize: Math.min(32, note.fontSize + 2) })}>A+</button>
-        <button className="sn-m-del" onClick={remove}>×</button>
-      </div>
-      <textarea className="sn-m-textarea" value={note.text} placeholder="入力…"
-        style={{ fontSize: note.fontSize }} onChange={e => update(note.id, { text: e.target.value })} />
-    </div>
-  )
-}
-
 // ── パネル ────────────────────────────────────────────────
 // tabTop:      パネルタブボタンの上端位置（CSS値, デフォルト '50%'）
 // label:       パネルタイトル（複数パネルを区別するため）
@@ -375,30 +324,8 @@ export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY, tabTop =
   const onDrag = useDrag(update)
   const onResize = useResize(update)
 
-  // モバイルでは free アイテムを強制的にパネル内に表示（PC の絶対座標が画面外になるため）
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 600
-  const panelItems = isMobile ? items : items.filter(n => n.inPanel)
-  const freeItems = isMobile ? [] : items.filter(n => !n.inPanel)
-
-  // モバイル：ドロワーやドラッグは使わず、パネル内に常に縦並びでインライン表示する
-  if (isMobile) {
-    return (
-      <div className="sn-mobile">
-        <div className="sn-mobile-head">
-          <span className="sn-mobile-title">付箋{label ? `（${label}）` : ''}</span>
-          <div className="sn-mobile-add">
-            <button className="sn-btn" onClick={() => commit(ns => [...ns, newNote(true)])}>＋付箋</button>
-            <button className="sn-btn" onClick={() => commit(ns => [...ns, newLink(true)])}>＋リンク</button>
-            <button className="sn-btn" onClick={() => commit(ns => [...ns, newTable(true)])}>＋表</button>
-          </div>
-        </div>
-        {items.length === 0 && <div className="sn-mobile-empty">（付箋なし）</div>}
-        {items.map(item => (
-          <MobileCard key={item.id} note={item} update={update} remove={() => remove(item.id)} />
-        ))}
-      </div>
-    )
-  }
+  const panelItems = items.filter(n => n.inPanel)
+  const freeItems = items.filter(n => !n.inPanel)
 
   // portal で document.body 直下に描画し、zoom/overflow の影響を受けないようにする
   return createPortal(
