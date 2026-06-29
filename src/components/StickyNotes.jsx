@@ -333,11 +333,13 @@ export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY, tabTop =
   // （fixed で画面に貼り付かない＝その日の付箋だと分かる）。ドロワー/ドラッグは使わない。
   if (isMobile) {
     const maxW = typeof window !== 'undefined' ? window.innerWidth - 24 : 320
+    // 中身のある付箋だけ表示（未編集の空デフォルト付箋は出さない）。
+    const visible = items.filter(n => n.type !== 'note' || (n.text && n.text.trim()))
     // PC の絶対座標はスマホ画面外になり見えないため、左上から少しずつずらして
     // 必ず見える位置に重ねる。右下の Google Drive アイコンには重ならない。
     return (
       <div className="sn-anchor">
-        {items.map((item, i) => {
+        {visible.map((item, i) => {
           const w = Math.min(item.width || 160, maxW - 12)
           const x = 8 + (i % 3) * 16
           const y = 46 + i * 18
