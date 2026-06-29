@@ -405,10 +405,8 @@ function useAdjacentSchoolDays(selectedKey) {
 export default function WhiteboardView({ events, db = {} }) {
   const todayKey = toDateKey(new Date())
   const [selectedKey, setSelectedKey] = useState(() => sessionStorage.getItem('wb_date') || todayKey)
-  const [prevSelectedKey, setPrevSelectedKey] = useState(null)
   function changeDate(k) {
     sessionStorage.setItem('wb_date', k)
-    setPrevSelectedKey(selectedKey)
     setSelectedKey(k)
   }
   const { next: tomorrowKey, prev: prevSchoolDay } = useAdjacentSchoolDays(selectedKey)
@@ -933,11 +931,9 @@ export default function WhiteboardView({ events, db = {} }) {
 
         </div>
       </div>
-      {/* 今日：日付キー。データなければ直前の日付から引き継ぐ → 日付ナビでアイコンが消えない */}
-      {/* 明日：日付キー。引き継ぎなし → 翌日の今日パネルに自然に現れる */}
-      <StickyNotes storageKey={`wb_sticky_${selectedKey}`}
-        inheritFrom={prevSelectedKey ? `wb_sticky_${prevSelectedKey}` : null}
-        tabTop="25%" label="今日" region="top" />
+      {/* 付箋は日付キーで保存。明日に置いた付箋はその日付が今日になれば
+          領域相対座標により今日領域に自然に現れる（引き継ぎコピーは行わない） */}
+      <StickyNotes storageKey={`wb_sticky_${selectedKey}`} tabTop="25%" label="今日" region="top" />
       <StickyNotes storageKey={`wb_sticky_${tomorrowKey}`} tabTop="75%" label="明日" region="bottom" />
     </div>
   )
