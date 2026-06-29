@@ -271,8 +271,10 @@ export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY, tabTop =
     if (prevKeyRef.current === storageKey) return
     prevKeyRef.current = storageKey
     const saved = load(storageKey)
-    setItems(saved.length > 0 ? saved : defaultItems())
-    setPanelOpen(false)
+    const hasData = saved.length > 0
+    setItems(hasData ? saved : defaultItems())
+    // データがある（引き継ぎ等）→ パネルを開く。なければ閉じる
+    setPanelOpen(hasData)
   }, [storageKey])
 
   // Supabase 同期: リモート優先で解決（無ければ引き継ぎ）＋他端末変更を購読
@@ -280,7 +282,7 @@ export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY, tabTop =
     let cancelled = false
     initStickyRealtime()
     resolveRemote(storageKey, getCached(storageKey), inheritFrom).then(resolved => {
-      if (!cancelled && resolved) setItems(resolved)
+      if (!cancelled && resolved) { setItems(resolved); setPanelOpen(true) }
     })
     const unsub = subscribe(storageKey, (remoteItems) => {
       setItems(prev => JSON.stringify(prev) === JSON.stringify(remoteItems) ? prev : remoteItems)
