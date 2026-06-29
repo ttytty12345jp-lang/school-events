@@ -307,7 +307,14 @@ export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY, tabTop =
     return next
   }), [])
 
-  const update = useCallback((id, patch) => commit(ns => ns.map(n => n.id === id ? { ...n, ...patch } : n)), [commit])
+  // 付箋の y 座標はパネル領域の上端からの「相対値」で保存する。
+  // こうすると「明日」領域（画面下半分）に置いた付箋は、その日付が「今日」に
+  // なったとき今日領域（上半分）の同じ相対位置に自動で現れる（座標手術不要）。
+  // ドラッグ等が渡してくる y は画面絶対座標なので、保存時に regionTopPx を引く。
+  const update = useCallback((id, patch) => {
+    const p = ('y' in patch) ? { ...patch, y: patch.y - regionTopPx } : patch
+    return commit(ns => ns.map(n => n.id === id ? { ...n, ...p } : n))
+  }, [commit, regionTopPx])
   const remove = useCallback((id) => commit(ns => ns.filter(n => n.id !== id)), [commit])
   const duplicate = useCallback((id) => commit(ns => {
     const src = ns.find(n => n.id === id); if (!src) return ns
@@ -368,9 +375,9 @@ export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY, tabTop =
         })
       })()}
 
-      {/* フリーアイテム */}
+      {/* フリーアイテム（保存値は領域相対 y。描画時に regionTopPx を足して絶対座標に） */}
       {freeItems.map(item => (
-        <AnyItem key={item.id} note={item}
+        <AnyItem key={item.id} note={{ ...item, y: (item.y || 0) + regionTopPx }}
           onUpdate={update} onDelete={() => remove(item.id)} onDuplicate={() => duplicate(item.id)}
           onDrag={onDrag} onResize={onResize} />
       ))}
