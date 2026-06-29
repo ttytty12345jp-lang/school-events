@@ -895,6 +895,7 @@ export default function WhiteboardView({ events, db = {} }) {
               <MorningAgenda key={`today-${selectedKey}-${agendaResetToday}`} dateKey={selectedKey} calendarEvents={selEvents} rich defaultSize={24} />
             </div>
             <DriveWidget key={`dw-today-${selectedKey}`} storeId="wb" dateKey={selectedKey} />
+            <StickyNotes storageKey={`wb_sticky_${selectedKey}`} tabTop="25%" label="今日" region="top" />
           </div>
 
           {/* 明日 */}
@@ -927,14 +928,11 @@ export default function WhiteboardView({ events, db = {} }) {
               <MorningAgenda key={`tomorrow-${tomorrowKey}-${agendaResetTomorrow}`} dateKey={tomorrowKey} calendarEvents={nextEvents} rich defaultSize={24} />
             </div>
             <DriveWidget key={`dw-tomorrow-${tomorrowKey}`} storeId="wb" dateKey={tomorrowKey} />
+            <StickyNotes storageKey={`wb_sticky_${tomorrowKey}`} tabTop="75%" label="明日" region="bottom" />
           </div>
 
         </div>
       </div>
-      {/* 付箋は日付キーで保存。明日に置いた付箋はその日付が今日になれば
-          領域相対座標により今日領域に自然に現れる（引き継ぎコピーは行わない） */}
-      <StickyNotes storageKey={`wb_sticky_${selectedKey}`} tabTop="25%" label="今日" region="top" />
-      <StickyNotes storageKey={`wb_sticky_${tomorrowKey}`} tabTop="75%" label="明日" region="bottom" />
     </div>
   )
 }
