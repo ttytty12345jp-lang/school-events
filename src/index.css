@@ -1870,17 +1870,20 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .sn-note:active { cursor: grabbing; }
 
 .sn-toolbar {
-  /* 付箋の上に浮かせて本文領域を削らない（編集の邪魔をしない） */
+  /* 付箋の上に浮かせて本文領域を削らない（編集の邪魔をしない）。
+     隙間（下の透明ボーダー）もツールバー自身の当たり判定に含め、
+     付箋→ツールバー間でホバーが途切れて消えないようにする */
   position: absolute;
   bottom: 100%;
   left: 0;
-  margin-bottom: 3px;
   display: none;
   align-items: center;
   gap: 3px;
   padding: 3px 5px;
   background: rgba(248,250,252,0.97);
+  background-clip: padding-box;
   border: 1px solid rgba(0,0,0,0.12);
+  border-bottom: 5px solid transparent;
   border-radius: 5px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.18);
   flex-wrap: wrap;
