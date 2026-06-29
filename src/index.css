@@ -1639,11 +1639,11 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   }
   /* 全3パターン共通: 行高さを固定してA4縦にちょうど収め、セルを縦中央揃え */
   .monthly-row td {
-    height: 12mm;
+    height: 13mm;
     padding: 0 6px;
     vertical-align: middle;
   }
-  .monthly-watch .monthly-row td { height: 12mm; }
+  .monthly-watch .monthly-row td { height: 13mm; }
   .col-cat-cell { vertical-align: middle; min-height: 0; }
   /* 印刷時は「今日」のハイライトを消す */
   .monthly-row.row-today td { background: transparent !important; }
