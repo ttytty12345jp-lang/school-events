@@ -61,9 +61,12 @@ export function save(key, items) {
   clearTimeout(timers[key])
   timers[key] = setTimeout(() => {
     markPending(key, TYPE)
+    // supabase-js は .then()/await で初めてリクエストが飛ぶ（遅延実行）。
+    // 投げっぱなしだと送信されないため、必ず .then() で実行＆エラーを拾う。
     supabase.from('school_notices')
       .upsert({ date: key, type: TYPE, content: JSON.stringify(items), updated_at: new Date().toISOString() },
               { onConflict: 'date,type' })
+      .then(({ error }) => { if (error) console.warn('[sticky] save failed', error) })
   }, 600)
 }
 
