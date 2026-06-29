@@ -860,7 +860,11 @@ export default function WhiteboardView({ events, db = {} }) {
           <div className="wb-panel wb-today">
             <div className="wb-panel-title">
               <span className="wb-panel-label">今日</span>
-              <span className="wb-panel-date">{formatShort(selectedDate)}</span>
+              <span className="wb-date-nav">
+                <button className="wb-date-nav-btn" onClick={() => changeDate(navKey(selectedKey, -1))} title="前日">＜</button>
+                <span className="wb-panel-date">{formatShort(selectedDate)}</span>
+                <button className="wb-date-nav-btn" onClick={() => changeDate(navKey(selectedKey, 1))} title="翌日">＞</button>
+              </span>
               <span className="wb-duty-inline">
                 <input
                   className="wb-team-input"

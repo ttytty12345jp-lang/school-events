@@ -1556,6 +1556,16 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 }
 .wb-panel-label { font-weight: 700; font-size: 22px; letter-spacing: 1px; }
 .wb-panel-date  { font-size: 22px; font-weight: 600; opacity: 0.95; flex: 1; text-align: center; }
+/* 「今日」の日付左右の前日／翌日ボタン。日付と一体で中央寄せ */
+.wb-date-nav { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.wb-date-nav .wb-panel-date { flex: 0 0 auto; }
+.wb-date-nav-btn {
+  flex-shrink: 0; background: rgba(255,255,255,0.18); color: #fff;
+  border: 1px solid rgba(255,255,255,0.45); border-radius: 5px;
+  font-size: 16px; line-height: 1; font-weight: 700; cursor: pointer;
+  padding: 2px 8px; touch-action: manipulation;
+}
+.wb-date-nav-btn:hover { background: rgba(255,255,255,0.32); }
 
 .wb-duty-inline { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
 .wb-team-input { width: 28px; border: 1px solid rgba(255,255,255,0.5); border-radius: 4px; background: rgba(255,255,255,0.15); color: #fff; font-size: 13px; font-weight: 700; text-align: center; padding: 0; height: 22px; outline: none; -moz-appearance: textfield; }
