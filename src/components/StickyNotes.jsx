@@ -311,7 +311,7 @@ export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY, tabTop =
   return createPortal(
     <>
       {/* タブボタン */}
-      <button className="sn-panel-tab"
+      <button className="sn-panel-tab no-print"
         style={{ right: panelOpen ? panelWidth - 6 : 0, top: tabTop, transform: 'translateY(-50%)' }}
         onClick={() => setPanelOpen(o => !o)}
         title={panelOpen ? 'パネルを閉じる' : 'パネルを開く'}>
