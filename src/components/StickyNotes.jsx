@@ -353,17 +353,17 @@ export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY, tabTop =
     return (
       <div className="sn-anchor">
         {visible.map((item, i) => {
-          // スマホは他の入力欄と同様にサイズ・文字を縮小（PC比 約0.7倍）
+          // スマホは付箋全体を一様に縮小（PC比 0.7倍）。個別にwidth/font等を縮めると
+          // 枠線・余白・行間など固定pxが縮まずPCと相似にならないため、transform:scale を使う。
           const SCALE = 0.7
-          const w = Math.min(Math.round((item.width || 160) * SCALE), maxW - 12)
-          const h = item.height != null ? Math.round(item.height * SCALE) : item.height
-          const fontSize = item.fontSize != null ? Math.max(9, Math.round(item.fontSize * SCALE)) : item.fontSize
-          const mx = item.mx != null ? item.mx : Math.max(8, maxW - w - 8 - (i % 3) * 16)
+          const visualW = (item.width || 160) * SCALE  // 縮小後の見かけ幅（配置計算用）
+          const mx = item.mx != null ? item.mx : Math.max(8, maxW - visualW - 8 - (i % 3) * 16)
           const my = item.my != null ? item.my : 46 + i * 18
           return (
-            <div key={item.id} className="sn-m-wrap" style={{ left: mx, top: my }}
+            <div key={item.id} className="sn-m-wrap"
+              style={{ left: mx, top: my, transform: `scale(${SCALE})`, transformOrigin: 'top left' }}
               onPointerDown={e => startDrag(e, item, mx, my)}>
-              <AnyItem note={{ ...item, x: 0, y: 0, width: w, height: h, fontSize, inPanel: false }}
+              <AnyItem note={{ ...item, x: 0, y: 0, inPanel: false }}
                 onUpdate={update} onDelete={() => remove(item.id)} onDuplicate={() => duplicate(item.id)}
                 onDrag={() => {}} onResize={() => {}} />
             </div>
