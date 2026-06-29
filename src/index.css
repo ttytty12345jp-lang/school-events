@@ -405,9 +405,9 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   gap: 8px;
 }
 
-/* 左2/3 */
+/* 左 6（右4との比） */
 .ttv-left {
-  flex: 2;
+  flex: 6;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -418,9 +418,9 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .ttv-left .ttv-panel:nth-child(2) { flex: 2; }   /* 諸連絡 */
 .ttv-left .ttv-panel.ttv-goal-panel { flex: none; height: 96px; }  /* 生活目標 */
 
-/* 右1/3 */
+/* 右 4（左6との比） */
 .ttv-right {
-  flex: 1;
+  flex: 4;
   display: flex;
   flex-direction: column;
   gap: 8px;

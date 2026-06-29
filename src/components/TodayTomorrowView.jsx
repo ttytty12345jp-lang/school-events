@@ -502,7 +502,9 @@ export default function TodayTomorrowView({ events }) {
   const today = new Date()
   const todayKey = toDateKey(today)
   const [selectedKey, setSelectedKey] = useState(() => sessionStorage.getItem('ttv_date') || todayKey)
-  function changeDate(k) { sessionStorage.setItem('ttv_date', k); setSelectedKey(k) }
+  // 直前に表示していた日付。付箋を新しい日付へ引き継ぐ（日付移動に追従）ために保持
+  const [prevSelectedKey, setPrevSelectedKey] = useState(null)
+  function changeDate(k) { sessionStorage.setItem('ttv_date', k); setPrevSelectedKey(selectedKey); setSelectedKey(k) }
   const { setControls } = useHeaderControls()
   const [spanEvents, setSpanEvents] = useState([])
   useEffect(() => { loadSpanEvents().then(setSpanEvents) }, [])
@@ -598,7 +600,8 @@ export default function TodayTomorrowView({ events }) {
           </div>
         </div>
       </div>
-      <StickyNotes storageKey={`ttv_sticky_${selectedKey}`} />
+      <StickyNotes storageKey={`ttv_sticky_${selectedKey}`}
+        inheritFrom={prevSelectedKey ? `ttv_sticky_${prevSelectedKey}` : null} />
     </>
   )
 }
