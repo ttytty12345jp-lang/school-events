@@ -329,24 +329,40 @@ export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY, tabTop =
 
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 600
 
-  // スマホ：付箋を「その日のパネル」内に絶対配置して、内容と一緒にスクロールさせる
-  // （fixed で画面に貼り付かない＝その日の付箋だと分かる）。ドロワー/ドラッグは使わない。
+  // スマホ：付箋を「その日のパネル」内に絶対配置し、内容と一緒にスクロールさせる。
+  // 位置は mx/my（パネル相対・PCの x/y とは別）に保存し、ポインタ操作で自由に動かせる。
   if (isMobile) {
     const maxW = typeof window !== 'undefined' ? window.innerWidth - 24 : 320
     // 中身のある付箋だけ表示（未編集の空デフォルト付箋は出さない）。
     const visible = items.filter(n => n.type !== 'note' || (n.text && n.text.trim()))
-    // PC の絶対座標はスマホ画面外になり見えないため、左上から少しずつずらして
-    // 必ず見える位置に重ねる。右下の Google Drive アイコンには重ならない。
+    const startDrag = (e, item, mx, my) => {
+      if (e.target.closest('button') || e.target.closest('input') || e.target.closest('textarea') || e.target.closest('.sn-resize')) return
+      const sx = e.clientX, sy = e.clientY
+      let moved = false
+      const move = ev => {
+        moved = true
+        update(item.id, { mx: Math.max(0, mx + ev.clientX - sx), my: Math.max(0, my + ev.clientY - sy) })
+      }
+      const up = () => {
+        window.removeEventListener('pointermove', move)
+        window.removeEventListener('pointerup', up)
+      }
+      window.addEventListener('pointermove', move)
+      window.addEventListener('pointerup', up)
+    }
     return (
       <div className="sn-anchor">
         {visible.map((item, i) => {
           const w = Math.min(item.width || 160, maxW - 12)
-          const x = 8 + (i % 3) * 16
-          const y = 46 + i * 18
+          const mx = item.mx != null ? item.mx : 8 + (i % 3) * 16
+          const my = item.my != null ? item.my : 46 + i * 18
           return (
-            <AnyItem key={item.id} note={{ ...item, x, y, width: w, inPanel: false }}
-              onUpdate={update} onDelete={() => remove(item.id)} onDuplicate={() => duplicate(item.id)}
-              onDrag={() => {}} onResize={() => {}} />
+            <div key={item.id} className="sn-m-wrap" style={{ left: mx, top: my }}
+              onPointerDown={e => startDrag(e, item, mx, my)}>
+              <AnyItem note={{ ...item, x: 0, y: 0, width: w, inPanel: false }}
+                onUpdate={update} onDelete={() => remove(item.id)} onDuplicate={() => duplicate(item.id)}
+                onDrag={() => {}} onResize={() => {}} />
+            </div>
           )
         })}
       </div>

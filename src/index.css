@@ -2082,6 +2082,11 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 /* スマホ：付箋を「その日のパネル」内に絶対配置し、内容と一緒にスクロールさせる。
    pointer-events:none で下の予定操作を邪魔せず、付箋だけ操作可能にする */
 .sn-anchor { position: absolute; inset: 0; pointer-events: none; z-index: 6; }
+.sn-m-wrap {
+  position: absolute;
+  pointer-events: auto;
+  touch-action: none; /* ドラッグ中にページがスクロールしないように */
+}
 .sn-anchor .sn-note,
 .sn-anchor .sn-icon-wrap,
 .sn-anchor .sn-table-item {
