@@ -348,15 +348,15 @@ function ClearBtn({ onClick }) {
   )
 }
 
-// selectedKeyの次の登校日（土日・グレー日を飛ばす）を求めるhook
-function useNextSchoolDay(selectedKey) {
+// selectedKeyの前後の登校日（土日・グレー日を飛ばす）を求めるhook
+// { prev: 前の登校日key, next: 次の登校日key } を返す
+function useAdjacentSchoolDays(selectedKey) {
   const [overrides, setOverrides] = useState({})
 
   useEffect(() => {
-    // 当月・翌月・翌々月のhighlightsを取得（月またぎ対応）
     const base = dateFromKey(selectedKey)
     const mkeys = []
-    for (let i = 0; i <= 2; i++) {
+    for (let i = -2; i <= 2; i++) {
       const d = new Date(base)
       d.setDate(1)
       d.setMonth(d.getMonth() + i)
@@ -380,18 +380,25 @@ function useNextSchoolDay(selectedKey) {
   }, [selectedKey])
 
   return useMemo(() => {
-    for (let delta = 1; delta <= 14; delta++) {
-      const d = dateFromKey(selectedKey)
-      d.setDate(d.getDate() + delta)
-      const key = toDateKey(d)
+    const isSchoolDay = (key) => {
+      const d = dateFromKey(key)
       const dow = d.getDay()
       const isWeekend = dow === 0 || dow === 6
       const mk = monthKey(d.getFullYear(), d.getMonth() + 1)
       const override = (overrides[mk] || {})[key]
-      const isGray = override === 'gray' ? true : override === 'none' ? false : isWeekend
-      if (!isGray) return key
+      return override === 'none' ? true : override === 'gray' ? false : !isWeekend
     }
-    return navKey(selectedKey, 1)
+    let next = navKey(selectedKey, 1)
+    for (let delta = 1; delta <= 14; delta++) {
+      const k = navKey(selectedKey, delta)
+      if (isSchoolDay(k)) { next = k; break }
+    }
+    let prev = navKey(selectedKey, -1)
+    for (let delta = 1; delta <= 14; delta++) {
+      const k = navKey(selectedKey, -delta)
+      if (isSchoolDay(k)) { prev = k; break }
+    }
+    return { next, prev }
   }, [selectedKey, overrides])
 }
 
@@ -404,7 +411,7 @@ export default function WhiteboardView({ events, db = {} }) {
     setPrevSelectedKey(selectedKey)
     setSelectedKey(k)
   }
-  const tomorrowKey = useNextSchoolDay(selectedKey)
+  const { next: tomorrowKey, prev: prevSchoolDay } = useAdjacentSchoolDays(selectedKey)
 
   const selectedDate = dateFromKey(selectedKey)
   const tomorrowDate = dateFromKey(tomorrowKey)
@@ -861,9 +868,9 @@ export default function WhiteboardView({ events, db = {} }) {
             <div className="wb-panel-title">
               <span className="wb-panel-label">今日</span>
               <span className="wb-date-nav">
-                <button className="wb-date-nav-btn" onClick={() => changeDate(navKey(selectedKey, -1))} title="前日">＜</button>
+                <button className="wb-date-nav-btn" onClick={() => changeDate(prevSchoolDay)} title="前の登校日">＜</button>
                 <span className="wb-panel-date">{formatShort(selectedDate)}</span>
-                <button className="wb-date-nav-btn" onClick={() => changeDate(navKey(selectedKey, 1))} title="翌日">＞</button>
+                <button className="wb-date-nav-btn" onClick={() => changeDate(tomorrowKey)} title="次の登校日">＞</button>
               </span>
               <span className="wb-duty-inline">
                 <input
