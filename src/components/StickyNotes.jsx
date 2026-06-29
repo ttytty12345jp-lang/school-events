@@ -354,7 +354,7 @@ export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY, tabTop =
       <div className="sn-anchor">
         {visible.map((item, i) => {
           const w = Math.min(item.width || 160, maxW - 12)
-          const mx = item.mx != null ? item.mx : 8 + (i % 3) * 16
+          const mx = item.mx != null ? item.mx : Math.max(8, maxW - w - 8 - (i % 3) * 16)
           const my = item.my != null ? item.my : 46 + i * 18
           return (
             <div key={item.id} className="sn-m-wrap" style={{ left: mx, top: my }}
