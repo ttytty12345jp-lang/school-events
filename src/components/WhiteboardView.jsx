@@ -7,6 +7,7 @@ import DriveWidget from './DriveWidget'
 import { DAYS_JA, dateKey as toDateKey, monthKey } from '../utils/date'
 import { loadSpanEvents, getActiveSpans } from '../lib/spanEvents'
 import { subscribeSchoolNotices, markPending, onVisibilityReload } from '../lib/schoolNoticesRealtime'
+import { getCached as getStickyCache, save as saveSticky } from '../lib/stickyStore'
 
 const HIGHLIGHTS_TYPE = 'row_highlights'
 
@@ -407,6 +408,18 @@ export default function WhiteboardView({ events, db = {} }) {
   const [selectedKey, setSelectedKey] = useState(() => sessionStorage.getItem('wb_date') || todayKey)
   const [prevSelectedKey, setPrevSelectedKey] = useState(null)
   function changeDate(k) {
+    // 前進かつ次の登校日へ移動するとき、明日の付箋y座標を今日エリア（上半分）へ補正
+    if (k === tomorrowKey) {
+      const key = `wb_sticky_${tomorrowKey}`
+      const items = getStickyCache(key)
+      if (items.some(item => !item.inPanel)) {
+        const halfH = Math.round(window.innerHeight / 2)
+        const adjusted = items.map(item =>
+          item.inPanel ? item : { ...item, y: Math.max(80, item.y - halfH) }
+        )
+        saveSticky(key, adjusted)
+      }
+    }
     sessionStorage.setItem('wb_date', k)
     setPrevSelectedKey(selectedKey)
     setSelectedKey(k)
