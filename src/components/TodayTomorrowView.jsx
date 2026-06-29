@@ -581,7 +581,7 @@ export default function TodayTomorrowView({ events }) {
   }, [])
 
   return (
-    <>
+    <div className="ttv-sticky-host" style={{ position: 'relative' }}>
       <div className="ttv-wrap" ref={wrapRef}>
         <div className="ttv-layout">
           {/* 左2/3 */}
@@ -599,6 +599,6 @@ export default function TodayTomorrowView({ events }) {
         </div>
       </div>
       <StickyNotes storageKey={`ttv_sticky_${selectedKey}`} />
-    </>
+    </div>
   )
 }

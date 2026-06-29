@@ -1544,6 +1544,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   min-height: 0;
   display: flex;
   flex-direction: column;
+  position: relative; /* スマホで付箋を内部に絶対配置する基準 */
 }
 .wb-panel-title {
   display: flex;
@@ -2077,6 +2078,16 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .sn-table-cell { width: 100%; border: none; outline: none; font-size: 11px; padding: 2px 4px; background: transparent; min-width: 30px; text-align: center; }
 .sn-table-ctrl { display: flex; gap: 2px; flex-wrap: wrap; }
 .sn-table-ctrl .sn-btn { font-size: 9px; padding: 1px 3px; }
+
+/* スマホ：付箋を「その日のパネル」内に絶対配置し、内容と一緒にスクロールさせる。
+   pointer-events:none で下の予定操作を邪魔せず、付箋だけ操作可能にする */
+.sn-anchor { position: absolute; inset: 0; pointer-events: none; z-index: 6; }
+.sn-anchor .sn-note,
+.sn-anchor .sn-icon-wrap,
+.sn-anchor .sn-table-item {
+  position: absolute !important;
+  pointer-events: auto;
+}
 
 /* ブラウザ全画面（F11 など）時はヘッダーを隠して表示領域を最大化 */
 @media (display-mode: fullscreen) {

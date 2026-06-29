@@ -327,17 +327,26 @@ export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY, tabTop =
   const panelItems = items.filter(n => n.inPanel)
   const freeItems = items.filter(n => !n.inPanel)
 
-  // スマホは画面が狭く、PC で置いた付箋の x/y が画面外になり見えなくなる。
-  // 保存座標は変えず、描画位置だけ画面内に収める（PCでは何もしない）。
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 600
-  const clampToScreen = (note) => {
-    if (!isMobile || typeof window === 'undefined') return note
-    const vw = window.innerWidth, vh = window.innerHeight
-    const w = note.width || 180
-    const h = note.height || 140
-    const x = Math.max(4, Math.min(note.x || 0, vw - Math.min(w, vw - 8) - 4))
-    const y = Math.max(4, Math.min(note.y || 0, vh - 40))
-    return { ...note, x, y }
+
+  // スマホ：付箋を「その日のパネル」内に絶対配置して、内容と一緒にスクロールさせる
+  // （fixed で画面に貼り付かない＝その日の付箋だと分かる）。ドロワー/ドラッグは使わない。
+  if (isMobile) {
+    const maxW = typeof window !== 'undefined' ? window.innerWidth - 24 : 320
+    return (
+      <div className="sn-anchor">
+        {items.map((item, i) => {
+          const w = Math.min(item.width || 160, maxW)
+          const x = Math.max(6, Math.min(item.x || 6, maxW - w))
+          const y = Math.max(6, Math.min(item.y || 6, 240))
+          return (
+            <AnyItem key={item.id} note={{ ...item, x, y, width: w, inPanel: false }}
+              onUpdate={update} onDelete={() => remove(item.id)} onDuplicate={() => duplicate(item.id)}
+              onDrag={() => {}} onResize={() => {}} />
+          )
+        })}
+      </div>
+    )
   }
 
   // portal で document.body 直下に描画し、zoom/overflow の影響を受けないようにする
@@ -386,9 +395,9 @@ export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY, tabTop =
         })
       })()}
 
-      {/* フリーアイテム（保存値は領域相対 y。描画時に regionTopPx を足して絶対座標に＋スマホは画面内に収める） */}
+      {/* フリーアイテム（保存値は領域相対 y。描画時に regionTopPx を足して絶対座標に） */}
       {freeItems.map(item => (
-        <AnyItem key={item.id} note={clampToScreen({ ...item, y: (item.y || 0) + regionTopPx })}
+        <AnyItem key={item.id} note={{ ...item, y: (item.y || 0) + regionTopPx }}
           onUpdate={update} onDelete={() => remove(item.id)} onDuplicate={() => duplicate(item.id)}
           onDrag={onDrag} onResize={onResize} />
       ))}
