@@ -335,12 +335,27 @@ export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY, tabTop =
     const maxW = typeof window !== 'undefined' ? window.innerWidth - 24 : 320
     // 中身のある付箋だけ表示（未編集の空デフォルト付箋は出さない）。
     const visible = items.filter(n => n.type !== 'note' || (n.text && n.text.trim()))
+    const SCALE = 0.7
     const startDrag = (e, item, mx, my) => {
-      if (e.target.closest('button') || e.target.closest('input') || e.target.closest('textarea') || e.target.closest('.sn-resize')) return
       const sx = e.clientX, sy = e.clientY
-      let moved = false
+      // 角のリサイズハンドルなら、サイズ変更（見かけ移動量を SCALE で割って実寸へ）
+      const resizeHandle = e.target.closest('.sn-resize') || e.target.closest('.sn-icon-resize')
+      if (resizeHandle) {
+        e.stopPropagation()
+        const isLink = item.type === 'link'
+        const sw = item.width || (isLink ? 72 : 180), sh = item.height || 140
+        const rmove = ev => {
+          const patch = { width: Math.max(isLink ? 16 : 80, sw + (ev.clientX - sx) / SCALE) }
+          if (!isLink) patch.height = Math.max(50, sh + (ev.clientY - sy) / SCALE)
+          update(item.id, patch)
+        }
+        const rup = () => { window.removeEventListener('pointermove', rmove); window.removeEventListener('pointerup', rup) }
+        window.addEventListener('pointermove', rmove)
+        window.addEventListener('pointerup', rup)
+        return
+      }
+      if (e.target.closest('button') || e.target.closest('input') || e.target.closest('textarea')) return
       const move = ev => {
-        moved = true
         update(item.id, { mx: Math.max(0, mx + ev.clientX - sx), my: Math.max(0, my + ev.clientY - sy) })
       }
       const up = () => {
