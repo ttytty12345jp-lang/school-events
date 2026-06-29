@@ -818,7 +818,7 @@ export default function WhiteboardView({ events, db = {} }) {
                 <col style={{width:'8%'}} />
                 <col style={{width:'43%'}} />
                 <col style={{width:'8%'}} />
-                <col />
+                <col style={{width:'43%'}} />
               </colgroup>
               <tbody>
                 {LEAVE_TYPES_LEFT.map((lt, i) => (
