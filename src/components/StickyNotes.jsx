@@ -356,10 +356,12 @@ export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY, tabTop =
           const w = Math.min(item.width || 160, maxW - 12)
           const mx = item.mx != null ? item.mx : Math.max(8, maxW - w - 8 - (i % 3) * 16)
           const my = item.my != null ? item.my : 46 + i * 18
+          // スマホは他の入力欄と同様に文字を縮小（PC比 約0.7倍）
+          const fontSize = item.fontSize != null ? Math.max(9, Math.round(item.fontSize * 0.7)) : item.fontSize
           return (
             <div key={item.id} className="sn-m-wrap" style={{ left: mx, top: my }}
               onPointerDown={e => startDrag(e, item, mx, my)}>
-              <AnyItem note={{ ...item, x: 0, y: 0, width: w, inPanel: false }}
+              <AnyItem note={{ ...item, x: 0, y: 0, width: w, fontSize, inPanel: false }}
                 onUpdate={update} onDelete={() => remove(item.id)} onDuplicate={() => duplicate(item.id)}
                 onDrag={() => {}} onResize={() => {}} />
             </div>
