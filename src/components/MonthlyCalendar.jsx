@@ -537,8 +537,9 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
   }
 
   // 当日の「学校行事」欄のテキスト（全イベントタイトルを連結）
+  // 学校行事名（チップ）の配列。完全一致は行事名単位で判定するため配列で渡す。
   function schoolEventText(dateKey) {
-    return (eventMap.get(`${dateKey}__学校行事`) || []).map(e => e.title || '').join(' ')
+    return (eventMap.get(`${dateKey}__学校行事`) || []).map(e => e.title || '')
   }
 
   // 学年配列のセル結合グループを計算

@@ -46,18 +46,22 @@ export async function saveWatchTemplate(template) {
     .upsert({ date: TEMPLATE_DATE, type: TEMPLATE_TYPE, content: json, updated_at: new Date().toISOString() }, { onConflict: 'date,type' })
 }
 
-// 学校行事テキスト・曜日に合致する文字列ルールを返す（なければ null）。
+// 学校行事・曜日に合致する文字列ルールを返す（なければ null）。
+// events は行事名（チップ）の配列、または連結文字列（後方互換）。
 // ルールは上から順に評価し、最初に一致したものを採用する。
-export function matchWatchRule(template, dayJa, schoolEventText) {
+//   partial（部分一致, 既定）: いずれかの行事名にキーワードが含まれる
+//   exact  （完全一致）      : いずれかの行事名がキーワードと一致する（欄全体ではなく行事名単位）
+export function matchWatchRule(template, dayJa, events) {
   const rules = (template && template.rules) || []
-  if (!schoolEventText) return null
+  const titles = Array.isArray(events) ? events : (events ? [events] : [])
+  if (titles.length === 0) return null
   for (const r of rules) {
     if (!r.keyword) continue
     if (r.day && r.day !== 'すべて' && r.day !== dayJa) continue
-    // match: 'exact'（完全一致）/ 'partial'（部分一致, 既定）
+    const kw = r.keyword.trim()
     const hit = r.match === 'exact'
-      ? schoolEventText.trim() === r.keyword.trim()
-      : schoolEventText.includes(r.keyword)
+      ? titles.some(t => (t || '').trim() === kw)
+      : titles.some(t => (t || '').includes(r.keyword))
     if (hit) return r
   }
   return null
