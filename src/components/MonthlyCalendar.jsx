@@ -336,6 +336,18 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
 
   // 表示バージョン: 'normal' | 'pta' | 'watch'
   const [viewMode, setViewMode] = useState('normal')
+  // 見守り隊セルの文字サイズ（端末ごとに保持）
+  const [watchFontSize, setWatchFontSize] = useState(() => {
+    const v = Number(localStorage.getItem('watch_font_size'))
+    return v >= 8 && v <= 28 ? v : 13
+  })
+  function changeWatchFont(delta) {
+    setWatchFontSize(s => {
+      const n = Math.max(8, Math.min(28, s + delta))
+      localStorage.setItem('watch_font_size', String(n))
+      return n
+    })
+  }
   // 見守り隊バージョンの学年別入力: { dateKey: { '1年': text, ... } }
   // null = 明示的に消去（斜線表示）、undefined = テンプレート使用
   const [watchData, setWatchData] = useState({})
@@ -642,6 +654,12 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
           <option value="pta">PTA用</option>
           <option value="watch">見守り隊用</option>
         </select>
+        {viewMode === 'watch' && (
+          <span className="hc-row" style={{ gap: 2 }}>
+            <button className="hc-btn" onClick={() => changeWatchFont(-1)} title="文字を小さく">A-</button>
+            <button className="hc-btn" onClick={() => changeWatchFont(1)} title="文字を大きく">A+</button>
+          </span>
+        )}
         <button className="hc-btn-nav" onClick={prevMonth}>‹</button>
         <span className="hc-label">{year}年{month}月</span>
         <button className="hc-btn-nav" onClick={nextMonth}>›</button>
@@ -811,8 +829,9 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
                           return (
                             <td key={g} className="col-grade">
                               <input
-                                type="time"
+                                type="text"
                                 className="watch-input watch-input-edit"
+                                style={{ fontSize: watchFontSize }}
                                 value={inputVal}
                                 autoFocus={idx === 0}
                                 onChange={e => updateWatch(dateKey, g, e.target.value === '' ? null : e.target.value)}
@@ -838,7 +857,7 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
                               colSpan={group.colspan}
                               title="クリックで編集"
                               onClick={() => setWatchRowEdit(dateKey)}>
-                              <span className="watch-merged-label">{group.displayValue}</span>
+                              <span className="watch-merged-label" style={{ fontSize: watchFontSize }}>{group.displayValue}</span>
                             </td>
                           )
                         })
