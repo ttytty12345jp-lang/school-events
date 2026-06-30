@@ -105,12 +105,13 @@ export default function WatchTemplateEditor() {
 
       {/* 文字列ルール */}
       <div className="db-section-title" style={{ marginTop: 18 }}>文字列ルール（特定の行事名で時刻を上書き）</div>
-      <p className="db-section-note">左の「学校行事」欄に登録した文字列が含まれる日は、曜日テンプレートの代わりにこの下校時刻が使われます。曜日を指定するとその曜日だけに適用されます（上の行から順に判定）。</p>
+      <p className="db-section-note">左の「学校行事」欄が条件に合う日は、曜日テンプレートの代わりにこの下校時刻が使われます。一致は「部分一致」（文字列が含まれれば適用）か「完全一致」（欄全体が一致したときだけ適用）を選べます。曜日を指定するとその曜日だけに適用されます（上の行から順に判定）。</p>
       <div className="db-wt-scroll">
       <table className="db-watch-template-table db-watch-rule-table">
         <thead>
           <tr>
-            <th className="db-wt-th-rule">含まれる文字列</th>
+            <th className="db-wt-th-rule">文字列</th>
+            <th className="db-wt-th-ruleday">一致</th>
             <th className="db-wt-th-ruleday">曜日</th>
             {GRADES.map(g => <th key={g} className="db-wt-th">{g}</th>)}
             <th className="db-wt-th-del"></th>
@@ -118,7 +119,7 @@ export default function WatchTemplateEditor() {
         </thead>
         <tbody>
           {rules.length === 0 && (
-            <tr><td className="db-wt-empty" colSpan={GRADES.length + 3}>ルールがありません。「＋ ルールを追加」で登録してください。</td></tr>
+            <tr><td className="db-wt-empty" colSpan={GRADES.length + 4}>ルールがありません。「＋ ルールを追加」で登録してください。</td></tr>
           )}
           {rules.map(rule => (
             <tr key={rule.id} className="db-wt-row-special">
@@ -130,6 +131,16 @@ export default function WatchTemplateEditor() {
                   value={rule.keyword || ''}
                   onChange={e => updateRule(rule.id, { keyword: e.target.value })}
                 />
+              </td>
+              <td className="db-wt-td">
+                <select
+                  className="db-wt-input db-wt-select"
+                  value={rule.match || 'partial'}
+                  onChange={e => updateRule(rule.id, { match: e.target.value })}
+                >
+                  <option value="partial">部分一致</option>
+                  <option value="exact">完全一致</option>
+                </select>
               </td>
               <td className="db-wt-td">
                 <select

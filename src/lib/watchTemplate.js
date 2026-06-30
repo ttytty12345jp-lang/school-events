@@ -54,7 +54,11 @@ export function matchWatchRule(template, dayJa, schoolEventText) {
   for (const r of rules) {
     if (!r.keyword) continue
     if (r.day && r.day !== 'すべて' && r.day !== dayJa) continue
-    if (schoolEventText.includes(r.keyword)) return r
+    // match: 'exact'（完全一致）/ 'partial'（部分一致, 既定）
+    const hit = r.match === 'exact'
+      ? schoolEventText.trim() === r.keyword.trim()
+      : schoolEventText.includes(r.keyword)
+    if (hit) return r
   }
   return null
 }
@@ -68,5 +72,5 @@ export function getWatchTemplateTime(template, dayJa, schoolEventText, grade) {
 }
 
 export function newWatchRule() {
-  return { id: genId(), keyword: '', day: 'すべて', times: {} }
+  return { id: genId(), keyword: '', day: 'すべて', match: 'partial', times: {} }
 }
