@@ -17,8 +17,14 @@ function newLink(inPanel = true) {
   return { id: crypto.randomUUID(), type: 'link', label: 'Google Drive', url: 'https://drive.google.com', x: 200, y: 200, width: 24, inPanel }
 }
 function newTable(inPanel = true) {
-  const cols = 4, rows = 4
-  return { id: crypto.randomUUID(), type: 'table', cells: Array.from({length: rows}, () => Array(cols).fill('')), x: 200, y: 200, width: 320, height: 160, inPanel }
+  // 出欠表のデフォルト雛形（4×4）
+  const cells = [
+    ['', '在籍', '欠', '出'],
+    ['-1', '', '', ''],
+    ['-2', '', '', ''],
+    ['計', '', '', ''],
+  ]
+  return { id: crypto.randomUUID(), type: 'table', cells, x: 200, y: 200, width: 320, height: 160, inPanel }
 }
 
 // ── ドラッグ＆リサイズ共通フック ──────────────────────────
@@ -193,6 +199,13 @@ function TableItem({ note, onUpdate, onDelete, onDuplicate, onDrag, onResize }) 
   const [hovered, setHovered] = useState(false)
   const cells = note.cells
 
+  // 表の拡縮に合わせてセルの文字サイズも変化させる（セルの大きさに比例）
+  const rows = cells.length || 1
+  const cols = (cells[0] || []).length || 1
+  const cellW = (note.width || 320) / cols
+  const cellH = ((note.height || 160) - 22) / rows  // 22 はハンドルバー分
+  const cellFont = Math.max(8, Math.round(Math.min(cellW, cellH) * 0.42))
+
   function setCell(r, c, val) {
     const next = cells.map((row, ri) => row.map((cell, ci) => ri === r && ci === c ? val : cell))
     onUpdate(note.id, { cells: next })
@@ -228,7 +241,7 @@ function TableItem({ note, onUpdate, onDelete, onDuplicate, onDrag, onResize }) 
                 {row.map((cell, c) => (
                   <td key={c}>
                     <input className="sn-table-cell" value={cell} onChange={e => setCell(r, c, e.target.value)}
-                      onMouseDown={e => e.stopPropagation()} />
+                      style={{ fontSize: cellFont }} onMouseDown={e => e.stopPropagation()} />
                   </td>
                 ))}
               </tr>
