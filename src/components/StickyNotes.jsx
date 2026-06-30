@@ -434,12 +434,20 @@ export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY, tabTop =
         })
       })()}
 
-      {/* フリーアイテム（保存値は領域相対 y。描画時に regionTopPx を足して絶対座標に） */}
-      {freeItems.map(item => (
-        <AnyItem key={item.id} note={{ ...item, y: (item.y || 0) + regionTopPx }}
-          onUpdate={update} onDelete={() => remove(item.id)} onDuplicate={() => duplicate(item.id)}
-          onDrag={onDrag} onResize={onResize} />
-      ))}
+      {/* フリーアイテム（保存値は領域相対 y。描画時に regionTopPx を足して絶対座標に）。
+          別PC（狭い画面）では x/y が画面外になり見えないため、描画位置だけ画面内に収める。 */}
+      {freeItems.map(item => {
+        const vw = typeof window !== 'undefined' ? window.innerWidth : 1920
+        const vh = typeof window !== 'undefined' ? window.innerHeight : 1080
+        const w = item.width || (item.type === 'link' ? (item.width || 72) : 180)
+        const x = Math.max(4, Math.min(item.x || 0, vw - Math.min(w, vw - 8) - 4))
+        const y = Math.max(4, Math.min((item.y || 0) + regionTopPx, vh - 40))
+        return (
+          <AnyItem key={item.id} note={{ ...item, x, y }}
+            onUpdate={update} onDelete={() => remove(item.id)} onDuplicate={() => duplicate(item.id)}
+            onDrag={onDrag} onResize={onResize} />
+        )
+      })}
     </>,
     document.body
   )
