@@ -750,6 +750,19 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .notelines-tools {
   display: flex; align-items: center; gap: 4px; margin: 2px 0 4px 6px;
 }
+.notelines-add {
+  align-self: flex-start;
+  margin: 4px 0 0 2px;
+  font-size: 12px;
+  color: var(--primary);
+  background: var(--primary-light);
+  border: 1px solid var(--primary);
+  border-radius: 5px;
+  padding: 2px 10px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.notelines-add:hover { background: var(--primary); color: #fff; }
 
 
 .agenda-add-btn,
@@ -2072,10 +2085,11 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 }
 .sn-table-handle:active { cursor: grabbing; }
 .sn-table-handle-dots { color: #94a3b8; font-size: 12px; line-height: 1; }
-.sn-table-wrap { flex: 1; overflow: auto; padding: 4px; min-height: 0; }
-.sn-table { border-collapse: collapse; width: 100%; }
-.sn-table td { border: 1px solid #cbd5e1; padding: 0; }
-.sn-table-cell { width: 100%; border: none; outline: none; font-size: 11px; padding: 2px 4px; background: transparent; min-width: 30px; text-align: center; }
+.sn-table-wrap { flex: 1; overflow: hidden; padding: 4px; min-height: 0; }
+/* 箱の高さいっぱいに広げて下の余白をなくす（行が均等に伸びる） */
+.sn-table { border-collapse: collapse; width: 100%; height: 100%; table-layout: fixed; }
+.sn-table td { border: 1px solid #cbd5e1; padding: 0; height: 1px; }
+.sn-table-cell { width: 100%; height: 100%; box-sizing: border-box; border: none; outline: none; font-size: 11px; padding: 2px 4px; background: transparent; min-width: 0; text-align: center; }
 .sn-table-ctrl { display: flex; gap: 2px; flex-wrap: wrap; }
 .sn-table-ctrl .sn-btn { font-size: 9px; padding: 1px 3px; }
 

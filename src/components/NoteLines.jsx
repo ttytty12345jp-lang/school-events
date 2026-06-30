@@ -64,11 +64,13 @@ export default function NoteLines({ content, onChange, placeholder = '' }) {
           {focusIdx === i && (
             <div className="notelines-tools">
               <FormatToolbar item={line} onChange={patch => patchFormat(i, patch)} />
+              <button className="fmt-btn" title="下に改行を追加" onMouseDown={e => e.preventDefault()} onClick={() => addAfter(i)}>↵</button>
               <button className="fmt-btn fmt-del" title="この行を削除" onMouseDown={e => e.preventDefault()} onClick={() => remove(i)}>✕</button>
             </div>
           )}
         </div>
       ))}
+      <button className="notelines-add" title="改行（行を追加）" onMouseDown={e => e.preventDefault()} onClick={() => addAfter(lines.length - 1)}>＋ 改行</button>
     </div>
   )
 }
