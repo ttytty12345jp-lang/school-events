@@ -744,6 +744,8 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .notelines-input {
   border: none; border-bottom: 1px solid transparent; outline: none;
   background: transparent; padding: 3px 6px; width: 100%; font-family: inherit;
+  resize: none; overflow: hidden; line-height: 1.4; display: block;
+  box-sizing: border-box; white-space: pre-wrap; word-break: break-word;
 }
 .notelines-input:focus { border-bottom-color: var(--primary); background: var(--primary-light); border-radius: 4px; }
 .notelines-input::placeholder { color: var(--text-light); }
