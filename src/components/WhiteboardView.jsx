@@ -563,6 +563,15 @@ export default function WhiteboardView({ events, db = {} }) {
           next.rooms = [...(next.rooms || []), ...Array.from({ length: ROOM_COUNT - (next.rooms?.length || 0) }, emptyRoom)]
         setData(prev => JSON.stringify(prev) === JSON.stringify(next) ? prev : next)
       })
+      // 特別教室（roomReservations）と長期欠席も Realtime 取りこぼしに備えて補う
+      if (!roomResDebounceRef.current) {
+        loadRoomReservations().then(list => {
+          setRoomReservations(prev => JSON.stringify(prev) === JSON.stringify(list) ? prev : list)
+        })
+      }
+      loadLongLeave().then(list => {
+        setLongLeave(prev => JSON.stringify(prev) === JSON.stringify(list) ? prev : list)
+      })
     }, 5000)
     return () => clearInterval(id)
   }, [])
@@ -622,7 +631,10 @@ export default function WhiteboardView({ events, db = {} }) {
     setRoomReservations(next)
     markPending(ROOM_RES_DATE, ROOM_RES_TYPE)
     if (roomResDebounceRef.current) clearTimeout(roomResDebounceRef.current)
-    roomResDebounceRef.current = setTimeout(() => saveRoomReservations(next), 800)
+    roomResDebounceRef.current = setTimeout(async () => {
+      await saveRoomReservations(next)
+      roomResDebounceRef.current = null // 保存完了 → ポーリング再開
+    }, 800)
   }
 
   function updateRoom(i, field, val) {
