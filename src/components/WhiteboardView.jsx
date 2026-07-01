@@ -608,6 +608,8 @@ export default function WhiteboardView({ events, db = {} }) {
       if (s >= 0 && s < ROOM_COUNT && slots[s].id === null) slots[s] = r
       else overflow.push(r) // slot 未設定（旧データ）や衝突分は空きへ
     })
+    // 端末間で配置が一致するよう、空き段へ詰める順序を決定的に（entryDate→id）
+    overflow.sort((a, b) => (a.entryDate || '').localeCompare(b.entryDate || '') || (a.id || '').localeCompare(b.id || ''))
     overflow.forEach(r => {
       const free = slots.findIndex(x => x.id === null)
       if (free >= 0) slots[free] = r
@@ -634,6 +636,8 @@ export default function WhiteboardView({ events, db = {} }) {
       const targetKey = getTargetDateKey(m, d, row.entryDate || selectedKey)
       updated.dow = targetKey ? DAYS_JA[new Date(targetKey + 'T00:00:00').getDay()] : ''
     }
+    // slot 未設定の旧データは、編集時に現在の段へ固定して端末間のズレを解消
+    if (!Number.isInteger(updated.slot)) updated.slot = i
     let next
     if (row.id) {
       next = roomReservations.map(r => r.id === row.id ? updated : r)
