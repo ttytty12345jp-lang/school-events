@@ -176,30 +176,13 @@ function UpcomingSection({ todayDate, events }) {
   }
 
   const bodyRef = useRef(null)
-  // 全体を統一サイズで、枠に収まる最大まで実測拡大（行ごとのばらつきをなくす）。
-  // パネル高さが確定してから測れるよう ResizeObserver でも再調整する。
+  // フォントは固定14px。以前は「枠に収まるまで縮小」していたが、行のはみ出し判定が
+  // 端末のフォント描画差に依存し、特定日付・特定PCだけ極端に小さくなる不具合が出た。
+  // パネル高さは flex 比率で一定化済みなので、常に固定サイズにして端末・日付間の
+  // ばらつきをなくす（内容が多い稀な日は行内でクリップ）。
   useLayoutEffect(() => {
     const el = bodyRef.current
-    if (!el) return
-    function fit() {
-      const rows = Array.from(el.querySelectorAll('.upcoming-day'))
-      if (!rows.length) return
-      // 上限14px（従来の適正サイズ）。パネル高さは一定化済みなので、これで
-      // どの日付・端末でも一定の落ち着いたサイズになる。内容が多い日は収まるまで縮小。
-      let size = 14
-      el.style.fontSize = size + 'px'
-      const overflows = () => rows.some(r => r.scrollHeight > r.clientHeight + 1)
-      while (overflows() && size > 9) {
-        size -= 1
-        el.style.fontSize = size + 'px'
-      }
-    }
-    fit()
-    const ro = new ResizeObserver(fit)
-    ro.observe(el)
-    window.addEventListener('resize', fit)
-    if (document.fonts?.ready) document.fonts.ready.then(fit)
-    return () => { ro.disconnect(); window.removeEventListener('resize', fit) }
+    if (el) el.style.fontSize = '14px'
   }, [days, allOverrides])
 
   return (
