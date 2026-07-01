@@ -768,8 +768,8 @@ export default function WhiteboardView({ events, db = {} }) {
               <colgroup>
                 <col style={{width:'22px'}} />
                 <col style={{width:'15.5%'}} />
-                <col style={{width:'34.1%'}} />
-                <col style={{width:'20.4%'}} />
+                <col style={{width:'27.25%'}} />
+                <col style={{width:'27.25%'}} />
                 <col />
                 <col style={{width:'22px'}} />
               </colgroup>
