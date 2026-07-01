@@ -176,13 +176,32 @@ function UpcomingSection({ todayDate, events }) {
   }
 
   const bodyRef = useRef(null)
-  // フォントは固定14px。以前は「枠に収まるまで縮小」していたが、行のはみ出し判定が
-  // 端末のフォント描画差に依存し、特定日付・特定PCだけ極端に小さくなる不具合が出た。
-  // パネル高さは flex 比率で一定化済みなので、常に固定サイズにして端末・日付間の
-  // ばらつきをなくす（内容が多い稀な日は行内でクリップ）。
+  // Excel の「縮小して全体を表示」と同じ考え方：基準は固定14px。日付ラベルは常に固定で、
+  // 収まらない行だけ、その行の「内容（イベント）」フォントだけを行に収まるまで縮小する。
+  // 行ごとに独立して調整するので、他の行や日付ラベルの大きさには影響しない。
   useLayoutEffect(() => {
     const el = bodyRef.current
-    if (el) el.style.fontSize = '14px'
+    if (!el) return
+    el.style.fontSize = '14px' // ラベル等の基準サイズ（固定）
+    function fitRows() {
+      el.querySelectorAll('.upcoming-day').forEach(row => {
+        const ev = row.querySelector('.upcoming-day-events')
+        if (!ev) return
+        let size = 14
+        ev.style.fontSize = size + 'px'
+        let guard = 0
+        while (row.scrollHeight > row.clientHeight + 1 && size > 8 && guard++ < 40) {
+          size -= 1
+          ev.style.fontSize = size + 'px'
+        }
+      })
+    }
+    fitRows()
+    const ro = new ResizeObserver(fitRows)
+    ro.observe(el)
+    window.addEventListener('resize', fitRows)
+    if (document.fonts?.ready) document.fonts.ready.then(fitRows)
+    return () => { ro.disconnect(); window.removeEventListener('resize', fitRows) }
   }, [days, allOverrides])
 
   return (
