@@ -1826,11 +1826,14 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   .wb-td-leave-type { font-size: 8px; letter-spacing: -0.5px; padding: 1px 0; }
   /* 時刻欄：デスクトップの高詳細度ルール(16px/幅60px)を同詳細度で上書きして列内に収める */
   .wb-left .wb-section:nth-child(1) .wb-time-input,
-  .wb-left .wb-section:nth-child(2) .wb-time-input { font-size: 10px; height: 22px; width: 38px; padding: 0; text-align: center; }
+  .wb-left .wb-section:nth-child(2) .wb-time-input { font-size: 9px; height: 22px; width: 30px; padding: 0; text-align: center; }
   .wb-left .wb-section:nth-child(1) .wb-time-range,
-  .wb-left .wb-section:nth-child(2) .wb-time-range { height: 26px; }
+  .wb-left .wb-section:nth-child(2) .wb-time-range { height: 26px; justify-content: center; gap: 0; padding: 0; }
+  /* 2つの時刻を左右に広げず中央にまとめて配置 */
+  .wb-left .wb-section:nth-child(1) .wb-time-combo-c,
+  .wb-left .wb-section:nth-child(2) .wb-time-combo-c { flex: 0 0 auto; }
   .wb-left .wb-section:nth-child(1) .wb-tilde,
-  .wb-left .wb-section:nth-child(2) .wb-tilde { font-size: 9px; margin: 0; }
+  .wb-left .wb-section:nth-child(2) .wb-tilde { font-size: 8px; margin: 0; }
 
   /* 右パネル（今日・明日）：PC 向けの大きなフォントをスマホ用に縮小 */
   .wb-panel-label { font-size: 14px; }
