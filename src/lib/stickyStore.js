@@ -27,6 +27,27 @@ export function subscribe(key, cb) {
 }
 function notify(key) { if (subs[key]) subs[key].forEach(cb => cb(cache[key])) }
 
+// 位置フィールドは端末ごとに独立させたいので Supabase には同期しない
+// （x/y=PC, mx/my=スマホ）。内容だけ共有し、位置はローカル保存を各端末が持つ。
+const POS_FIELDS = ['x', 'y', 'mx', 'my']
+function stripPos(items) {
+  return (items || []).map(it => {
+    const c = { ...it }; POS_FIELDS.forEach(f => delete c[f]); return c
+  })
+}
+// リモート（位置なし）に、この端末のローカル位置を id 一致で反映する
+function applyLocalPos(remote, localItems) {
+  const byId = {}
+  ;(localItems || []).forEach(it => { byId[it.id] = it })
+  return (remote || []).map(it => {
+    const l = byId[it.id]
+    if (!l) return it
+    const m = { ...it }
+    POS_FIELDS.forEach(f => { if (l[f] != null) m[f] = l[f] })
+    return m
+  })
+}
+
 async function fetchFromRemote(key) {
   const { data } = await supabase.from('school_notices').select('content')
     .eq('date', key).eq('type', TYPE).maybeSingle()
@@ -43,7 +64,11 @@ export async function resolveRemote(key, localItems, inheritKey) {
   if (!USE_SUPABASE) return null
   const remote = await fetchFromRemote(key)
   fetched[key] = true
-  if (remote && remote.length) { cache[key] = remote; lsSave(key, remote); return remote }
+  if (remote && remote.length) {
+    // リモート内容 ＋ この端末のローカル位置
+    const merged = applyLocalPos(remote, lsLoad(key))
+    cache[key] = merged; lsSave(key, merged); return merged
+  }
   if (localItems && localItems.length) { save(key, localItems); return null }
   if (inheritKey) {
     let inh = await fetchFromRemote(inheritKey)
@@ -64,7 +89,7 @@ export function save(key, items) {
     // supabase-js は .then()/await で初めてリクエストが飛ぶ（遅延実行）。
     // 投げっぱなしだと送信されないため、必ず .then() で実行＆エラーを拾う。
     supabase.from('school_notices')
-      .upsert({ date: key, type: TYPE, content: JSON.stringify(items), updated_at: new Date().toISOString() },
+      .upsert({ date: key, type: TYPE, content: JSON.stringify(stripPos(items)), updated_at: new Date().toISOString() },
               { onConflict: 'date,type' })
       .then(({ error }) => { if (error) console.warn('[sticky] save failed', error) })
   }, 600)
@@ -81,6 +106,9 @@ export function initStickyRealtime() {
     // この端末が関心を持つキーのみ更新（購読中 or 取得済み）
     if (!subs[key] && !fetched[key]) return
     const items = await fetchFromRemote(key)
-    if (items) { cache[key] = items; lsSave(key, items); notify(key) }
+    if (items) {
+      const merged = applyLocalPos(items, lsLoad(key))
+      cache[key] = merged; lsSave(key, merged); notify(key)
+    }
   })
 }
