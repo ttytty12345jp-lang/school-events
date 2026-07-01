@@ -184,9 +184,9 @@ function UpcomingSection({ todayDate, events }) {
     function fit() {
       const rows = Array.from(el.querySelectorAll('.upcoming-day'))
       if (!rows.length) return
-      // 上限16px（パネルが広い未来日付でも膨らみ過ぎず、日付・端末間で一定に）。
-      // 内容が多い日は収まるまで縮小。
-      let size = 16
+      // 上限14px（従来の適正サイズ）。パネル高さは一定化済みなので、これで
+      // どの日付・端末でも一定の落ち着いたサイズになる。内容が多い日は収まるまで縮小。
+      let size = 14
       el.style.fontSize = size + 'px'
       const overflows = () => rows.some(r => r.scrollHeight > r.clientHeight + 1)
       while (overflows() && size > 9) {
