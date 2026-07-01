@@ -1359,17 +1359,22 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
    同じ flex:1 だと行数の多い特別教室の最終行がクリップされるため。 */
 /* 行が切れないよう自然な高さ（内容ぶん）を確保。収まらない画面は wb-wrap がスクロール。
    1行34px + ヘッダー行ぶんを最低高さとして確保する。 */
-.wb-left .wb-section:nth-child(1) { flex: 9 1 0; min-height: 0; }
-.wb-left .wb-section:nth-child(2) { flex: 7 1 0; min-height: 0; }
+/* 各表は内容ぶんの自然な高さ。行高は JS が算出した --wb-row-h に従う。
+   これで幅を保ったまま、画面高に応じて行だけを縮めて全段を1画面に収める。 */
+.wb-left .wb-section:nth-child(1) { flex: none; }
+.wb-left .wb-section:nth-child(2) { flex: none; }
 .wb-left .wb-section:nth-child(3) { flex: none; }
 
-/* 行の高さは固定しない（table の height:100% が各行に配分される）。
-   背の高い画面では行が広がり、低い画面では均等に縮んで全段が1画面に収まる。
-   文字サイズも画面高に追従させて、行が縮んでもはみ出さない。 */
+/* 行高は JS 算出の --wb-row-h（既定34px）。文字も行高に比例させる。 */
 .wb-left .wb-section:nth-child(1) .wb-row,
-.wb-left .wb-section:nth-child(2) .wb-row { height: auto; }
+.wb-left .wb-section:nth-child(2) .wb-row { height: var(--wb-row-h, 34px); }
 .wb-left .wb-section:nth-child(1) .wb-input,
-.wb-left .wb-section:nth-child(2) .wb-input { font-size: clamp(11px, 2.2vh, 20px); height: auto; line-height: 1.15; text-align: center !important; padding-left: 8px; }
+.wb-left .wb-section:nth-child(2) .wb-input {
+  font-size: calc(var(--wb-row-h, 34px) * 0.56);
+  height: var(--wb-row-h, 34px);
+  line-height: var(--wb-row-h, 34px);
+  text-align: center !important; padding-left: 8px;
+}
 .wb-left .wb-section:nth-child(1) .wb-tilde,
 .wb-left .wb-section:nth-child(2) .wb-tilde { font-size: 14px; }
 .wb-left .wb-section:nth-child(1) .wb-clear-btn,

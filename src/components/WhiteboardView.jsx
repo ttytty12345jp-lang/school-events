@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback, useLayoutEffect } from 'react'
 import { supabase, USE_SUPABASE } from '../lib/supabase'
 import { useHeaderControls } from '../HeaderControlsContext'
 import MorningAgenda from './MorningAgenda'
@@ -511,6 +511,30 @@ export default function WhiteboardView({ events, db = {} }) {
   const debounceRef = useRef(null)
   const { setControls } = useHeaderControls()
 
+  // 左カラム（特別教室・出張）の行高を、画面高に合わせて縮めて全段を1画面に収める。
+  // 幅は変えず高さ(--wb-row-h)だけ調整するので歪みなし。スクロールも出さない。
+  const wrapRef = useRef(null)
+  useLayoutEffect(() => {
+    const wrap = wrapRef.current
+    if (!wrap) return
+    function fit() {
+      const left = wrap.querySelector('.wb-left')
+      if (!left) return
+      wrap.style.setProperty('--wb-row-h', '34px') // 一旦基準に戻して自然高さを測る
+      const natural = left.scrollHeight
+      const avail = left.clientHeight
+      if (avail > 0 && natural > avail) {
+        const DATA_ROWS = ROOM_COUNT + TRIP_COUNT // 縮小対象のデータ行数(9+7)
+        const newH = Math.max(16, 34 - (natural - avail) / DATA_ROWS)
+        wrap.style.setProperty('--wb-row-h', newH + 'px')
+      }
+    }
+    fit()
+    window.addEventListener('resize', fit)
+    if (document.fonts?.ready) document.fonts.ready.then(fit)
+    return () => window.removeEventListener('resize', fit)
+  }, [longLeave, data, selectedKey])
+
   useEffect(() => {
     setData(emptyData())
     loadWhiteboard(selectedKey).then(async saved => {
@@ -713,7 +737,7 @@ export default function WhiteboardView({ events, db = {} }) {
   }
 
   return (
-    <div className="wb-wrap">
+    <div className="wb-wrap" ref={wrapRef}>
       {longLeaveModal && (
         <LongLeaveModal
           leaveType={longLeaveModal.leaveType}
