@@ -1341,6 +1341,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   min-height: 0;
   display: grid;
   grid-template-columns: 3fr 2fr;
+  grid-template-rows: minmax(0, 1fr); /* 行を中身で伸ばさずコンテナ高さに固定（はみ出しを検出可能に） */
   gap: 10px;
   align-items: stretch;
 }
