@@ -1735,7 +1735,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
     width: 1080px !important;
     height: 760px !important;
     margin: 0 !important;
-    zoom: 0.68 !important;
+    zoom: 0.65 !important; /* 2段+gap48px を A4縦1ページに収める（実測で1036px≤1062px） */
     page-break-inside: avoid;
   }
 }
