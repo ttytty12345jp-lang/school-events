@@ -540,6 +540,7 @@ export default function WhiteboardView({ events, db = {} }) {
       setSaving(true)
       await saveWhiteboard(selectedKey, next)
       setSaving(false)
+      debounceRef.current = null // 保存完了 → ポーリングを再開できるように戻す
     }, 800)
   }, [selectedKey])
 
