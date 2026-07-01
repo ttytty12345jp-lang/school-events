@@ -1537,9 +1537,9 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 
 /* 大サイズ（特別教室・出張セクション） */
 .wb-left .wb-section:nth-child(1) .wb-time-range,
-.wb-left .wb-section:nth-child(2) .wb-time-range { height: 34px; }
+.wb-left .wb-section:nth-child(2) .wb-time-range { height: var(--wb-row-h, 34px); }
 .wb-left .wb-section:nth-child(1) .wb-time-input,
-.wb-left .wb-section:nth-child(2) .wb-time-input { font-size: 16px; height: 28px; width: 60px; }
+.wb-left .wb-section:nth-child(2) .wb-time-input { font-size: calc(var(--wb-row-h, 34px) * 0.47); height: var(--wb-row-h, 34px); width: 60px; }
 
 /* Row clear button */
 .wb-clear-btn {
