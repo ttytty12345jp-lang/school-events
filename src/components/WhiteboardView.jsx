@@ -176,6 +176,17 @@ function emptyData() {
     weekEventTomorrow: '',
   }
 }
+// 保存データを既定値とマージし、行数を固定数まで補う（端末間で段数を揃える）
+function normalizeData(saved) {
+  const d = { ...emptyData(), ...(saved || {}) }
+  if (!Array.isArray(d.trips)) d.trips = []
+  if (d.trips.length < TRIP_COUNT)
+    d.trips = [...d.trips, ...Array.from({ length: TRIP_COUNT - d.trips.length }, emptyTrip)]
+  if (!Array.isArray(d.rooms)) d.rooms = []
+  if (d.rooms.length < ROOM_COUNT)
+    d.rooms = [...d.rooms, ...Array.from({ length: ROOM_COUNT - d.rooms.length }, emptyRoom)]
+  return d
+}
 
 async function loadWhiteboard(dateKey) {
   if (!USE_SUPABASE) {
@@ -460,7 +471,7 @@ export default function WhiteboardView({ events, db = {} }) {
   useEffect(() => {
     return subscribeSchoolNotices(row => {
       if (row.type === 'whiteboard' && row.date === selectedKeyRef.current) {
-        try { setData({ ...emptyData(), ...JSON.parse(row.content) }) } catch {}
+        try { setData(normalizeData(JSON.parse(row.content))) } catch {}
       } else if (row.type === ROOM_RES_TYPE) {
         loadRoomReservations().then(setRoomReservations)
       } else if (row.type === LONG_LEAVE_TYPE) {
@@ -473,7 +484,7 @@ export default function WhiteboardView({ events, db = {} }) {
   useEffect(() => {
     return onVisibilityReload(() => {
       loadWhiteboard(selectedKeyRef.current).then(saved => {
-        if (saved) setData({ ...emptyData(), ...saved })
+        if (saved) setData(normalizeData(saved))
       })
       loadRoomReservations().then(setRoomReservations)
       loadLongLeave().then(setLongLeave)
@@ -556,11 +567,7 @@ export default function WhiteboardView({ events, db = {} }) {
       if (ae && ae.closest && ae.closest('.wb-wrap')) return // 入力中
       loadWhiteboard(selectedKeyRef.current).then(saved => {
         if (!saved) return
-        const next = { ...emptyData(), ...saved }
-        if (!Array.isArray(next.trips) || next.trips.length < TRIP_COUNT)
-          next.trips = [...(next.trips || []), ...Array.from({ length: TRIP_COUNT - (next.trips?.length || 0) }, emptyTrip)]
-        if (!Array.isArray(next.rooms) || next.rooms.length < ROOM_COUNT)
-          next.rooms = [...(next.rooms || []), ...Array.from({ length: ROOM_COUNT - (next.rooms?.length || 0) }, emptyRoom)]
+        const next = normalizeData(saved)
         setData(prev => JSON.stringify(prev) === JSON.stringify(next) ? prev : next)
       })
       // 特別教室（roomReservations）と長期欠席も Realtime 取りこぼしに備えて補う
