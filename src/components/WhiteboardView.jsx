@@ -543,6 +543,29 @@ export default function WhiteboardView({ events, db = {} }) {
     }, 800)
   }, [selectedKey])
 
+  // Realtime 取りこぼし対策のポーリング。モバイルは WebSocket が切れやすく
+  // 他端末の変更が届かないことがあるため、数秒ごとに現在の日付を再取得して補う。
+  // 編集中（入力にフォーカス）や未保存の変更がある間は上書きしない。
+  useEffect(() => {
+    if (!USE_SUPABASE) return
+    const id = setInterval(() => {
+      if (document.visibilityState !== 'visible') return
+      if (debounceRef.current) return // ローカルに未保存の変更あり
+      const ae = document.activeElement
+      if (ae && ae.closest && ae.closest('.wb-wrap')) return // 入力中
+      loadWhiteboard(selectedKeyRef.current).then(saved => {
+        if (!saved) return
+        const next = { ...emptyData(), ...saved }
+        if (!Array.isArray(next.trips) || next.trips.length < TRIP_COUNT)
+          next.trips = [...(next.trips || []), ...Array.from({ length: TRIP_COUNT - (next.trips?.length || 0) }, emptyTrip)]
+        if (!Array.isArray(next.rooms) || next.rooms.length < ROOM_COUNT)
+          next.rooms = [...(next.rooms || []), ...Array.from({ length: ROOM_COUNT - (next.rooms?.length || 0) }, emptyRoom)]
+        setData(prev => JSON.stringify(prev) === JSON.stringify(next) ? prev : next)
+      })
+    }, 5000)
+    return () => clearInterval(id)
+  }, [])
+
   // Header controls
   useEffect(() => {
     setControls(
