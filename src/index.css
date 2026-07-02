@@ -1749,6 +1749,15 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   .ttv-header-date { font-size: 17px; }
   .ttv-saving { font-size: 13px; }
 
+  /* 朝会記録簿の当番欄：PCでは大きく、担当者名は中央寄せ。日付とは space-between で分離済み。
+     当番欄は縮まないので日付が優先的に折り返し、日付表示に干渉しない。 */
+  .ttv-header-today .wb-team-input { font-size: 20px; width: 40px; height: 34px; }
+  .ttv-header-today .wb-duty-label { font-size: 15px; }
+  .ttv-header-today .wb-duty-input {
+    font-size: 20px !important; height: 34px !important; width: 130px !important;
+    text-align: center !important;
+  }
+
   /* 明日以降の予定：スペースを7等分（各日1/7の等高）に固定し、各セル内で縦中央。
      フォントは全行が収まる統一サイズ。子要素はem連動 */
   .ttv-upcoming-body { display: grid; grid-auto-rows: 1fr; overflow: hidden; }
