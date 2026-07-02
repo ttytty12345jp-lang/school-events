@@ -94,21 +94,38 @@ function formatDateLong(d) {
 }
 
 // 左上：朝会アジェンダ（月中行事 + 自由追記が同一リスト）
-// 水曜のみ：今日の予定の最下方に「職員打ち合わせ」＋選択欄（15：35～ / なし / 職会兼）
-const STAFF_MEETING_OPTIONS = ['15：35～', 'なし', '職会兼']
-function StaffMeetingRow({ dateKey }) {
-  const { content, handleChange } = useNotice(dateKey, 'staff_meeting')
+// 曜日限定の「ラベル＋選択」行の共通部品。
+//   水曜：今日の予定の最下方に「職員打ち合わせ」（15：35～ / なし / 職会兼）
+//   金曜：期間行事欄のすぐ下に「児童集会」（あり / なし）
+//   月曜：期間行事欄のすぐ下に「全校朝会」（あり / なし / meet）
+function DowOptionRow({ dateKey, noticeType, label, options, targetDow, className = 'ttv-staff-meeting' }) {
+  const { content, handleChange } = useNotice(dateKey, noticeType)
   const dow = new Date(dateKey + 'T00:00:00').getDay()
-  if (dow !== 3) return null // 水曜日のみ表示
-  const value = content || STAFF_MEETING_OPTIONS[0]
+  if (dow !== targetDow) return null
+  const value = content || options[0]
   return (
-    <div className="ttv-staff-meeting">
-      <span className="ttv-staff-meeting-label">職員打ち合わせ</span>
-      <select className="ttv-staff-meeting-select" value={value} onChange={e => handleChange(e.target.value)}>
-        {STAFF_MEETING_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+    <div className={className}>
+      <span className={`${className}-label`}>{label}</span>
+      <select className={`${className}-select`} value={value} onChange={e => handleChange(e.target.value)}>
+        {options.map(o => <option key={o} value={o}>{o}</option>)}
       </select>
     </div>
   )
+}
+
+const STAFF_MEETING_OPTIONS = ['15：35～', 'なし', '職会兼']
+function StaffMeetingRow({ dateKey }) {
+  return <DowOptionRow dateKey={dateKey} noticeType="staff_meeting" label="職員打ち合わせ" options={STAFF_MEETING_OPTIONS} targetDow={3} />
+}
+
+const CHILD_ASSEMBLY_OPTIONS = ['あり', 'なし']
+function ChildAssemblyRow({ dateKey }) {
+  return <DowOptionRow dateKey={dateKey} noticeType="child_assembly" label="児童集会" options={CHILD_ASSEMBLY_OPTIONS} targetDow={5} />
+}
+
+const ALL_SCHOOL_MEETING_OPTIONS = ['あり', 'なし', 'meet']
+function AllSchoolMeetingRow({ dateKey }) {
+  return <DowOptionRow dateKey={dateKey} noticeType="all_school_meeting" label="全校朝会" options={ALL_SCHOOL_MEETING_OPTIONS} targetDow={1} />
 }
 
 function TodaySection({ date, events, dateKey, spanEvents = [], db = {} }) {
@@ -131,6 +148,8 @@ function TodaySection({ date, events, dateKey, spanEvents = [], db = {} }) {
           placeholder=""
         />
       </div>
+      <ChildAssemblyRow dateKey={dateKey} />
+      <AllSchoolMeetingRow dateKey={dateKey} />
       <MorningAgenda dateKey={dateKey} calendarEvents={events} rich />
       <div className="ttv-bottom-row">
         <StaffMeetingRow dateKey={dateKey} />

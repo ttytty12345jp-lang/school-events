@@ -467,6 +467,8 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   gap: 8px;
 }
 .ttv-bottom-row .dw-widget { margin-left: auto; }  /* Drive アイコンは右端のまま */
+
+/* 曜日限定のラベル＋選択行 共通スタイル（職員打ち合わせ／児童集会／全校朝会） */
 .ttv-staff-meeting {
   display: inline-flex;
   align-items: center;
@@ -474,7 +476,6 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   /* 各行のテキスト開始位置（drag-handle 18px + title-input padding 6px）に頭を揃える */
   padding: 2px 2px 2px 30px;
 }
-/* フォントは内容よりわずかに小さめ */
 .ttv-staff-meeting-label { font-weight: 700; font-size: 24px; color: #334155; }
 .ttv-staff-meeting-select {
   font-size: 24px; font-weight: 600; padding: 0 6px;
