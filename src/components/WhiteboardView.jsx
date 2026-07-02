@@ -236,7 +236,7 @@ function autoScaleWidth(el) {
 }
 
 // ── Inline editable cell ───────────────────────────────────
-function EditCell({ value, onChange, placeholder = '', className = '', align, listId, options, live = false, onNext, cellKey, tripKey, noTab = false }) {
+export function EditCell({ value, onChange, placeholder = '', className = '', align, listId, options, live = false, onNext, cellKey, tripKey, noTab = false }) {
   const [local, setLocal] = useState(value)
   const [dropPos, setDropPos] = useState(null) // { top, left, width } or null
   const ref = useRef(null)

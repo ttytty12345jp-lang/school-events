@@ -5,6 +5,7 @@ import MorningAgenda from './MorningAgenda'
 import NoteLines from './NoteLines'
 import StickyNotes from './StickyNotes'
 import DriveWidget from './DriveWidget'
+import { EditCell } from './WhiteboardView'
 import { loadLifeGoals } from '../lib/lifeGoals'
 import { loadJijiMaster, thirdsDisplay } from './SchoolJijiView'
 import { useHeaderControls } from '../HeaderControlsContext'
@@ -68,8 +69,7 @@ function DutySection({ dateKey, db = {} }) {
       <input className="wb-team-input" type="number" min="1" max="4" value={team}
         onChange={e => changeTeam(e.target.value)} placeholder="□" />
       <span className="wb-duty-label">班　当番</span>
-      <input className="wb-duty-input" list="ttv-duty-list" value={duty} onChange={e => changeDuty(e.target.value)} />
-      <datalist id="ttv-duty-list">{nursingOptions.map((n, i) => <option key={i} value={n} />)}</datalist>
+      <EditCell value={duty} onChange={changeDuty} options={nursingOptions} className="wb-duty-input" align="center" />
     </span>
   )
 }
