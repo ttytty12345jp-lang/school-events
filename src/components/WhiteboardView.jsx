@@ -130,7 +130,7 @@ function weekDiff(prevKey, currKey) {
   return Math.round(ms / (7 * 24 * 60 * 60 * 1000))
 }
 // 直近の teamToday から dateKey に対応する班番号を推定（1〜4, なければ ''）
-async function inferTeam(dateKey) {
+export async function inferTeam(dateKey) {
   let lastDate = null, lastTeam = 0
   if (!USE_SUPABASE) {
     for (let i = 1; i <= 90; i++) {

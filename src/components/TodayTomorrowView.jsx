@@ -5,7 +5,7 @@ import MorningAgenda from './MorningAgenda'
 import NoteLines from './NoteLines'
 import StickyNotes from './StickyNotes'
 import DriveWidget from './DriveWidget'
-import { EditCell } from './WhiteboardView'
+import { EditCell, inferTeam } from './WhiteboardView'
 import { loadLifeGoals } from '../lib/lifeGoals'
 import { loadJijiMaster, thirdsDisplay } from './SchoolJijiView'
 import { useHeaderControls } from '../HeaderControlsContext'
@@ -51,13 +51,24 @@ function DutySection({ dateKey, db = {} }) {
   }, [db.nursing, dateKey])
   useEffect(() => {
     let cancel = false
-    loadWbRecord(dateKey).then(r => { if (!cancel) { setTeam(r?.teamToday || ''); setDuty(r?.dutyToday || '') } })
+    loadWbRecord(dateKey).then(async r => {
+      if (cancel) return
+      if (r?.teamToday) {
+        setTeam(r.teamToday); setDuty(r.dutyToday || nursingName(r.teamToday))
+        return
+      }
+      // 保存が無ければホワイトボードと同じロジックで班を推定し、当番を自動入力
+      const inferred = await inferTeam(dateKey)
+      if (cancel) return
+      setTeam(inferred || '')
+      setDuty(inferred ? nursingName(inferred) : '')
+    })
     const unsub = subscribeSchoolNotices(row => {
       if (row.type !== 'whiteboard' || row.date !== dateKey) return
       try { const r = JSON.parse(row.content); setTeam(r.teamToday || ''); setDuty(r.dutyToday || '') } catch {}
     })
     return () => { cancel = true; unsub() }
-  }, [dateKey])
+  }, [dateKey, db.nursing])
   const scheduleSave = (t, d) => {
     clearTimeout(saveRef.current)
     saveRef.current = setTimeout(() => patchWbRecord(dateKey, { teamToday: t, dutyToday: d }), 600)
