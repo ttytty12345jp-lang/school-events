@@ -999,9 +999,12 @@ export default function WhiteboardView({ events, db = {} }) {
                 placeholder="" className="wb-week-input" />
               <button className="wb-sync-btn" onClick={() => syncAgenda(tomorrowKey, setAgendaResetTomorrow)} title="月中行事と同期">↺ 同期</button>
             </div>
+            <AllSchoolMeetingRow dateKey={tomorrowKey} />
+            <ChildAssemblyRow dateKey={tomorrowKey} />
             <div className="wb-schedule-list">
               <MorningAgenda key={`tomorrow-${tomorrowKey}-${agendaResetTomorrow}`} dateKey={tomorrowKey} calendarEvents={nextEvents} rich defaultSize={24} />
             </div>
+            <StaffMeetingRow dateKey={tomorrowKey} />
             <DriveWidget key={`dw-tomorrow-${tomorrowKey}`} storeId="wb" dateKey={tomorrowKey} />
             <StickyNotes storageKey={`wb_sticky_${tomorrowKey}`} tabTop="75%" label="明日" region="bottom" />
           </div>
