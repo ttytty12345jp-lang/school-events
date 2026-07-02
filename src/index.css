@@ -457,6 +457,25 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .ttv-week-event-row { padding: 2px 6px; border-bottom: 1px solid var(--border); flex-shrink: 0; display: flex; align-items: center; gap: 6px; }
 .ttv-week-event-input { flex: 1; min-width: 0; border: none; background: transparent; font-size: 18px; color: #7c3aed; outline: none; height: 30px; font-family: inherit; }
 .ttv-header-notice   { background: #475569; }
+
+/* 水曜のみ：今日の予定 最下方の「職員打ち合わせ」欄 */
+.ttv-staff-meeting {
+  margin-top: auto;               /* 欄の最下方へ */
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 12px;
+  border-top: 1px solid var(--border);
+  background: #f8fafc;
+}
+.ttv-staff-meeting-label { font-weight: 700; font-size: 15px; color: #334155; }
+.ttv-staff-meeting-select {
+  font-size: 15px; font-weight: 600; padding: 2px 8px;
+  border: 1px solid var(--border); border-radius: 5px; background: #fff;
+  color: #334155; font-family: inherit; cursor: pointer;
+}
 .ttv-header-dist     { background: #0891b2; }
 .ttv-header-hours    { background: #7c3aed; }
 .ttv-header-upcoming { background: var(--accent); }

@@ -94,6 +94,23 @@ function formatDateLong(d) {
 }
 
 // 左上：朝会アジェンダ（月中行事 + 自由追記が同一リスト）
+// 水曜のみ：今日の予定の最下方に「職員打ち合わせ」＋選択欄（15：35～ / なし / 職会兼）
+const STAFF_MEETING_OPTIONS = ['15：35～', 'なし', '職会兼']
+function StaffMeetingRow({ dateKey }) {
+  const { content, handleChange } = useNotice(dateKey, 'staff_meeting')
+  const dow = new Date(dateKey + 'T00:00:00').getDay()
+  if (dow !== 3) return null // 水曜日のみ表示
+  const value = content || STAFF_MEETING_OPTIONS[0]
+  return (
+    <div className="ttv-staff-meeting">
+      <span className="ttv-staff-meeting-label">職員打ち合わせ</span>
+      <select className="ttv-staff-meeting-select" value={value} onChange={e => handleChange(e.target.value)}>
+        {STAFF_MEETING_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+      </select>
+    </div>
+  )
+}
+
 function TodaySection({ date, events, dateKey, spanEvents = [], db = {} }) {
   const { content: weekEvent, handleChange: setWeekEvent } = useNotice(dateKey, 'week_event')
   const activeSpans = getActiveSpans(spanEvents, dateKey)
@@ -115,6 +132,7 @@ function TodaySection({ date, events, dateKey, spanEvents = [], db = {} }) {
         />
       </div>
       <MorningAgenda dateKey={dateKey} calendarEvents={events} rich />
+      <StaffMeetingRow dateKey={dateKey} />
       <DriveWidget key={`dw-ttv-${dateKey}`} storeId="ttv" dateKey={dateKey} />
     </div>
   )
