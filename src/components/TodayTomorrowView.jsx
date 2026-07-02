@@ -118,14 +118,39 @@ function StaffMeetingRow({ dateKey }) {
   return <DowOptionRow dateKey={dateKey} noticeType="staff_meeting" label="職員打ち合わせ" options={STAFF_MEETING_OPTIONS} targetDow={3} />
 }
 
-const CHILD_ASSEMBLY_OPTIONS = ['あり', 'なし']
-function ChildAssemblyRow({ dateKey }) {
-  return <DowOptionRow dateKey={dateKey} noticeType="child_assembly" label="児童集会" options={CHILD_ASSEMBLY_OPTIONS} targetDow={5} />
+// 曜日限定の「ラベル＋あり/なし＋場所」の2段階選択行（金：児童集会、月：全校朝会）。
+// 「なし」のときは場所選択を出さない。値は notice に "あり|運動場" のように保存。
+function DowPlaceRow({ dateKey, noticeType, label, places, targetDow }) {
+  const { content, handleChange } = useNotice(dateKey, noticeType)
+  const dow = new Date(dateKey + 'T00:00:00').getDay()
+  if (dow !== targetDow) return null
+  const [savedHas, savedPlace] = (content || '').split('|')
+  const has = savedHas || 'あり'
+  const place = savedPlace || places[0]
+  function changeHas(v) { handleChange(v === 'あり' ? `${v}|${place}` : v) }
+  function changePlace(v) { handleChange(`${has}|${v}`) }
+  return (
+    <div className="ttv-staff-meeting">
+      <span className="ttv-staff-meeting-label">{label}</span>
+      <select className="ttv-staff-meeting-select" value={has} onChange={e => changeHas(e.target.value)}>
+        <option value="あり">あり</option>
+        <option value="なし">なし</option>
+      </select>
+      {has === 'あり' && (
+        <select className="ttv-staff-meeting-select" value={place} onChange={e => changePlace(e.target.value)}>
+          {places.map(p => <option key={p} value={p}>{p}</option>)}
+        </select>
+      )}
+    </div>
+  )
 }
 
-const ALL_SCHOOL_MEETING_OPTIONS = ['あり', 'なし', 'meet']
+function ChildAssemblyRow({ dateKey }) {
+  return <DowPlaceRow dateKey={dateKey} noticeType="child_assembly" label="児童集会" places={['運動場', '講堂']} targetDow={5} />
+}
+
 function AllSchoolMeetingRow({ dateKey }) {
-  return <DowOptionRow dateKey={dateKey} noticeType="all_school_meeting" label="全校朝会" options={ALL_SCHOOL_MEETING_OPTIONS} targetDow={1} />
+  return <DowPlaceRow dateKey={dateKey} noticeType="all_school_meeting" label="全校朝会" places={['運動場', '講堂', 'meet']} targetDow={1} />
 }
 
 function TodaySection({ date, events, dateKey, spanEvents = [], db = {} }) {
