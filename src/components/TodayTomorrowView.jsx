@@ -5,7 +5,7 @@ import MorningAgenda from './MorningAgenda'
 import NoteLines from './NoteLines'
 import StickyNotes from './StickyNotes'
 import DriveWidget from './DriveWidget'
-import { EditCell, inferTeam } from './WhiteboardView'
+import { EditCell, inferTeam, useAdjacentSchoolDays } from './WhiteboardView'
 import { loadLifeGoals } from '../lib/lifeGoals'
 import { loadJijiMaster, thirdsDisplay } from './SchoolJijiView'
 import { useHeaderControls } from '../HeaderControlsContext'
@@ -580,6 +580,8 @@ export default function TodayTomorrowView({ events, db = {} }) {
   const todayKey = toDateKey(today)
   const [selectedKey, setSelectedKey] = useState(() => sessionStorage.getItem('ttv_date') || todayKey)
   function changeDate(k) { sessionStorage.setItem('ttv_date', k); setSelectedKey(k) }
+  // ‹ › は休み（月中行事のグレー日・土日）をスキップして前後の登校日へ（ホワイトボードの明日と同じ）
+  const { next: nextSchoolDay, prev: prevSchoolDay } = useAdjacentSchoolDays(selectedKey)
   const { setControls } = useHeaderControls()
   const [spanEvents, setSpanEvents] = useState([])
   useEffect(() => { loadSpanEvents().then(setSpanEvents) }, [])
@@ -617,13 +619,9 @@ export default function TodayTomorrowView({ events, db = {} }) {
   useEffect(() => {
     setControls(
       <div className="hc-row">
-        <button className="hc-btn-nav" onClick={() => {
-          const d = new Date(selectedKey + 'T00:00:00'); d.setDate(d.getDate() - 1); changeDate(toDateKey(d))
-        }}>‹</button>
+        <button className="hc-btn-nav" onClick={() => changeDate(prevSchoolDay)}>‹</button>
         <input type="date" value={selectedKey} onChange={e => changeDate(e.target.value)} className="hc-date-input" />
-        <button className="hc-btn-nav" onClick={() => {
-          const d = new Date(selectedKey + 'T00:00:00'); d.setDate(d.getDate() + 1); changeDate(toDateKey(d))
-        }}>›</button>
+        <button className="hc-btn-nav" onClick={() => changeDate(nextSchoolDay)}>›</button>
         {!isToday && <button className="hc-btn" onClick={() => changeDate(todayKey)}>今日に戻る</button>}
         <button className="hc-btn" onClick={() => {
           const wrap = document.querySelector('.ttv-wrap')
@@ -636,7 +634,7 @@ export default function TodayTomorrowView({ events, db = {} }) {
       </div>
     )
     return () => setControls(null)
-  }, [selectedKey, isToday])
+  }, [selectedKey, isToday, prevSchoolDay, nextSchoolDay])
 
   // 固定サイズページの「高さ」を画面に合わせて拡大縮小（縦スクロールなし・幅は結果に任せる）
   const wrapRef = useRef(null)

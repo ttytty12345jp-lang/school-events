@@ -361,7 +361,7 @@ function ClearBtn({ onClick }) {
 
 // selectedKeyの前後の登校日（土日・グレー日を飛ばす）を求めるhook
 // { prev: 前の登校日key, next: 次の登校日key } を返す
-function useAdjacentSchoolDays(selectedKey) {
+export function useAdjacentSchoolDays(selectedKey) {
   const [overrides, setOverrides] = useState({})
 
   useEffect(() => {
