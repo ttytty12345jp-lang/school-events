@@ -119,15 +119,16 @@ function StaffMeetingRow({ dateKey }) {
 }
 
 // 曜日限定の「ラベル＋あり/なし＋場所」の2段階選択行（金：児童集会、月：全校朝会）。
-// 「なし」のときは場所選択を出さない。値は notice に "あり|運動場" のように保存。
+// 場所選択は「あり」を実際に選んだときだけ表示する（未編集時は出さない）。
+// 値は notice に "あり|運動場" のように保存。
 function DowPlaceRow({ dateKey, noticeType, label, places, targetDow }) {
   const { content, handleChange } = useNotice(dateKey, noticeType)
   const dow = new Date(dateKey + 'T00:00:00').getDay()
   if (dow !== targetDow) return null
   const [savedHas, savedPlace] = (content || '').split('|')
   const has = savedHas || 'あり'
-  const place = savedPlace || places[0]
-  function changeHas(v) { handleChange(v === 'あり' ? `${v}|${place}` : v) }
+  const place = savedPlace || ''
+  function changeHas(v) { handleChange(v === 'あり' ? (savedPlace ? `${v}|${savedPlace}` : v) : v) }
   function changePlace(v) { handleChange(`${has}|${v}`) }
   return (
     <div className="ttv-staff-meeting">
@@ -138,6 +139,7 @@ function DowPlaceRow({ dateKey, noticeType, label, places, targetDow }) {
       </select>
       {has === 'あり' && (
         <select className="ttv-staff-meeting-select" value={place} onChange={e => changePlace(e.target.value)}>
+          <option value="" disabled hidden></option>
           {places.map(p => <option key={p} value={p}>{p}</option>)}
         </select>
       )}

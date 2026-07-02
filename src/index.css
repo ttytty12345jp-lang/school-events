@@ -477,16 +477,18 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   padding: 2px 2px 2px 30px;
 }
 .ttv-staff-meeting-label { font-weight: 700; font-size: 24px; color: #334155; }
-/* 未操作時は他の行と見た目上区別なく（枠・背景なし）。ホバー/フォーカス時のみ枠を見せる。 */
+/* 未操作時は他の行と見た目上区別なく（枠・背景・▼なし）。ホバー/フォーカス時のみ枠と▼を見せる。 */
 .ttv-staff-meeting-select {
   font-size: 24px; font-weight: 600; padding: 0 6px;
   border: 1px solid transparent; border-radius: 5px; background: transparent;
   color: #334155; font-family: inherit; cursor: pointer;
   transition: background 0.12s, border-color 0.12s;
+  -webkit-appearance: none; -moz-appearance: none; appearance: none; /* ▼を隠す */
 }
 .ttv-staff-meeting-select:hover,
 .ttv-staff-meeting-select:focus {
   border-color: var(--border); background: #fff;
+  -webkit-appearance: menulist; -moz-appearance: menulist; appearance: auto; /* ▼を表示 */
 }
 .ttv-header-dist     { background: #0891b2; }
 .ttv-header-hours    { background: #7c3aed; }
