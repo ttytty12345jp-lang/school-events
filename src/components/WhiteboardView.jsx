@@ -7,6 +7,7 @@ import DriveWidget from './DriveWidget'
 import { DAYS_JA, dateKey as toDateKey, monthKey } from '../utils/date'
 import { loadSpanEvents, getActiveSpans } from '../lib/spanEvents'
 import { subscribeSchoolNotices, markPending, onVisibilityReload } from '../lib/schoolNoticesRealtime'
+import { StaffMeetingRow, ChildAssemblyRow, AllSchoolMeetingRow } from './DowRows'
 
 const HIGHLIGHTS_TYPE = 'row_highlights'
 
@@ -962,9 +963,12 @@ export default function WhiteboardView({ events, db = {} }) {
                 placeholder="" className="wb-week-input" />
               <button className="wb-sync-btn" onClick={() => syncAgenda(selectedKey, setAgendaResetToday)} title="月中行事と同期">↺ 同期</button>
             </div>
+            <AllSchoolMeetingRow dateKey={selectedKey} />
+            <ChildAssemblyRow dateKey={selectedKey} />
             <div className="wb-schedule-list">
               <MorningAgenda key={`today-${selectedKey}-${agendaResetToday}`} dateKey={selectedKey} calendarEvents={selEvents} rich defaultSize={24} />
             </div>
+            <StaffMeetingRow dateKey={selectedKey} />
             <DriveWidget key={`dw-today-${selectedKey}`} storeId="wb" dateKey={selectedKey} />
             <StickyNotes storageKey={`wb_sticky_${selectedKey}`} tabTop="25%" label="今日" region="top" />
           </div>
