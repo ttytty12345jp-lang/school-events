@@ -10,8 +10,69 @@ import { loadJijiMaster, thirdsDisplay } from './SchoolJijiView'
 import { useHeaderControls } from '../HeaderControlsContext'
 import { DAYS_JA, dateKey as toDateKey, monthKey } from '../utils/date'
 import { loadSpanEvents, getActiveSpans } from '../lib/spanEvents'
+import { subscribeSchoolNotices, markPending } from '../lib/schoolNoticesRealtime'
 
 const HIGHLIGHTS_TYPE = 'row_highlights'
+const DOW_JA_DUTY = ['日', '月', '火', '水', '木', '金', '土']
+
+// ホワイトボードのその日のレコード（teamToday/dutyToday を共有）を読み書きする。
+// 当番は日付ごとに1つなので、朝会記録簿とホワイトボードで同じ値を表示・編集できる。
+function loadWbRecord(dateKey) {
+  if (!USE_SUPABASE) {
+    try { return Promise.resolve(JSON.parse(localStorage.getItem(`whiteboard_${dateKey}`) || 'null')) } catch { return Promise.resolve(null) }
+  }
+  return supabase.from('school_notices').select('content').eq('date', dateKey).eq('type', 'whiteboard').maybeSingle()
+    .then(({ data }) => { try { return data?.content ? JSON.parse(data.content) : null } catch { return null } })
+}
+async function patchWbRecord(dateKey, patch) {
+  const cur = (await loadWbRecord(dateKey)) || {}
+  const json = JSON.stringify({ ...cur, ...patch })
+  if (!USE_SUPABASE) { localStorage.setItem(`whiteboard_${dateKey}`, json); return }
+  markPending(dateKey, 'whiteboard')
+  await supabase.from('school_notices')
+    .upsert({ date: dateKey, type: 'whiteboard', content: json, updated_at: new Date().toISOString() }, { onConflict: 'date,type' })
+}
+
+// 朝会記録簿 日付の右：当番（班＋担当者）。ホワイトボードと同じ仕様・表示。
+function DutySection({ dateKey, db = {} }) {
+  const [team, setTeam] = useState('')
+  const [duty, setDuty] = useState('')
+  const saveRef = useRef(null)
+  const nursingName = (t) => {
+    if (!t) return ''
+    const key = String(t).startsWith('班') ? String(t) : `班${t}`
+    const dow = DOW_JA_DUTY[new Date(dateKey + 'T00:00:00').getDay()]
+    return (db.nursing || {})[key]?.[dow] || ''
+  }
+  const nursingOptions = useMemo(() => {
+    const dow = DOW_JA_DUTY[new Date(dateKey + 'T00:00:00').getDay()]
+    return Object.values(db.nursing || {}).map(t => t[dow]).filter(Boolean)
+  }, [db.nursing, dateKey])
+  useEffect(() => {
+    let cancel = false
+    loadWbRecord(dateKey).then(r => { if (!cancel) { setTeam(r?.teamToday || ''); setDuty(r?.dutyToday || '') } })
+    const unsub = subscribeSchoolNotices(row => {
+      if (row.type !== 'whiteboard' || row.date !== dateKey) return
+      try { const r = JSON.parse(row.content); setTeam(r.teamToday || ''); setDuty(r.dutyToday || '') } catch {}
+    })
+    return () => { cancel = true; unsub() }
+  }, [dateKey])
+  const scheduleSave = (t, d) => {
+    clearTimeout(saveRef.current)
+    saveRef.current = setTimeout(() => patchWbRecord(dateKey, { teamToday: t, dutyToday: d }), 600)
+  }
+  const changeTeam = (v) => { const d = nursingName(v); setTeam(v); setDuty(d); scheduleSave(v, d) }
+  const changeDuty = (v) => { setDuty(v); scheduleSave(team, v) }
+  return (
+    <span className="wb-duty-inline">
+      <input className="wb-team-input" type="number" min="1" max="4" value={team}
+        onChange={e => changeTeam(e.target.value)} placeholder="□" />
+      <span className="wb-duty-label">班　当番</span>
+      <input className="wb-duty-input" list="ttv-duty-list" value={duty} onChange={e => changeDuty(e.target.value)} />
+      <datalist id="ttv-duty-list">{nursingOptions.map((n, i) => <option key={i} value={n} />)}</datalist>
+    </span>
+  )
+}
 
 function formatDate(d) {
   return `${d.getMonth() + 1}/${d.getDate()}（${DAYS_JA[d.getDay()]}）`
@@ -22,13 +83,14 @@ function formatDateLong(d) {
 }
 
 // 左上：朝会アジェンダ（月中行事 + 自由追記が同一リスト）
-function TodaySection({ date, events, dateKey, spanEvents = [] }) {
+function TodaySection({ date, events, dateKey, spanEvents = [], db = {} }) {
   const { content: weekEvent, handleChange: setWeekEvent } = useNotice(dateKey, 'week_event')
   const activeSpans = getActiveSpans(spanEvents, dateKey)
   return (
     <div className="ttv-panel">
       <div className="ttv-header ttv-header-today">
         <span className="ttv-header-date-large">{formatDateLong(date)}</span>
+        <DutySection dateKey={dateKey} db={db} />
       </div>
       <div className="ttv-week-event-row">
         {activeSpans.map(s => (
@@ -502,7 +564,7 @@ function SchoolHoursSection({ date, calendarEvents }) {
   )
 }
 
-export default function TodayTomorrowView({ events }) {
+export default function TodayTomorrowView({ events, db = {} }) {
   const today = new Date()
   const todayKey = toDateKey(today)
   const [selectedKey, setSelectedKey] = useState(() => sessionStorage.getItem('ttv_date') || todayKey)
@@ -590,7 +652,7 @@ export default function TodayTomorrowView({ events }) {
         <div className="ttv-layout">
           {/* 左2/3 */}
           <div className="ttv-left">
-            <TodaySection date={selectedDate} events={selectedEvents} dateKey={selectedKey} spanEvents={spanEvents} />
+            <TodaySection date={selectedDate} events={selectedEvents} dateKey={selectedKey} spanEvents={spanEvents} db={db} />
             <NoticeSection date={selectedKey} />
             <LifeGoalSection date={selectedKey} />
           </div>

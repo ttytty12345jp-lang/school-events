@@ -24,7 +24,7 @@ export default function App() {
         {loading ? (
           <div style={{ textAlign: 'center', padding: 40, color: '#64748b' }}>読み込み中…</div>
         ) : view === 'today' ? (
-          <TodayTomorrowView events={events} />
+          <TodayTomorrowView events={events} db={db} />
         ) : view === 'monthly' ? (
           <MonthlyCalendar
             events={events}
