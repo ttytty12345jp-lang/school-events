@@ -471,12 +471,13 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   display: inline-flex;
   align-items: center;
   gap: 6px;                        /* ラベルと選択欄を近づける */
-  padding: 2px 10px;
+  /* 各行のテキスト開始位置（drag-handle 18px + title-input padding 6px）に頭を揃える */
+  padding: 2px 2px 2px 30px;
 }
-/* フォントは内容（今日の予定 DEFAULT_SIZE=28px）と同じ大きさ */
-.ttv-staff-meeting-label { font-weight: 700; font-size: 28px; color: #334155; }
+/* フォントは内容よりわずかに小さめ */
+.ttv-staff-meeting-label { font-weight: 700; font-size: 24px; color: #334155; }
 .ttv-staff-meeting-select {
-  font-size: 28px; font-weight: 600; padding: 0 6px;
+  font-size: 24px; font-weight: 600; padding: 0 6px;
   border: 1px solid var(--border); border-radius: 5px; background: #fff;
   color: #334155; font-family: inherit; cursor: pointer;
 }
