@@ -458,21 +458,25 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .ttv-week-event-input { flex: 1; min-width: 0; border: none; background: transparent; font-size: 18px; color: #7c3aed; outline: none; height: 30px; font-family: inherit; }
 .ttv-header-notice   { background: #475569; }
 
-/* 水曜のみ：今日の予定 最下方の「職員打ち合わせ」欄 */
-.ttv-staff-meeting {
+/* 水曜のみ：今日の予定 最下方の「職員打ち合わせ」欄。Google Drive アイコンと同じ行。 */
+.ttv-bottom-row {
   margin-top: auto;               /* 欄の最下方へ */
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
-  padding: 4px 12px;
-  border-top: 1px solid var(--border);
-  background: #f8fafc;
 }
-.ttv-staff-meeting-label { font-weight: 700; font-size: 15px; color: #334155; }
+.ttv-bottom-row .dw-widget { margin-left: auto; }  /* Drive アイコンは右端のまま */
+.ttv-staff-meeting {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;                        /* ラベルと選択欄を近づける */
+  padding: 2px 10px;
+}
+/* フォントは内容（今日の予定 DEFAULT_SIZE=28px）と同じ大きさ */
+.ttv-staff-meeting-label { font-weight: 700; font-size: 28px; color: #334155; }
 .ttv-staff-meeting-select {
-  font-size: 15px; font-weight: 600; padding: 2px 8px;
+  font-size: 28px; font-weight: 600; padding: 0 6px;
   border: 1px solid var(--border); border-radius: 5px; background: #fff;
   color: #334155; font-family: inherit; cursor: pointer;
 }
@@ -1831,6 +1835,8 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 
   .ttv-week-event-input { font-size: 12px !important; height: 22px !important; }
   .agenda-row { padding: 1px 2px; }
+  /* 職員打ち合わせもモバイルは内容(12px)に合わせる */
+  .ttv-staff-meeting-label, .ttv-staff-meeting-select { font-size: 12px !important; }
 
 /* 月中行事：全列を1画面に収める */
   .monthly-table-wrap { overflow-x: hidden; }
