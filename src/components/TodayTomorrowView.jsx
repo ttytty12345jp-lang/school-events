@@ -119,7 +119,7 @@ function TodaySection({ date, events, dateKey, spanEvents = [], db = {} }) {
         />
       </div>
       <ChildAssemblyRow dateKey={dateKey} />
-      <AllSchoolMeetingRow dateKey={dateKey} />
+      <AllSchoolMeetingRow dateKey={dateKey} db={db} />
       <MorningAgenda dateKey={dateKey} calendarEvents={events} rich />
       <div className="ttv-bottom-row">
         <StaffMeetingRow dateKey={dateKey} />
