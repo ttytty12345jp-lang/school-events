@@ -1,5 +1,8 @@
+import { useState, useEffect, useRef } from 'react'
 import { useNotice } from '../hooks/useNotice'
 import { NURSING_DAYS, NURSING_TEAMS } from '../hooks/useDatabaseLists'
+import { loadAnchors, setAnchorForWeek, subscribeAssemblyDuty } from '../lib/assemblyDuty'
+import { dateKey as toDateKey } from '../utils/date'
 
 // 看護当番表を「左上から縦（班1→班4）に進み、下まで行ったら右の列（曜日）へ、
 // 一番右下の後は左上に戻る」順（＝列優先）で、手入力された名前のみを並べる。
@@ -14,21 +17,38 @@ function nursingRoster(nursing) {
   return list
 }
 
-// その日が属する週（月曜起点）の通し番号。固定基準日(1970-01-05 月)からの週数。
-function weekIndex(dateKey) {
+// dateKey が属する週の月曜日キーを返す（toISOString はUTC変換で日付がずれるため使わない）
+function mondayKeyOf(dateKey) {
   const d = new Date(dateKey + 'T00:00:00')
-  const diff = (d.getDay() + 6) % 7 // 月曜まで戻す
+  const diff = (d.getDay() + 6) % 7
   d.setDate(d.getDate() - diff)
-  const base = new Date('1970-01-05T00:00:00') // 月曜
-  return Math.floor((d - base) / (7 * 86400000))
+  return toDateKey(d)
+}
+// 2つの月曜日キーの週差
+function weeksBetween(fromMonday, toMonday) {
+  const a = new Date(fromMonday + 'T00:00:00')
+  const b = new Date(toMonday + 'T00:00:00')
+  return Math.round((b - a) / (7 * 86400000))
 }
 
-// 週ごとに1人ずつ自動で進む担当者（毎週自動表示）。
-function weeklyDutyPerson(nursing, dateKey) {
+// 手入力された週（アンカー）を起点に、それ以降だけ看護当番表の並び順で自動ローテーションする。
+// 手入力が一つも無い（対象週より前にアンカーが無い）場合は空文字＝非表示。
+// その週ちょうどにアンカーがあれば、その手入力値をそのまま優先表示する。
+function computeDutyName(nursing, anchors, dateKey) {
+  const targetWeek = mondayKeyOf(dateKey)
+  const exact = anchors.find(a => a.week === targetWeek)
+  if (exact) return exact.name
+  let best = null
+  for (const a of anchors) {
+    if (a.week < targetWeek && (!best || a.week > best.week)) best = a
+  }
+  if (!best) return ''
   const roster = nursingRoster(nursing)
-  if (roster.length === 0) return ''
-  const idx = ((weekIndex(dateKey) % roster.length) + roster.length) % roster.length
-  return roster[idx]
+  const idx = roster.indexOf(best.name)
+  if (idx === -1 || roster.length === 0) return best.name // ローテーション不能時は直前の値を維持
+  const wb = weeksBetween(best.week, targetWeek)
+  const newIdx = ((idx + wb) % roster.length + roster.length) % roster.length
+  return roster[newIdx]
 }
 
 // 曜日限定の「ラベル＋選択」行の共通部品。朝会記録簿・ホワイトボード両方から使う。
@@ -58,7 +78,7 @@ export function StaffMeetingRow({ dateKey }) {
 // 曜日限定の「ラベル＋あり/なし＋場所」の2段階選択行（金：児童集会、月：全校朝会）。
 // 場所選択は「あり」を実際に選んだときだけ表示する（未編集時は出さない）。
 // 値は notice に "あり|運動場" のように保存。
-function DowPlaceRow({ dateKey, noticeType, label, places, targetDow, dutyPerson }) {
+function DowPlaceRow({ dateKey, noticeType, label, places, targetDow, DutyField }) {
   const { content, handleChange } = useNotice(dateKey, noticeType)
   const dow = new Date(dateKey + 'T00:00:00').getDay()
   if (dow !== targetDow) return null
@@ -80,9 +100,7 @@ function DowPlaceRow({ dateKey, noticeType, label, places, targetDow, dutyPerson
           {places.map(p => <option key={p} value={p}>{p}</option>)}
         </select>
       )}
-      {has === 'あり' && dutyPerson != null && (
-        <span className="ttv-staff-meeting-duty">{dutyPerson || '　'}</span>
-      )}
+      {has === 'あり' && DutyField}
     </div>
   )
 }
@@ -91,9 +109,45 @@ export function ChildAssemblyRow({ dateKey }) {
   return <DowPlaceRow dateKey={dateKey} noticeType="child_assembly" label="児童集会" places={['運動場', '講堂']} targetDow={5} />
 }
 
-// 月曜「全校朝会」：右に担当者枠（看護当番表の名前を毎週自動ローテーション）
+// 月曜「全校朝会」：右に担当者枠（看護当番表の名前を、手入力した週を起点に自動ローテーション）
 export function AllSchoolMeetingRow({ dateKey, db = {} }) {
-  const dutyPerson = weeklyDutyPerson(db.nursing, dateKey)
+  const dow = new Date(dateKey + 'T00:00:00').getDay()
+  const [anchors, setAnchors] = useState([])
+  const [local, setLocal] = useState(null) // null = 未編集（computed値を表示）
+  const debounceRef = useRef(null)
+
+  useEffect(() => {
+    if (dow !== 1) return
+    let cancel = false
+    loadAnchors().then(a => { if (!cancel) setAnchors(a) })
+    const unsub = subscribeAssemblyDuty(a => { if (!cancel) setAnchors(a) })
+    return () => { cancel = true; unsub() }
+  }, [dow])
+
+  useEffect(() => { setLocal(null) }, [dateKey]) // 日付が変わったら未編集状態に戻す
+
+  if (dow !== 1) return null
+  const computed = computeDutyName(db.nursing, anchors, dateKey)
+  const value = local != null ? local : computed
+
+  // 入力のたびにデバウンス保存（他の入力欄と同様。blur待ちにしない）
+  function handleInput(v) {
+    setLocal(v)
+    clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      const weekKey = mondayKeyOf(dateKey)
+      setAnchorForWeek(weekKey, v).then(setAnchors)
+    }, 600)
+  }
+
+  const dutyField = (
+    <input
+      className="ttv-staff-meeting-duty-input"
+      value={value}
+      placeholder=""
+      onChange={e => handleInput(e.target.value)}
+    />
+  )
   return <DowPlaceRow dateKey={dateKey} noticeType="all_school_meeting" label="全校朝会"
-    places={['運動場', '講堂', 'meet']} targetDow={1} dutyPerson={dutyPerson} />
+    places={['運動場', '講堂', 'meet']} targetDow={1} DutyField={dutyField} />
 }
