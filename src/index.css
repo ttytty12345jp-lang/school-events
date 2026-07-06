@@ -488,7 +488,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .ttv-staff-meeting-duty-input {
   font-weight: 700; font-size: 24px; color: #334155; font-family: inherit;
   min-width: 3em; width: 6em; padding: 0 8px; text-align: center;
-  border: none; border-bottom: 2px solid var(--border); border-radius: 0;
+  border: none; border-radius: 0;
   background: transparent; outline: none;
 }
 .ttv-staff-meeting-duty-input:focus { background: var(--primary-light); border-radius: 4px; }
