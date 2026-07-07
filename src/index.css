@@ -428,8 +428,9 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 }
 
 .ttv-right .ttv-panel:first-child  { flex: 2; min-height: 0; }
-.ttv-right .ttv-panel:nth-child(2) { flex: 2; min-height: 0; } /* 時数：内容依存をやめ一定比率に（下のupcoming高さ＝文字サイズを日付で変えない） */
-.ttv-right .ttv-panel:last-child   { flex: 3; min-height: 0; }
+/* 時数を縮め、その分を明日以降の予定に回して「明日以降」の上端が左列「諸連絡」の上端と揃うように調整 */
+.ttv-right .ttv-panel:nth-child(2) { flex: 1.6; min-height: 0; }
+.ttv-right .ttv-panel:last-child   { flex: 3.4; min-height: 0; }
 
 /* 共通パネル */
 .ttv-panel {
