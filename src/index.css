@@ -1812,6 +1812,11 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   .hours-th-label { width: 68px; }
   .hours-td-label { font-size: 13px; padding-right: 6px; }
   .hours-td-cell { padding: 3px 4px; }
+
+  /* 学校行事時数：ヘッダー行＋3データ行の4段をパネル内の高さで均等割り */
+  .hours-body { display: flex; align-items: stretch; }
+  .hours-table { height: 100%; flex: 1; }
+  .hours-table thead, .hours-table tbody tr { height: 25%; }
 }
 
 /* ── Responsive ── */
