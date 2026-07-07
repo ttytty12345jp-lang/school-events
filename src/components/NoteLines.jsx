@@ -47,6 +47,23 @@ export default function NoteLines({ content, onChange, placeholder = '' }) {
     commit(next.length ? next : [{ text: '' }])
     setTimeout(() => inputRefs.current[Math.max(0, i - 1)]?.focus(), 30)
   }
+  // Enter で改行文字を入れるのではなく「別ブロック」に分割する（行ごとに文字サイズ等を変えたいため）。
+  // カーソル位置で前後にテキストを分け、後半を新ブロックとして次の位置に挿入する。
+  function splitAtCursor(i, el) {
+    const pos = el.selectionStart
+    const before = el.value.slice(0, pos)
+    const after = el.value.slice(pos)
+    const cur = lines[i]
+    const next = [...lines]
+    next[i] = { ...cur, text: before }
+    next.splice(i + 1, 0, { text: after, size: cur.size, color: cur.color })
+    commit(next)
+    setTimeout(() => {
+      const el2 = inputRefs.current[i + 1]
+      el2?.focus()
+      el2?.setSelectionRange(0, 0)
+    }, 30)
+  }
 
   return (
     <div className="notelines-body">
@@ -62,6 +79,9 @@ export default function NoteLines({ content, onChange, placeholder = '' }) {
             onChange={e => { setText(i, e.target.value); autoGrow(e.target) }}
             onFocus={e => { setFocusIdx(i); autoGrow(e.target) }}
             onBlur={() => setTimeout(() => setFocusIdx(f => (f === i ? -1 : f)), 150)}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); splitAtCursor(i, e.target) }
+            }}
           />
           {focusIdx === i && lines.length > 1 && (
             <div className="notelines-tools">
