@@ -482,10 +482,11 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .ttv-staff-meeting-select {
   font-size: 24px; font-weight: 600; padding: 0 6px;
   border: 1px solid transparent; border-radius: 5px; background: transparent;
-  color: #334155; font-family: inherit; cursor: pointer;
+  color: #334155; font-family: inherit; cursor: pointer; outline: none;
   transition: background 0.12s, border-color 0.12s;
-  -webkit-appearance: none; -moz-appearance: none; appearance: none; /* ▼を隠す */
+  -webkit-appearance: none; -moz-appearance: none; appearance: none; /* ▼を隠す（select用。inputでは無効化される） */
 }
+input.ttv-staff-meeting-select { width: 7em; cursor: text; }
 .ttv-staff-meeting-duty-input {
   font-weight: 700; font-size: 24px; color: #334155; font-family: inherit;
   min-width: 3em; width: 6em; padding: 0 8px; text-align: center;

@@ -70,9 +70,29 @@ function DowOptionRow({ dateKey, noticeType, label, options, targetDow, classNam
   )
 }
 
-const STAFF_MEETING_OPTIONS = ['15：35～', 'なし', '職会兼']
+const STAFF_MEETING_OPTIONS = ['14：35～', 'なし', '職会兼']
+const STAFF_MEETING_LIST_ID = 'ttv-staff-meeting-options'
+
+// 職員打ち合わせ：候補を選ぶことも、自由入力もできる（プルダウン専用の DowOptionRow と違い text+datalist）。
 export function StaffMeetingRow({ dateKey }) {
-  return <DowOptionRow dateKey={dateKey} noticeType="staff_meeting" label="職員打ち合わせ" options={STAFF_MEETING_OPTIONS} targetDow={3} />
+  const { content, handleChange } = useNotice(dateKey, 'staff_meeting')
+  const dow = new Date(dateKey + 'T00:00:00').getDay()
+  if (dow !== 3) return null
+  const value = content || STAFF_MEETING_OPTIONS[0]
+  return (
+    <div className="ttv-staff-meeting">
+      <span className="ttv-staff-meeting-label">職員打ち合わせ</span>
+      <input
+        className="ttv-staff-meeting-select"
+        list={STAFF_MEETING_LIST_ID}
+        value={value}
+        onChange={e => handleChange(e.target.value)}
+      />
+      <datalist id={STAFF_MEETING_LIST_ID}>
+        {STAFF_MEETING_OPTIONS.map(o => <option key={o} value={o} />)}
+      </datalist>
+    </div>
+  )
 }
 
 // 曜日限定の「ラベル＋あり/なし＋場所」の2段階選択行（金：児童集会、月：全校朝会）。
