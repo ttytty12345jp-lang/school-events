@@ -71,10 +71,10 @@ function DowOptionRow({ dateKey, noticeType, label, options, targetDow, classNam
 }
 
 const STAFF_MEETING_OPTIONS = ['14：35～', 'なし', '職会兼']
-const STAFF_MEETING_CUSTOM = 'その他（自由入力）'
 
-// 職員打ち合わせ：候補はネイティブ select で選ぶ（datalist は Safari/iOS で機能しないため不使用）。
-// 「その他」を選んだときだけ横にテキスト欄が出て自由入力できる。
+// 職員打ち合わせ：常にテキスト欄を表示し、直接編集できる。横の候補ボタンを押すと
+// その場でテキストが入る（datalist は Safari/iOS で候補が出ないため不使用、
+// select は選んだ後に直接編集できないため不使用）。
 // content(サーバー値)が空文字だと「未設定」と区別できず既定値に戻ってしまうため、
 // 一度でも編集を始めたら local を優先し、空にしても既定値へ戻さない。
 export function StaffMeetingRow({ dateKey }) {
@@ -84,28 +84,21 @@ export function StaffMeetingRow({ dateKey }) {
   useEffect(() => { setLocal(null) }, [dateKey]) // 日付が変わったら未編集状態に戻す
   if (dow !== 3) return null
   const value = local != null ? local : (content || STAFF_MEETING_OPTIONS[0])
-  const isCustom = !STAFF_MEETING_OPTIONS.includes(value)
-  function onSelect(v) {
-    const next = v === STAFF_MEETING_CUSTOM ? '' : v
-    setLocal(next)
-    handleChange(next)
-  }
-  function onCustomInput(v) { setLocal(v); handleChange(v) }
+  function onInput(v) { setLocal(v); handleChange(v) }
   return (
     <div className="ttv-staff-meeting">
       <span className="ttv-staff-meeting-label">職員打ち合わせ</span>
-      <select className="ttv-staff-meeting-select" value={isCustom ? STAFF_MEETING_CUSTOM : value} onChange={e => onSelect(e.target.value)}>
-        {STAFF_MEETING_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
-        <option value={STAFF_MEETING_CUSTOM}>{STAFF_MEETING_CUSTOM}</option>
-      </select>
-      {isCustom && (
-        <input
-          className="ttv-staff-meeting-duty-input"
-          value={value}
-          placeholder="時刻・内容を入力"
-          onChange={e => onCustomInput(e.target.value)}
-        />
-      )}
+      <input
+        className="ttv-staff-meeting-duty-input"
+        value={value}
+        placeholder="時刻・内容を入力"
+        onChange={e => onInput(e.target.value)}
+      />
+      <span className="ttv-staff-meeting-quick">
+        {STAFF_MEETING_OPTIONS.map(o => (
+          <button key={o} type="button" className="ttv-staff-meeting-quick-btn" onClick={() => onInput(o)}>{o}</button>
+        ))}
+      </span>
     </div>
   )
 }
