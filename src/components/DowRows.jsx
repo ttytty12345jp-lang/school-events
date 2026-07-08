@@ -72,33 +72,61 @@ function DowOptionRow({ dateKey, noticeType, label, options, targetDow, classNam
 
 const STAFF_MEETING_OPTIONS = ['14：35～', 'なし', '職会兼']
 
-// 職員打ち合わせ：常にテキスト欄を表示し、直接編集できる。横の候補ボタンを押すと
-// その場でテキストが入る（datalist は Safari/iOS で候補が出ないため不使用、
-// select は選んだ後に直接編集できないため不使用）。
+// 職員打ち合わせ：普段はラベル表示。クリックで候補から選ぶ（select）、
+// ダブルクリックで自由入力（input）に切り替わる（きらら時間割の CellEditor と同じ操作感）。
 // content(サーバー値)が空文字だと「未設定」と区別できず既定値に戻ってしまうため、
 // 一度でも編集を始めたら local を優先し、空にしても既定値へ戻さない。
 export function StaffMeetingRow({ dateKey }) {
   const { content, handleChange } = useNotice(dateKey, 'staff_meeting')
   const dow = new Date(dateKey + 'T00:00:00').getDay()
   const [local, setLocal] = useState(null) // null = 未編集（content から表示値を導出）
-  useEffect(() => { setLocal(null) }, [dateKey]) // 日付が変わったら未編集状態に戻す
+  const [editMode, setEditMode] = useState(null) // null | 'select' | 'input'
+  const clickTimer = useRef(null)
+  useEffect(() => { setLocal(null); setEditMode(null) }, [dateKey]) // 日付が変わったら未編集状態に戻す
   if (dow !== 3) return null
   const value = local != null ? local : (content || STAFF_MEETING_OPTIONS[0])
+  // 入力のたびに保存（blur待ちにしない＝blurが効かない環境でも確実に保存される）
   function onInput(v) { setLocal(v); handleChange(v) }
+  function handleClick() {
+    if (clickTimer.current) {
+      clearTimeout(clickTimer.current)
+      clickTimer.current = null
+      setEditMode('input') // ダブルクリック＝自由入力
+    } else {
+      clickTimer.current = setTimeout(() => {
+        clickTimer.current = null
+        setEditMode('select') // シングルクリック＝候補から選択
+      }, 220)
+    }
+  }
+  if (editMode === 'select') {
+    return (
+      <div className="ttv-staff-meeting">
+        <span className="ttv-staff-meeting-label">職員打ち合わせ</span>
+        <select className="ttv-staff-meeting-select" autoFocus value={value}
+          onChange={e => { onInput(e.target.value); setEditMode(null) }} onBlur={() => setEditMode(null)}
+          onKeyDown={e => { if (e.key === 'Escape') setEditMode(null) }}>
+          {!STAFF_MEETING_OPTIONS.includes(value) && <option value={value}>{value || '（空欄）'}</option>}
+          {STAFF_MEETING_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+        </select>
+      </div>
+    )
+  }
+  if (editMode === 'input') {
+    return (
+      <div className="ttv-staff-meeting">
+        <span className="ttv-staff-meeting-label">職員打ち合わせ</span>
+        <input className="ttv-staff-meeting-duty-input" autoFocus value={value}
+          onChange={e => onInput(e.target.value)}
+          onBlur={() => setEditMode(null)}
+          onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Escape') setEditMode(null) }} />
+      </div>
+    )
+  }
   return (
-    <div className="ttv-staff-meeting">
+    <div className="ttv-staff-meeting" onClick={handleClick} title="クリックで選択／ダブルクリックで自由入力">
       <span className="ttv-staff-meeting-label">職員打ち合わせ</span>
-      <input
-        className="ttv-staff-meeting-duty-input"
-        value={value}
-        placeholder="時刻・内容を入力"
-        onChange={e => onInput(e.target.value)}
-      />
-      <span className="ttv-staff-meeting-quick">
-        {STAFF_MEETING_OPTIONS.map(o => (
-          <button key={o} type="button" className="ttv-staff-meeting-quick-btn" onClick={() => onInput(o)}>{o}</button>
-        ))}
-      </span>
+      <span className="ttv-staff-meeting-value">{value || '（空欄）'}</span>
     </div>
   )
 }
