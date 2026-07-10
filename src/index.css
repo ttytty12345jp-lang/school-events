@@ -441,6 +441,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   box-shadow: var(--shadow-sm);
   overflow: hidden;
   min-height: 0;
+  position: relative; /* DriveWidget をオーバーレイ配置する基準 */
 }
 
 .ttv-header {
@@ -714,7 +715,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .agenda-body {
   flex: 1;
   overflow-y: auto;
-  padding: 6px 8px;
+  padding: 6px 8px 30px; /* 下端は DriveWidget オーバーレイぶんの余白を確保 */
   position: relative;
 }
 
@@ -1658,7 +1659,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .wb-schedule-list { padding: 0; display: flex; flex-direction: column; overflow-y: auto; flex: 1; }
 /* ホワイトボードの予定欄は、同期項目・手入力項目とも同じ太さ（太字）に統一 */
 .wb-schedule-list .agenda-title-input { font-weight: 600; }
-.wb-schedule-list .agenda-body { padding: 4px 6px; }
+.wb-schedule-list .agenda-body { padding: 4px 6px 30px; }
 .wb-sync-btn { align-self: flex-end; margin: 2px 6px 0; padding: 1px 6px; font-size: 10px; color: var(--text-muted); background: transparent; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; opacity: 0.6; }
 .wb-sync-btn:hover { opacity: 1; }
 .wb-no-events { font-size: 13px; color: #9ca3af; padding: 2px 0; }
@@ -1943,15 +1944,23 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   }
 }
 
-/* ── DriveWidget ── */
+/* ── DriveWidget ──
+   固定高さの flex アイテムとして下に置くと、表示/非表示でパネルの高さ配分が変わり、
+   行数が多いとき（予定リスト等）の表示領域を圧迫して下側が隠れる原因になっていた。
+   レイアウトに参加しないオーバーレイにして、他コンテンツの高さ計算に影響させない。 */
 .dw-widget {
   display: flex;
   align-items: flex-end;
   justify-content: flex-end;
   gap: 4px;
   padding: 4px 8px 6px;
-  flex-shrink: 0;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
+  pointer-events: none; /* 隙間部分はクリックを下に通す */
 }
+.dw-widget > * { pointer-events: auto; }
 .dw-vis-btn {
   background: none; border: none; cursor: pointer;
   color: #9ca3af; font-size: 13px; padding: 4px 6px;
