@@ -230,10 +230,16 @@ function autoScaleWidth(el) {
   const base = parseFloat(getComputedStyle(el).fontSize) || CELL_FONT_MAX
   let size = Math.min(base, CELL_FONT_MAX)
   el.style.fontSize = size + 'px'
+  let shrunk = false
   while (el.scrollWidth > el.clientWidth && size > CELL_FONT_MIN) {
     size -= 1
     el.style.fontSize = size + 'px'
+    shrunk = true
   }
+  // 縮小が不要だった場合はインライン指定を残さない。固定pxのままだと、後で行の高さ
+  // （--wb-row-h）が画面サイズに応じて再計算されても追従できず、その行だけ文字サイズが
+  // ズレて見える不具合になる（例：特別教室の2段目だけ大きいまま残る）。
+  if (!shrunk) el.style.fontSize = ''
 }
 
 // ── Inline editable cell ───────────────────────────────────
