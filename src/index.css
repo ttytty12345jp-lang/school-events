@@ -1414,7 +1414,10 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
    これで幅を保ったまま、画面高に応じて行だけを縮めて全段を1画面に収める。 */
 .wb-left .wb-section:nth-child(1) { flex: none; }
 .wb-left .wb-section:nth-child(2) { flex: none; }
-.wb-left .wb-section:nth-child(3) { flex: none; }
+/* 休暇等は残りスペースいっぱいに伸ばし、右列「明日」パネルの下端と揃える。行は高さで均等割り。 */
+.wb-left .wb-section:nth-child(3) { flex: 1; min-height: 0; }
+.wb-left .wb-section:nth-child(3) .wb-table { height: 100%; }
+.wb-left .wb-section:nth-child(3) .wb-row { height: calc(100% / 6); }
 
 /* 行高は JS 算出の --wb-row-h（既定34px）。文字も行高に比例させる。 */
 .wb-left .wb-section:nth-child(1) .wb-row,
