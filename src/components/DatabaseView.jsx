@@ -80,7 +80,61 @@ function NursingTable({ nursing, onSave }) {
   )
 }
 
-export default function DatabaseView({ rooms, names, nursing, saveRooms, saveNames, saveNursing }) {
+function VacationEditor({ vacations, onSave }) {
+  function genId() { return (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : String(Math.random()) }
+  function add() {
+    onSave([...vacations, { id: genId(), label: '', start: '', end: '' }])
+  }
+  function update(id, patch) {
+    onSave(vacations.map(v => v.id === id ? { ...v, ...patch } : v))
+  }
+  function remove(id) {
+    onSave(vacations.filter(v => v.id !== id))
+  }
+  return (
+    <div className="db-section">
+      <div className="db-section-title">休み期間（夏休み・冬休みなど）</div>
+      <p className="db-section-note">
+        この期間中は、月中行事でグレー塗りつぶしにしていても、ホワイトボードの「明日」等の
+        登校日判定では土日以外はスキップしません（グレー＝長期休み中の平日、という扱いになります）。
+      </p>
+      <table className="db-vacation-table">
+        <thead>
+          <tr>
+            <th>名称</th>
+            <th>開始日</th>
+            <th>終了日</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {vacations.map(v => (
+            <tr key={v.id}>
+              <td>
+                <input className="db-vacation-input" value={v.label} placeholder="夏休み"
+                  onChange={e => update(v.id, { label: e.target.value })} />
+              </td>
+              <td>
+                <input className="db-vacation-input" type="date" value={v.start}
+                  onChange={e => update(v.id, { start: e.target.value })} />
+              </td>
+              <td>
+                <input className="db-vacation-input" type="date" value={v.end}
+                  onChange={e => update(v.id, { end: e.target.value })} />
+              </td>
+              <td>
+                <button className="db-tag-del" onClick={() => remove(v.id)}>×</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <button className="db-add-btn" onClick={add}>＋ 期間を追加</button>
+    </div>
+  )
+}
+
+export default function DatabaseView({ rooms, names, nursing, vacations = [], saveRooms, saveNames, saveNursing, saveVacations }) {
   const [tab, setTab] = useState('jiji')
 
   return (
@@ -103,6 +157,7 @@ export default function DatabaseView({ rooms, names, nursing, saveRooms, saveNam
           <TagListEditor label="特別教室" items={rooms} onSave={saveRooms} />
           <TagListEditor label="名前" items={names} onSave={saveNames} />
           <NursingTable nursing={nursing} onSave={saveNursing} />
+          <VacationEditor vacations={vacations} onSave={saveVacations} />
         </div>
       )}
     </div>

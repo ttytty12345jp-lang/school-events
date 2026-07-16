@@ -27,10 +27,14 @@ async function save(type, value) {
     .upsert({ date: `db_${type}`, type: 'database', content: json, updated_at: new Date().toISOString() }, { onConflict: 'date,type' })
 }
 
+// 夏休み・冬休みなどの長期休み期間。[{ id, label, start:'YYYY-MM-DD', end:'YYYY-MM-DD' }]
+// この期間中は、月中行事でグレー塗りつぶしにしていても「明日」等の登校日判定では
+// 土日以外はスキップしない（グレー＝長期休み中の平日、という運用を想定）。
 export function useDatabaseLists() {
   const [rooms, setRoomsState] = useState([])
   const [names, setNamesState] = useState([])
   const [nursing, setNursingState] = useState(emptyNursing())
+  const [vacations, setVacationsState] = useState([])
 
   const [currentTeam, setCurrentTeamState] = useState('')
 
@@ -38,13 +42,15 @@ export function useDatabaseLists() {
     load('rooms').then(d => { if (d) setRoomsState(d) })
     load('names').then(d => { if (d) setNamesState(d) })
     load('nursing').then(d => { if (d) setNursingState({ ...emptyNursing(), ...d }) })
+    load('vacations').then(d => { if (d) setVacationsState(d) })
     load('team').then(d => { if (d) setCurrentTeamState(d) })
   }, [])
 
   const saveRooms = useCallback((next) => { setRoomsState(next); save('rooms', next) }, [])
   const saveNames = useCallback((next) => { setNamesState(next); save('names', next) }, [])
   const saveNursing = useCallback((next) => { setNursingState(next); save('nursing', next) }, [])
+  const saveVacations = useCallback((next) => { setVacationsState(next); save('vacations', next) }, [])
   const saveCurrentTeam = useCallback((next) => { setCurrentTeamState(next); save('team', next) }, [])
 
-  return { rooms, names, nursing, currentTeam, saveRooms, saveNames, saveNursing, saveCurrentTeam }
+  return { rooms, names, nursing, vacations, currentTeam, saveRooms, saveNames, saveNursing, saveVacations, saveCurrentTeam }
 }

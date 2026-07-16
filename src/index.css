@@ -562,6 +562,13 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .db-nursing-input { border: none; outline: none; background: transparent; font-size: 13px; width: 80px; padding: 2px 4px; }
 .db-nursing-input:focus { background: var(--primary-light); border-radius: 3px; }
 
+/* ── 休み期間タブ ── */
+.db-vacation-table { border-collapse: collapse; margin-bottom: 8px; }
+.db-vacation-table th { border: 1px solid var(--border); padding: 4px 10px; background: #f3f4f6; font-size: 13px; font-weight: 600; text-align: center; }
+.db-vacation-table td { border: 1px solid var(--border); padding: 2px 4px; }
+.db-vacation-input { border: none; outline: none; background: transparent; font-size: 13px; padding: 3px 6px; font-family: inherit; }
+.db-vacation-input:focus { background: var(--primary-light); border-radius: 3px; }
+
 /* ── 生活目標タブ ── */
 .db-saving { font-size: 12px; font-weight: 400; color: var(--text-muted); }
 .db-goals-table { border-collapse: collapse; width: 100%; max-width: 700px; }

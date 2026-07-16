@@ -368,7 +368,8 @@ function ClearBtn({ onClick }) {
 
 // selectedKeyの前後の登校日（土日・グレー日を飛ばす）を求めるhook
 // { prev: 前の登校日key, next: 次の登校日key } を返す
-export function useAdjacentSchoolDays(selectedKey) {
+// vacations: [{ start, end }] 長期休み期間。この期間中は土日以外グレーでもスキップしない。
+export function useAdjacentSchoolDays(selectedKey, vacations = []) {
   const [overrides, setOverrides] = useState({})
 
   useEffect(() => {
@@ -398,26 +399,31 @@ export function useAdjacentSchoolDays(selectedKey) {
   }, [selectedKey])
 
   return useMemo(() => {
+    const inVacation = (key) => vacations.some(v => v.start && v.end && key >= v.start && key <= v.end)
     const isSchoolDay = (key) => {
       const d = dateFromKey(key)
       const dow = d.getDay()
       const isWeekend = dow === 0 || dow === 6
+      if (isWeekend) return false
       const mk = monthKey(d.getFullYear(), d.getMonth() + 1)
       const override = (overrides[mk] || {})[key]
-      return override === 'none' ? true : override === 'gray' ? false : !isWeekend
+      if (override === 'none') return true
+      if (override === 'gray') return inVacation(key) // 長期休み中の平日はグレーでも登校日扱い
+      return true
     }
+    // 長期休みが14日を大きく超えることがあるため、探索範囲は余裕を持って60日に。
     let next = navKey(selectedKey, 1)
-    for (let delta = 1; delta <= 14; delta++) {
+    for (let delta = 1; delta <= 60; delta++) {
       const k = navKey(selectedKey, delta)
       if (isSchoolDay(k)) { next = k; break }
     }
     let prev = navKey(selectedKey, -1)
-    for (let delta = 1; delta <= 14; delta++) {
+    for (let delta = 1; delta <= 60; delta++) {
       const k = navKey(selectedKey, -delta)
       if (isSchoolDay(k)) { prev = k; break }
     }
     return { next, prev }
-  }, [selectedKey, overrides])
+  }, [selectedKey, overrides, vacations])
 }
 
 export default function WhiteboardView({ events, db = {} }) {
@@ -427,7 +433,7 @@ export default function WhiteboardView({ events, db = {} }) {
     sessionStorage.setItem('wb_date', k)
     setSelectedKey(k)
   }
-  const { next: tomorrowKey, prev: prevSchoolDay } = useAdjacentSchoolDays(selectedKey)
+  const { next: tomorrowKey, prev: prevSchoolDay } = useAdjacentSchoolDays(selectedKey, db.vacations)
 
   const selectedDate = dateFromKey(selectedKey)
   const tomorrowDate = dateFromKey(tomorrowKey)
