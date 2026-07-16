@@ -737,6 +737,7 @@ export default function MonthlyCalendar({ events, onAdd, onUpdate, onDelete, add
         <span>2026年度　{month}月　月中行事</span>
         <span>大阪市立北中島小学校</span>
       </div>
+      <p className="monthly-day-hint no-print no-fullscreen">曜日をクリックすると休日設定（塗りつぶし）のON/OFFを切り替えられます</p>
       <div className="monthly-table-wrap" ref={watchTableRef}>
         <table className={`monthly-table${viewMode === 'watch' ? ' monthly-watch' : ''}`}>
           <thead>

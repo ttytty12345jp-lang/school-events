@@ -911,6 +911,8 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .annual-no-events { color: var(--text-light); font-size: 12px; }
 
 /* ── Monthly Table ── */
+.monthly-day-hint { font-size: 12px; color: var(--text-muted); margin: 0 0 6px; }
+
 .monthly-table-wrap {
   overflow-x: auto;
   border-radius: var(--radius-lg);
@@ -2215,6 +2217,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 /* ブラウザ全画面（F11 など）時はヘッダーを隠して表示領域を最大化 */
 @media (display-mode: fullscreen) {
   .app-header { display: none !important; }
+  .no-fullscreen { display: none !important; }
   /* ヘッダー(48px)前提で高さを計算している画面を全高に補正し、下部の余白を防ぐ */
   .main-content:has(.ttv-wrap),
   .wb-wrap { height: 100vh; }
