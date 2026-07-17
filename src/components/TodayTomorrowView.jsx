@@ -419,40 +419,82 @@ export async function recalculateAllSchoolHours() {
   }
 }
 
-// 直近180日の school_hours レコードを一括取得し、dateKey より前で最新の累計を返す
-async function findLastCumulative(dateKey) {
-  const d = new Date(dateKey + 'T00:00:00')
-  d.setDate(d.getDate() - 180)
-  const since = toDateKey(d)
-
-  let rows = []
+// dateKey より前の累計を、保存済みスナップショットを信用せず行事データから動的に積算する。
+// 起点は直近の手動編集(kinouManual)レコード（信頼できる値として扱う）。
+// 無ければ年度開始(4/1)をゼロ起点とする。閲覧順に関わらず常に正しい値になる。
+async function computeCumulativeUpTo(dateKey) {
   if (!USE_SUPABASE) {
-    // localStorage: 全キーを走査
+    // localStorage: 直近の保存値を信頼するフォールバック（従来動作）
     for (let i = 1; i <= 180; i++) {
       const k = prevDateKey(dateKey)
       try {
         const r = JSON.parse(localStorage.getItem(`school_hours_${k}`) || 'null')
-        if (r) { rows.push({ date: k, ...r }); break }
+        if (r) {
+          const cum = emptyThirds()
+          GRADES.forEach(g => { cum[g] = (r.kinou?.[g] || 0) + (r.kyou?.[g] || 0) })
+          return cum
+        }
       } catch {}
     }
-  } else {
-    const { data } = await supabase.from('school_notices')
-      .select('date, content')
-      .eq('type', 'school_hours')
-      .gte('date', since)
-      .lt('date', dateKey)
-      .order('date', { ascending: false })
-      .limit(1)
-    rows = data || []
+    return emptyThirds()
   }
 
-  if (!rows.length) return emptyThirds()
-  try {
-    const rec = JSON.parse(rows[0].content)
-    const cum = emptyThirds()
-    GRADES.forEach(g => { cum[g] = (rec.kinou?.[g] || 0) + (rec.kyou?.[g] || 0) })
-    return cum
-  } catch { return emptyThirds() }
+  const { data: anchorRows } = await supabase.from('school_notices')
+    .select('date, content')
+    .eq('type', 'school_hours')
+    .lt('date', dateKey)
+    .order('date', { ascending: false })
+    .limit(60)
+
+  let anchorDate = null
+  let anchorCum = emptyThirds()
+  for (const row of anchorRows || []) {
+    try {
+      const rec = JSON.parse(row.content)
+      if (rec.kinouManual) {
+        anchorDate = row.date
+        const cum = emptyThirds()
+        GRADES.forEach(g => { cum[g] = (rec.kinou?.[g] || 0) + (rec.kyou?.[g] || 0) })
+        anchorCum = cum
+        break
+      }
+    } catch {}
+  }
+  if (!anchorDate) {
+    const [y, m] = dateKey.split('-').map(Number)
+    const fyStartYear = m >= 4 ? y : y - 1
+    anchorDate = prevDateKey(`${fyStartYear}-04-01`)
+  }
+  if (anchorDate >= dateKey) return emptyThirds()
+
+  const [jijiMaster, agendaRes, calRes] = await Promise.all([
+    loadJijiMaster(),
+    supabase.from('school_notices').select('date, content').eq('type', 'morning_agenda')
+      .gt('date', anchorDate).lt('date', dateKey),
+    supabase.from('school_events').select('date, title, start_time, end_time')
+      .gt('date', anchorDate).lt('date', dateKey),
+  ])
+
+  const agendaByDate = {}
+  for (const row of agendaRes.data || []) {
+    try { agendaByDate[row.date] = JSON.parse(row.content) } catch {}
+  }
+  const calByDate = {}
+  for (const ev of calRes.data || []) {
+    if (!calByDate[ev.date]) calByDate[ev.date] = []
+    calByDate[ev.date].push(ev)
+  }
+
+  const dates = new Set([...Object.keys(agendaByDate), ...Object.keys(calByDate)])
+  const sortedDates = [...dates].sort()
+  let cumulative = anchorCum
+  for (const d of sortedDates) {
+    const kyou = computeKyou(calByDate[d] || [], agendaByDate[d] || [], jijiMaster, d)
+    const next = emptyThirds()
+    GRADES.forEach(g => { next[g] = (cumulative[g] || 0) + (kyou[g] || 0) })
+    cumulative = next
+  }
+  return cumulative
 }
 
 async function saveHoursRecord(date, kinou, kyou, manual, setSaving) {
@@ -473,7 +515,7 @@ function SchoolHoursSection({ date, calendarEvents }) {
   const kyouRef = useRef(emptyThirds())
 
   useEffect(() => {
-    Promise.all([loadHoursRecord(date), findLastCumulative(date), loadJijiMaster(), loadAgendaItems(date)])
+    Promise.all([loadHoursRecord(date), computeCumulativeUpTo(date), loadJijiMaster(), loadAgendaItems(date)])
       .then(([today, lastCum, master, agendaItems]) => {
         const resolvedKinou = today?.kinouManual ? (today.kinou || lastCum) : lastCum
         const resolvedKyou = computeKyou(calendarEvents, agendaItems, master, date)
