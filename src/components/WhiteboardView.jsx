@@ -567,12 +567,20 @@ export default function WhiteboardView({ events, db = {} }) {
     function fit() {
       const left = wrap.querySelector('.wb-left')
       if (!left) return
+      const sec1 = left.querySelector('.wb-section:nth-child(1)')
+      const sec2 = left.querySelector('.wb-section:nth-child(2)')
+      // 休暇等（3段目）は flex:1 で残りスペースを埋めるだけなので、特別教室・出張だけを
+      // 縮めても画面が低いPCでは休暇等の取り分がほぼ無くなり、行がつぶれて見える。
+      // 休暇等の最低高さを確保した上で、特別教室・出張の行を縮める。
+      const LEAVE_MIN = 130
       wrap.style.setProperty('--wb-row-h', '34px') // 一旦基準に戻して自然高さを測る
-      const natural = left.scrollHeight
+      const natural12 = (sec1?.scrollHeight || 0) + (sec2?.scrollHeight || 0)
       const avail = left.clientHeight
-      if (avail > 0 && natural > avail) {
+      const budget = avail - LEAVE_MIN
+      if (avail > 0 && natural12 > budget) {
         const DATA_ROWS = ROOM_COUNT + TRIP_COUNT // 縮小対象のデータ行数(9+7)
-        const newH = Math.max(16, 34 - (natural - avail) / DATA_ROWS)
+        const overflow = natural12 - budget
+        const newH = Math.max(16, 34 - overflow / DATA_ROWS)
         wrap.style.setProperty('--wb-row-h', newH + 'px')
       }
     }

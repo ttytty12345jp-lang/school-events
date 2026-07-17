@@ -1427,7 +1427,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .wb-left .wb-section:nth-child(1) { flex: none; }
 .wb-left .wb-section:nth-child(2) { flex: none; }
 /* 休暇等は残りスペースいっぱいに伸ばし、右列「明日」パネルの下端と揃える。行は高さで均等割り。 */
-.wb-left .wb-section:nth-child(3) { flex: 1; min-height: 0; }
+.wb-left .wb-section:nth-child(3) { flex: 1; min-height: 130px; }
 .wb-left .wb-section:nth-child(3) .wb-table { height: 100%; }
 .wb-left .wb-section:nth-child(3) .wb-row { height: calc(100% / 6); }
 
