@@ -569,14 +569,23 @@ export default function WhiteboardView({ events, db = {} }) {
       if (!left) return
       const sec1 = left.querySelector('.wb-section:nth-child(1)')
       const sec2 = left.querySelector('.wb-section:nth-child(2)')
+      const sec3Table = left.querySelector('.wb-section:nth-child(3) .wb-table')
       // 休暇等（3段目）は flex:1 で残りスペースを埋めるだけなので、特別教室・出張だけを
       // 縮めても画面が低いPCでは休暇等の取り分がほぼ無くなり、行がつぶれて見える。
-      // 休暇等の最低高さを確保した上で、特別教室・出張の行を縮める。
-      const LEAVE_MIN = 130
+      // 休暇等の実際に必要な自然高さを測り、それを確保した上で特別教室・出張の行を縮める。
       wrap.style.setProperty('--wb-row-h', '34px') // 一旦基準に戻して自然高さを測る
-      const natural12 = (sec1?.scrollHeight || 0) + (sec2?.scrollHeight || 0)
+      let leaveMin = 130
+      if (sec3Table) {
+        const prevHeight = sec3Table.style.height
+        sec3Table.style.height = 'auto'
+        leaveMin = sec3Table.scrollHeight
+        sec3Table.style.height = prevHeight
+      }
+      const natural12 = (sec1?.offsetHeight || 0) + (sec2?.offsetHeight || 0)
+      const GAPS = 10 // .wb-left の gap:5px × 3段の間2箇所ぶん
+      const BORDERS = 6 // 各 .wb-section の上下ボーダー1pxぶん × 3段
       const avail = left.clientHeight
-      const budget = avail - LEAVE_MIN
+      const budget = avail - leaveMin - GAPS - BORDERS
       if (avail > 0 && natural12 > budget) {
         const DATA_ROWS = ROOM_COUNT + TRIP_COUNT // 縮小対象のデータ行数(9+7)
         const overflow = natural12 - budget
