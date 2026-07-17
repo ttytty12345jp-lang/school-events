@@ -374,7 +374,7 @@ async function loadAgendaItems(dateKey) {
 }
 
 // jiji_master 変更時: 全期間の school_hours を再計算して累計チェーンを再構築
-async function recalculateAllSchoolHours() {
+export async function recalculateAllSchoolHours() {
   if (!USE_SUPABASE) return
   const [jijiMaster, agendaRes, calRes, hoursRes] = await Promise.all([
     loadJijiMaster(),
