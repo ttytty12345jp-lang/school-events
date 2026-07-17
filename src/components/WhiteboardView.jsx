@@ -5,6 +5,7 @@ import MorningAgenda from './MorningAgenda'
 import StickyNotes from './StickyNotes'
 import DriveWidget from './DriveWidget'
 import { DAYS_JA, dateKey as toDateKey, monthKey } from '../utils/date'
+import { isHolidayTitle } from '../utils/holidays'
 import { loadSpanEvents, getActiveSpans } from '../lib/spanEvents'
 import { subscribeSchoolNotices, markPending, onVisibilityReload } from '../lib/schoolNoticesRealtime'
 import { StaffMeetingRow, ChildAssemblyRow, AllSchoolMeetingRow } from './DowRows'
@@ -376,8 +377,9 @@ export function isInVacation(dateKey, vacations = []) {
 }
 
 // { prev: 前の登校日key, next: 次の登校日key } を返す
-// vacations: [{ start, end }] 長期休み期間。この期間中は土日以外グレーでもスキップしない。
-export function useAdjacentSchoolDays(selectedKey, vacations = []) {
+// vacations: [{ start, end }] 長期休み期間。この期間中は土日・国民の祝日以外はグレーでもスキップしない
+// （休業日・学校閉庁日等の単なるグレーは登校日扱い。海の日・山の日等の本当の祝日はイベント名で判定してスキップ）。
+export function useAdjacentSchoolDays(selectedKey, vacations = [], events = []) {
   const [overrides, setOverrides] = useState({})
 
   useEffect(() => {
@@ -406,6 +408,11 @@ export function useAdjacentSchoolDays(selectedKey, vacations = []) {
       })
   }, [selectedKey])
 
+  const holidayDates = useMemo(
+    () => new Set(events.filter(e => isHolidayTitle(e.title)).map(e => e.date)),
+    [events]
+  )
+
   return useMemo(() => {
     const inVacation = (key) => isInVacation(key, vacations)
     const isSchoolDay = (key) => {
@@ -413,10 +420,11 @@ export function useAdjacentSchoolDays(selectedKey, vacations = []) {
       const dow = d.getDay()
       const isWeekend = dow === 0 || dow === 6
       if (isWeekend) return false
+      if (holidayDates.has(key)) return false // 国民の祝日は休み期間中でも常にスキップ
       const mk = monthKey(d.getFullYear(), d.getMonth() + 1)
       const override = (overrides[mk] || {})[key]
       if (override === 'none') return true
-      if (override === 'gray') return inVacation(key) // 長期休み中の平日はグレーでも登校日扱い
+      if (override === 'gray') return inVacation(key) // 休み期間中の平日はグレーでも登校日扱い（祝日は上で除外済み）
       return true
     }
     // 長期休みが14日を大きく超えることがあるため、探索範囲は余裕を持って60日に。
@@ -431,7 +439,7 @@ export function useAdjacentSchoolDays(selectedKey, vacations = []) {
       if (isSchoolDay(k)) { prev = k; break }
     }
     return { next, prev }
-  }, [selectedKey, overrides, vacations])
+  }, [selectedKey, overrides, vacations, holidayDates])
 }
 
 export default function WhiteboardView({ events, db = {} }) {
@@ -441,7 +449,7 @@ export default function WhiteboardView({ events, db = {} }) {
     sessionStorage.setItem('wb_date', k)
     setSelectedKey(k)
   }
-  const { next: tomorrowKey, prev: prevSchoolDay } = useAdjacentSchoolDays(selectedKey, db.vacations)
+  const { next: tomorrowKey, prev: prevSchoolDay } = useAdjacentSchoolDays(selectedKey, db.vacations, events)
 
   const selectedDate = dateFromKey(selectedKey)
   const tomorrowDate = dateFromKey(tomorrowKey)

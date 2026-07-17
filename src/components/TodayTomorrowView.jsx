@@ -651,7 +651,7 @@ export default function TodayTomorrowView({ events, db = {} }) {
   const [selectedKey, setSelectedKey] = useState(() => sessionStorage.getItem('ttv_date') || todayKey)
   function changeDate(k) { sessionStorage.setItem('ttv_date', k); setSelectedKey(k) }
   // ‹ › は休み（月中行事のグレー日・土日）をスキップして前後の登校日へ（ホワイトボードの明日と同じ）
-  const { next: nextSchoolDay, prev: prevSchoolDay } = useAdjacentSchoolDays(selectedKey, db.vacations)
+  const { next: nextSchoolDay, prev: prevSchoolDay } = useAdjacentSchoolDays(selectedKey, db.vacations, events)
   const { setControls } = useHeaderControls()
   const [spanEvents, setSpanEvents] = useState([])
   useEffect(() => { loadSpanEvents().then(setSpanEvents) }, [])

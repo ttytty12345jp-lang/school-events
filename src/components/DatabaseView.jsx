@@ -4,6 +4,8 @@ import LifeGoalsEditor from './LifeGoalsEditor'
 import WatchTemplateEditor from './WatchTemplateEditor'
 import { NURSING_DAYS, NURSING_TEAMS } from '../hooks/useDatabaseLists'
 import { dateKey as toDateKey } from '../utils/date'
+import { supabase, USE_SUPABASE } from '../lib/supabase'
+import { isHolidayTitle } from '../utils/holidays'
 
 function TagListEditor({ label, items, onSave }) {
   const [input, setInput] = useState('')
@@ -96,8 +98,9 @@ function VacationEditor({ vacations, onSave }) {
     <div className="db-section">
       <div className="db-section-title">休み期間（夏休み・冬休みなど）</div>
       <p className="db-section-note">
-        この期間中は、月中行事でグレー塗りつぶしにしていても、ホワイトボードの「明日」等の
-        登校日判定では土日以外はスキップしません（グレー＝長期休み中の平日、という扱いになります）。
+        この期間の日付は「日番」の対象期間になります。学校閉庁日などの単なる休業日は対象に含まれますが、
+        土日と「海の日」「山の日」などカレンダーに登録された国民の祝日は、休み期間中でも
+        登校日判定・日番の対象から自動でスキップされます（月中行事のグレー塗りつぶし有無は影響しません）。
       </p>
       <table className="db-vacation-table">
         <thead>
@@ -151,6 +154,21 @@ function vacationWeekdays(vacations) {
   return [...new Set(dates)].sort()
 }
 
+// 休み期間内の国民の祝日（海の日・山の日など）の日付集合を返す。
+// 学校閉庁日等の単なる休業日は含めない — カレンダー行事名が祝日名と一致する日のみ。
+async function fetchHolidayDates(vacations) {
+  const holidays = new Set()
+  const ranges = vacations.filter(v => v.start && v.end)
+  if (!ranges.length) return holidays
+  if (!USE_SUPABASE) return holidays
+  for (const v of ranges) {
+    const { data } = await supabase.from('school_events').select('date, title')
+      .gte('date', v.start).lte('date', v.end)
+    ;(data || []).forEach(ev => { if (isHolidayTitle(ev.title)) holidays.add(ev.date) })
+  }
+  return holidays
+}
+
 // 基本の順番（名前）。ループする。
 function HolidayDutyOrderEditor({ order, onSave }) {
   const [input, setInput] = useState('')
@@ -195,8 +213,9 @@ function HolidayDutyOrderEditor({ order, onSave }) {
 
 // 休み期間の日付ごとの日番表。基本の順番から自動生成し、手入力で個別上書き・その日を除外できる。
 function HolidayDutyTable({ vacations, order, holidayDuty, onSave }) {
-  function regenerate() {
-    const allDates = vacationWeekdays(vacations)
+  async function regenerate() {
+    const holidays = await fetchHolidayDates(vacations)
+    const allDates = vacationWeekdays(vacations).filter(date => !holidays.has(date))
     const byDate = Object.fromEntries(holidayDuty.map(v => [v.date, v]))
     let idx = 0
     const next = []
