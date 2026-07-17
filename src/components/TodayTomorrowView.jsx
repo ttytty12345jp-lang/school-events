@@ -5,7 +5,7 @@ import MorningAgenda from './MorningAgenda'
 import NoteLines from './NoteLines'
 import StickyNotes from './StickyNotes'
 import DriveWidget from './DriveWidget'
-import { EditCell, inferTeam, useAdjacentSchoolDays } from './WhiteboardView'
+import { EditCell, inferTeam, useAdjacentSchoolDays, isInVacation } from './WhiteboardView'
 import { StaffMeetingRow, ChildAssemblyRow, AllSchoolMeetingRow } from './DowRows'
 import { loadLifeGoals } from '../lib/lifeGoals'
 import { loadJijiMaster, thirdsDisplay } from './SchoolJijiView'
@@ -54,8 +54,8 @@ function DutySection({ dateKey, db = {} }) {
     let cancel = false
     loadWbRecord(dateKey).then(async r => {
       if (cancel) return
-      if (r?.teamToday) {
-        setTeam(r.teamToday); setDuty(r.dutyToday || nursingName(r.teamToday))
+      if (r?.teamManual) {
+        setTeam(r.teamToday || ''); setDuty(r.dutyToday || nursingName(r.teamToday))
         return
       }
       // 保存が無ければホワイトボードと同じロジックで班を推定し、当番を自動入力
@@ -72,10 +72,29 @@ function DutySection({ dateKey, db = {} }) {
   }, [dateKey, db.nursing])
   const scheduleSave = (t, d) => {
     clearTimeout(saveRef.current)
-    saveRef.current = setTimeout(() => patchWbRecord(dateKey, { teamToday: t, dutyToday: d }), 600)
+    saveRef.current = setTimeout(() => patchWbRecord(dateKey, { teamToday: t, teamManual: true, dutyToday: d }), 600)
   }
   const changeTeam = (v) => { const d = nursingName(v); setTeam(v); setDuty(d); scheduleSave(v, d) }
   const changeDuty = (v) => { setDuty(v); scheduleSave(team, v) }
+
+  const holidayDuty = db.holidayDuty || []
+  const holidayName = holidayDuty.find(v => v.date === dateKey)?.name || ''
+  const changeHolidayDuty = (v) => {
+    const exists = holidayDuty.some(e => e.date === dateKey)
+    const next = exists
+      ? holidayDuty.map(e => e.date === dateKey ? { ...e, name: v } : e)
+      : [...holidayDuty, { id: dateKey, date: dateKey, name: v }]
+    db.saveHolidayDuty?.(next)
+  }
+
+  if (isInVacation(dateKey, db.vacations)) {
+    return (
+      <span className="wb-duty-inline">
+        <span className="wb-duty-label">日番</span>
+        <EditCell value={holidayName} onChange={changeHolidayDuty} className="wb-duty-input" align="center" />
+      </span>
+    )
+  }
   return (
     <span className="wb-duty-inline">
       <input className="wb-team-input" type="number" min="1" max="4" value={team}

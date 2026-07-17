@@ -134,7 +134,56 @@ function VacationEditor({ vacations, onSave }) {
   )
 }
 
-export default function DatabaseView({ rooms, names, nursing, vacations = [], saveRooms, saveNames, saveNursing, saveVacations }) {
+function HolidayDutyEditor({ holidayDuty, onSave }) {
+  function genId() { return (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : String(Math.random()) }
+  function add() {
+    onSave([...holidayDuty, { id: genId(), date: '', name: '' }])
+  }
+  function update(id, patch) {
+    onSave(holidayDuty.map(v => v.id === id ? { ...v, ...patch } : v))
+  }
+  function remove(id) {
+    onSave(holidayDuty.filter(v => v.id !== id))
+  }
+  const sorted = [...holidayDuty].sort((a, b) => (a.date || '').localeCompare(b.date || ''))
+  return (
+    <div className="db-section">
+      <div className="db-section-title">日番（休み期間中の当番）</div>
+      <p className="db-section-note">
+        休み期間中は当番欄の表示が「日番」になり、看護当番表の代わりにここで日付ごとに割り当てた名前を表示します。
+      </p>
+      <table className="db-vacation-table">
+        <thead>
+          <tr>
+            <th>日付</th>
+            <th>名前</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.map(v => (
+            <tr key={v.id}>
+              <td>
+                <input className="db-vacation-input" type="date" value={v.date}
+                  onChange={e => update(v.id, { date: e.target.value })} />
+              </td>
+              <td>
+                <input className="db-vacation-input" value={v.name} placeholder="名前"
+                  onChange={e => update(v.id, { name: e.target.value })} />
+              </td>
+              <td>
+                <button className="db-tag-del" onClick={() => remove(v.id)}>×</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <button className="db-add-btn" onClick={add}>＋ 日付を追加</button>
+    </div>
+  )
+}
+
+export default function DatabaseView({ rooms, names, nursing, vacations = [], holidayDuty = [], saveRooms, saveNames, saveNursing, saveVacations, saveHolidayDuty }) {
   const [tab, setTab] = useState('jiji')
 
   return (
@@ -158,6 +207,7 @@ export default function DatabaseView({ rooms, names, nursing, vacations = [], sa
           <TagListEditor label="名前" items={names} onSave={saveNames} />
           <NursingTable nursing={nursing} onSave={saveNursing} />
           <VacationEditor vacations={vacations} onSave={saveVacations} />
+          <HolidayDutyEditor holidayDuty={holidayDuty} onSave={saveHolidayDuty} />
         </div>
       )}
     </div>

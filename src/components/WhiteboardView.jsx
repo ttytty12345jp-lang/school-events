@@ -130,16 +130,17 @@ function weekDiff(prevKey, currKey) {
   const ms = dateFromKey(mondayOf(currKey)) - dateFromKey(mondayOf(prevKey))
   return Math.round(ms / (7 * 24 * 60 * 60 * 1000))
 }
-// 直近の teamToday から dateKey に対応する班番号を推定（1〜4, なければ ''）
+// 直近の「手動入力された」班番号（teamManual）から dateKey に対応する班番号を推定（1〜4, なければ ''）。
+// 手動入力のない自動推定値はチェーンの起点にならず、そこで空欄にした場合はそこから先も空欄になる。
 export async function inferTeam(dateKey) {
-  let lastDate = null, lastTeam = 0
+  let anchorDate = null, anchorTeam = ''
   if (!USE_SUPABASE) {
     for (let i = 1; i <= 90; i++) {
       const d = dateFromKey(dateKey); d.setDate(d.getDate() - i)
       const k = toDateKey(d)
       try {
         const saved = JSON.parse(localStorage.getItem(`whiteboard_${k}`) || 'null')
-        if (saved?.teamToday) { lastDate = k; lastTeam = parseInt(saved.teamToday); break }
+        if (saved?.teamManual) { anchorDate = k; anchorTeam = saved.teamToday || ''; break }
       } catch {}
     }
   } else {
@@ -148,12 +149,14 @@ export async function inferTeam(dateKey) {
     for (const row of (data || [])) {
       try {
         const parsed = JSON.parse(row.content)
-        if (parsed?.teamToday) { lastDate = row.date; lastTeam = parseInt(parsed.teamToday); break }
+        if (parsed?.teamManual) { anchorDate = row.date; anchorTeam = parsed.teamToday || ''; break }
       } catch {}
     }
   }
-  if (!lastDate || isNaN(lastTeam) || lastTeam < 1 || lastTeam > 4) return ''
-  const weeks = weekDiff(lastDate, dateKey)
+  if (!anchorDate) return ''
+  const lastTeam = parseInt(anchorTeam)
+  if (isNaN(lastTeam) || lastTeam < 1 || lastTeam > 4) return ''
+  const weeks = weekDiff(anchorDate, dateKey)
   return String(((lastTeam - 1 + weeks) % 4) + 1)
 }
 
@@ -367,6 +370,11 @@ function ClearBtn({ onClick }) {
 }
 
 // selectedKeyの前後の登校日（土日・グレー日を飛ばす）を求めるhook
+// dateKey が長期休み期間（夏休み・冬休みなど）に含まれるか
+export function isInVacation(dateKey, vacations = []) {
+  return vacations.some(v => v.start && v.end && dateKey >= v.start && dateKey <= v.end)
+}
+
 // { prev: 前の登校日key, next: 次の登校日key } を返す
 // vacations: [{ start, end }] 長期休み期間。この期間中は土日以外グレーでもスキップしない。
 export function useAdjacentSchoolDays(selectedKey, vacations = []) {
@@ -399,7 +407,7 @@ export function useAdjacentSchoolDays(selectedKey, vacations = []) {
   }, [selectedKey])
 
   return useMemo(() => {
-    const inVacation = (key) => vacations.some(v => v.start && v.end && key >= v.start && key <= v.end)
+    const inVacation = (key) => isInVacation(key, vacations)
     const isSchoolDay = (key) => {
       const d = dateFromKey(key)
       const dow = d.getDay()
@@ -448,12 +456,30 @@ export default function WhiteboardView({ events, db = {} }) {
     return (db.nursing || {})[key]?.[dow] || ''
   }
 
-  // 班入力時に当番名を自動反映
-  function updateTeamToday(team) {
-    scheduleSave({ ...data, teamToday: team, dutyToday: nursingName(team, selectedKey) })
+  // 休み期間中は看護当番表の代わりに日付ごとの「日番」表を参照する
+  function holidayDutyName(dateKey) {
+    return (db.holidayDuty || []).find(v => v.date === dateKey)?.name || ''
   }
-  function updateTeamTomorrow(team) {
-    scheduleSave({ ...data, teamTomorrow: team, dutyTomorrow: nursingName(team, tomorrowKey) })
+  function updateHolidayDuty(dateKey, name) {
+    const list = db.holidayDuty || []
+    const exists = list.some(v => v.date === dateKey)
+    const next = exists
+      ? list.map(v => v.date === dateKey ? { ...v, name } : v)
+      : [...list, { id: dateKey, date: dateKey, name }]
+    db.saveHolidayDuty?.(next)
+  }
+
+  // 班入力時に当番名を自動反映。手動入力した班番号は teamManual フラグ付きでその日付の
+  // レコードに直接保存し、以後の推定(inferTeam)の起点にする（空欄にした場合はそこで途切れる）。
+  function updateTeamToday(team) {
+    scheduleSave({ ...data, teamToday: team, teamManual: true, dutyToday: nursingName(team, selectedKey) })
+  }
+  async function updateTeamTomorrow(team) {
+    const dutyTomorrow = nursingName(team, tomorrowKey)
+    scheduleSave({ ...data, teamTomorrow: team, dutyTomorrow })
+    const existing = await loadWhiteboard(tomorrowKey)
+    const merged = { ...emptyData(), ...(existing || {}), teamToday: team, teamManual: true, dutyToday: dutyTomorrow }
+    await saveWhiteboard(tomorrowKey, merged)
   }
 
   // 看護当番のドロップダウン候補（曜日別に全班の名前を集める）
@@ -955,16 +981,26 @@ export default function WhiteboardView({ events, db = {} }) {
                 <button className="wb-date-nav-btn" onClick={() => changeDate(tomorrowKey)} title="次の登校日">＞</button>
               </span>
               <span className="wb-duty-inline">
-                <input
-                  className="wb-team-input"
-                  type="number" min="1" max="4"
-                  value={data.teamToday || ''}
-                  onChange={e => updateTeamToday(e.target.value)}
-                  placeholder="□"
-                />
-                <span className="wb-duty-label">班　当番</span>
-                <EditCell value={data.dutyToday} onChange={v => updateField('dutyToday', v)}
-                  placeholder="" className="wb-duty-input" listId="wb-duty-today-list" />
+                {isInVacation(selectedKey, db.vacations) ? (
+                  <>
+                    <span className="wb-duty-label">日番</span>
+                    <EditCell value={holidayDutyName(selectedKey)} onChange={v => updateHolidayDuty(selectedKey, v)}
+                      placeholder="" className="wb-duty-input" />
+                  </>
+                ) : (
+                  <>
+                    <input
+                      className="wb-team-input"
+                      type="number" min="1" max="4"
+                      value={data.teamToday || ''}
+                      onChange={e => updateTeamToday(e.target.value)}
+                      placeholder="□"
+                    />
+                    <span className="wb-duty-label">班　当番</span>
+                    <EditCell value={data.dutyToday} onChange={v => updateField('dutyToday', v)}
+                      placeholder="" className="wb-duty-input" listId="wb-duty-today-list" />
+                  </>
+                )}
               </span>
             </div>
             <div className="wb-week-event">
@@ -991,16 +1027,26 @@ export default function WhiteboardView({ events, db = {} }) {
               <span className="wb-panel-label">明日</span>
               <span className="wb-panel-date">{formatShort(tomorrowDate)}</span>
               <span className="wb-duty-inline">
-                <input
-                  className="wb-team-input"
-                  type="number" min="1" max="4"
-                  value={data.teamTomorrow || ''}
-                  onChange={e => updateTeamTomorrow(e.target.value)}
-                  placeholder="□"
-                />
-                <span className="wb-duty-label">班　当番</span>
-                <EditCell value={data.dutyTomorrow} onChange={v => updateField('dutyTomorrow', v)}
-                  placeholder="" className="wb-duty-input" listId="wb-duty-tomorrow-list" />
+                {isInVacation(tomorrowKey, db.vacations) ? (
+                  <>
+                    <span className="wb-duty-label">日番</span>
+                    <EditCell value={holidayDutyName(tomorrowKey)} onChange={v => updateHolidayDuty(tomorrowKey, v)}
+                      placeholder="" className="wb-duty-input" />
+                  </>
+                ) : (
+                  <>
+                    <input
+                      className="wb-team-input"
+                      type="number" min="1" max="4"
+                      value={data.teamTomorrow || ''}
+                      onChange={e => updateTeamTomorrow(e.target.value)}
+                      placeholder="□"
+                    />
+                    <span className="wb-duty-label">班　当番</span>
+                    <EditCell value={data.dutyTomorrow} onChange={v => updateField('dutyTomorrow', v)}
+                      placeholder="" className="wb-duty-input" listId="wb-duty-tomorrow-list" />
+                  </>
+                )}
               </span>
             </div>
             <div className="wb-week-event">

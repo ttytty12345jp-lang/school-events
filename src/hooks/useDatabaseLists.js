@@ -35,6 +35,9 @@ export function useDatabaseLists() {
   const [names, setNamesState] = useState([])
   const [nursing, setNursingState] = useState(emptyNursing())
   const [vacations, setVacationsState] = useState([])
+  // 休業期間中の「日番」表。班のローテーションではなく、日付ごとに直接名前を割り当てる単純なリスト。
+  // [{ id, date:'YYYY-MM-DD', name }]
+  const [holidayDuty, setHolidayDutyState] = useState([])
 
   const [currentTeam, setCurrentTeamState] = useState('')
 
@@ -43,6 +46,7 @@ export function useDatabaseLists() {
     load('names').then(d => { if (d) setNamesState(d) })
     load('nursing').then(d => { if (d) setNursingState({ ...emptyNursing(), ...d }) })
     load('vacations').then(d => { if (d) setVacationsState(d) })
+    load('holidayDuty').then(d => { if (d) setHolidayDutyState(d) })
     load('team').then(d => { if (d) setCurrentTeamState(d) })
   }, [])
 
@@ -50,7 +54,11 @@ export function useDatabaseLists() {
   const saveNames = useCallback((next) => { setNamesState(next); save('names', next) }, [])
   const saveNursing = useCallback((next) => { setNursingState(next); save('nursing', next) }, [])
   const saveVacations = useCallback((next) => { setVacationsState(next); save('vacations', next) }, [])
+  const saveHolidayDuty = useCallback((next) => { setHolidayDutyState(next); save('holidayDuty', next) }, [])
   const saveCurrentTeam = useCallback((next) => { setCurrentTeamState(next); save('team', next) }, [])
 
-  return { rooms, names, nursing, vacations, currentTeam, saveRooms, saveNames, saveNursing, saveVacations, saveCurrentTeam }
+  return {
+    rooms, names, nursing, vacations, holidayDuty, currentTeam,
+    saveRooms, saveNames, saveNursing, saveVacations, saveHolidayDuty, saveCurrentTeam,
+  }
 }
