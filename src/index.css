@@ -551,6 +551,8 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .db-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; min-height: 28px; }
 .db-tag { display: inline-flex; align-items: center; gap: 4px; background: #e0e7ff; color: #3730a3; border-radius: 4px; padding: 2px 8px; font-size: 13px; }
 .db-tag-del { background: none; border: none; cursor: pointer; color: #6366f1; font-size: 14px; padding: 0 2px; line-height: 1; }
+.db-order-btn { background: none; border: none; cursor: pointer; color: #6366f1; font-size: 11px; padding: 0 1px; line-height: 1; }
+.db-order-btn:disabled { color: #c7d2fe; cursor: default; }
 .db-add-row { display: flex; gap: 8px; }
 .db-add-input { border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; font-size: 13px; width: 200px; outline: none; }
 .db-add-input:focus { border-color: var(--primary); }

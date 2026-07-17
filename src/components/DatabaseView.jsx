@@ -3,6 +3,7 @@ import SchoolJijiView from './SchoolJijiView'
 import LifeGoalsEditor from './LifeGoalsEditor'
 import WatchTemplateEditor from './WatchTemplateEditor'
 import { NURSING_DAYS, NURSING_TEAMS } from '../hooks/useDatabaseLists'
+import { dateKey as toDateKey } from '../utils/date'
 
 function TagListEditor({ label, items, onSave }) {
   const [input, setInput] = useState('')
@@ -134,24 +135,103 @@ function VacationEditor({ vacations, onSave }) {
   )
 }
 
-function HolidayDutyEditor({ holidayDuty, onSave }) {
-  function genId() { return (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : String(Math.random()) }
+// 休み期間の平日日付を日付順に列挙
+function vacationWeekdays(vacations) {
+  const dates = []
+  for (const v of vacations) {
+    if (!v.start || !v.end) continue
+    const d = new Date(v.start + 'T00:00:00')
+    const end = new Date(v.end + 'T00:00:00')
+    while (d <= end) {
+      const dow = d.getDay()
+      if (dow !== 0 && dow !== 6) dates.push(toDateKey(d))
+      d.setDate(d.getDate() + 1)
+    }
+  }
+  return [...new Set(dates)].sort()
+}
+
+// 基本の順番（名前）。ループする。
+function HolidayDutyOrderEditor({ order, onSave }) {
+  const [input, setInput] = useState('')
   function add() {
-    onSave([...holidayDuty, { id: genId(), date: '', name: '' }])
+    const v = input.trim()
+    if (!v) return
+    onSave([...order, v])
+    setInput('')
   }
-  function update(id, patch) {
-    onSave(holidayDuty.map(v => v.id === id ? { ...v, ...patch } : v))
+  function remove(i) {
+    onSave(order.filter((_, idx) => idx !== i))
   }
-  function remove(id) {
-    onSave(holidayDuty.filter(v => v.id !== id))
+  function move(i, dir) {
+    const j = i + dir
+    if (j < 0 || j >= order.length) return
+    const next = [...order]
+    ;[next[i], next[j]] = [next[j], next[i]]
+    onSave(next)
   }
-  const sorted = [...holidayDuty].sort((a, b) => (a.date || '').localeCompare(b.date || ''))
   return (
     <div className="db-section">
-      <div className="db-section-title">日番（休み期間中の当番）</div>
+      <div className="db-section-title">日番の基本の順番</div>
+      <p className="db-section-note">この順番で名前がループして日番表に割り当てられます。</p>
+      <div className="db-tags">
+        {order.map((name, i) => (
+          <span key={i} className="db-tag">
+            <button className="db-order-btn" onClick={() => move(i, -1)} disabled={i === 0}>↑</button>
+            <button className="db-order-btn" onClick={() => move(i, 1)} disabled={i === order.length - 1}>↓</button>
+            {name}
+            <button className="db-tag-del" onClick={() => remove(i)}>×</button>
+          </span>
+        ))}
+      </div>
+      <div className="db-add-row">
+        <input className="db-add-input" value={input} onChange={e => setInput(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && add()} placeholder="追加…" />
+        <button className="db-add-btn" onClick={add}>追加</button>
+      </div>
+    </div>
+  )
+}
+
+// 休み期間の日付ごとの日番表。基本の順番から自動生成し、手入力で個別上書き・その日を除外できる。
+function HolidayDutyTable({ vacations, order, holidayDuty, onSave }) {
+  function regenerate() {
+    const allDates = vacationWeekdays(vacations)
+    const byDate = Object.fromEntries(holidayDuty.map(v => [v.date, v]))
+    let idx = 0
+    const next = []
+    for (const date of allDates) {
+      const existing = byDate[date]
+      if (existing?.excluded) { next.push(existing); continue }
+      if (existing?.manual) { next.push(existing); idx++; continue }
+      if (order.length) next.push({ id: date, date, name: order[idx % order.length], manual: false, excluded: false })
+      idx++
+    }
+    onSave(next)
+  }
+  function updateName(date, name) {
+    const exists = holidayDuty.some(v => v.date === date)
+    const next = exists
+      ? holidayDuty.map(v => v.date === date ? { ...v, name, manual: true } : v)
+      : [...holidayDuty, { id: date, date, name, manual: true, excluded: false }]
+    onSave(next)
+  }
+  function excludeDate(date) {
+    const exists = holidayDuty.some(v => v.date === date)
+    const next = exists
+      ? holidayDuty.map(v => v.date === date ? { ...v, excluded: true, name: '' } : v)
+      : [...holidayDuty, { id: date, date, name: '', manual: false, excluded: true }]
+    onSave(next)
+  }
+  const visible = holidayDuty.filter(v => !v.excluded).sort((a, b) => a.date.localeCompare(b.date))
+  return (
+    <div className="db-section">
+      <div className="db-section-title">日番表（休み期間）</div>
       <p className="db-section-note">
-        休み期間中は当番欄の表示が「日番」になり、看護当番表の代わりにここで日付ごとに割り当てた名前を表示します。
+        「順番を反映」で休み期間の平日に基本の順番を割り当てます。個別に名前を書き換えると以後その行は上書きされません。
+        お盆など当番が無い日は×で消せます（次に「順番を反映」しても復活しません）。
       </p>
+      <button className="db-add-btn" onClick={regenerate}>順番を反映して生成・更新</button>
       <table className="db-vacation-table">
         <thead>
           <tr>
@@ -161,29 +241,28 @@ function HolidayDutyEditor({ holidayDuty, onSave }) {
           </tr>
         </thead>
         <tbody>
-          {sorted.map(v => (
-            <tr key={v.id}>
-              <td>
-                <input className="db-vacation-input" type="date" value={v.date}
-                  onChange={e => update(v.id, { date: e.target.value })} />
-              </td>
+          {visible.map(v => (
+            <tr key={v.date}>
+              <td>{v.date}</td>
               <td>
                 <input className="db-vacation-input" value={v.name} placeholder="名前"
-                  onChange={e => update(v.id, { name: e.target.value })} />
+                  onChange={e => updateName(v.date, e.target.value)} />
               </td>
               <td>
-                <button className="db-tag-del" onClick={() => remove(v.id)}>×</button>
+                <button className="db-tag-del" onClick={() => excludeDate(v.date)}>×</button>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
-      <button className="db-add-btn" onClick={add}>＋ 日付を追加</button>
     </div>
   )
 }
 
-export default function DatabaseView({ rooms, names, nursing, vacations = [], holidayDuty = [], saveRooms, saveNames, saveNursing, saveVacations, saveHolidayDuty }) {
+export default function DatabaseView({
+  rooms, names, nursing, vacations = [], holidayDutyOrder = [], holidayDuty = [],
+  saveRooms, saveNames, saveNursing, saveVacations, saveHolidayDutyOrder, saveHolidayDuty,
+}) {
   const [tab, setTab] = useState('jiji')
 
   return (
@@ -192,6 +271,7 @@ export default function DatabaseView({ rooms, names, nursing, vacations = [], ho
         <button className={`db-tab${tab === 'jiji' ? ' active' : ''}`} onClick={() => setTab('jiji')}>学校行事マスター</button>
         <button className={`db-tab${tab === 'goals' ? ' active' : ''}`} onClick={() => setTab('goals')}>生活目標</button>
         <button className={`db-tab${tab === 'watch' ? ' active' : ''}`} onClick={() => setTab('watch')}>見守り隊</button>
+        <button className={`db-tab${tab === 'duty' ? ' active' : ''}`} onClick={() => setTab('duty')}>当番</button>
         <button className={`db-tab${tab === 'lists' ? ' active' : ''}`} onClick={() => setTab('lists')}>リスト管理</button>
       </div>
 
@@ -201,13 +281,19 @@ export default function DatabaseView({ rooms, names, nursing, vacations = [], ho
 
       {tab === 'watch' && <WatchTemplateEditor />}
 
+      {tab === 'duty' && (
+        <div className="db-lists">
+          <NursingTable nursing={nursing} onSave={saveNursing} />
+          <VacationEditor vacations={vacations} onSave={saveVacations} />
+          <HolidayDutyOrderEditor order={holidayDutyOrder} onSave={saveHolidayDutyOrder} />
+          <HolidayDutyTable vacations={vacations} order={holidayDutyOrder} holidayDuty={holidayDuty} onSave={saveHolidayDuty} />
+        </div>
+      )}
+
       {tab === 'lists' && (
         <div className="db-lists">
           <TagListEditor label="特別教室" items={rooms} onSave={saveRooms} />
           <TagListEditor label="名前" items={names} onSave={saveNames} />
-          <NursingTable nursing={nursing} onSave={saveNursing} />
-          <VacationEditor vacations={vacations} onSave={saveVacations} />
-          <HolidayDutyEditor holidayDuty={holidayDuty} onSave={saveHolidayDuty} />
         </div>
       )}
     </div>

@@ -35,8 +35,11 @@ export function useDatabaseLists() {
   const [names, setNamesState] = useState([])
   const [nursing, setNursingState] = useState(emptyNursing())
   const [vacations, setVacationsState] = useState([])
-  // 休業期間中の「日番」表。班のローテーションではなく、日付ごとに直接名前を割り当てる単純なリスト。
-  // [{ id, date:'YYYY-MM-DD', name }]
+  // 休業期間中の「日番」の基本の順番（名前）。ループして割り当てる。
+  const [holidayDutyOrder, setHolidayDutyOrderState] = useState([])
+  // 休業期間の各日付に生成された当番表。[{ id, date:'YYYY-MM-DD', name, manual?, excluded? }]
+  // excluded:true の日は「消した」日として表示・ローテーション対象から除外する（お盆など）。
+  // manual:true の日は手入力で上書きされており、再生成時も上書きしない。
   const [holidayDuty, setHolidayDutyState] = useState([])
 
   const [currentTeam, setCurrentTeamState] = useState('')
@@ -46,6 +49,7 @@ export function useDatabaseLists() {
     load('names').then(d => { if (d) setNamesState(d) })
     load('nursing').then(d => { if (d) setNursingState({ ...emptyNursing(), ...d }) })
     load('vacations').then(d => { if (d) setVacationsState(d) })
+    load('holidayDutyOrder').then(d => { if (d) setHolidayDutyOrderState(d) })
     load('holidayDuty').then(d => { if (d) setHolidayDutyState(d) })
     load('team').then(d => { if (d) setCurrentTeamState(d) })
   }, [])
@@ -54,11 +58,12 @@ export function useDatabaseLists() {
   const saveNames = useCallback((next) => { setNamesState(next); save('names', next) }, [])
   const saveNursing = useCallback((next) => { setNursingState(next); save('nursing', next) }, [])
   const saveVacations = useCallback((next) => { setVacationsState(next); save('vacations', next) }, [])
+  const saveHolidayDutyOrder = useCallback((next) => { setHolidayDutyOrderState(next); save('holidayDutyOrder', next) }, [])
   const saveHolidayDuty = useCallback((next) => { setHolidayDutyState(next); save('holidayDuty', next) }, [])
   const saveCurrentTeam = useCallback((next) => { setCurrentTeamState(next); save('team', next) }, [])
 
   return {
-    rooms, names, nursing, vacations, holidayDuty, currentTeam,
-    saveRooms, saveNames, saveNursing, saveVacations, saveHolidayDuty, saveCurrentTeam,
+    rooms, names, nursing, vacations, holidayDutyOrder, holidayDuty, currentTeam,
+    saveRooms, saveNames, saveNursing, saveVacations, saveHolidayDutyOrder, saveHolidayDuty, saveCurrentTeam,
   }
 }
