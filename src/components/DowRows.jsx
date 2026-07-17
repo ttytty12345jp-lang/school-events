@@ -3,6 +3,7 @@ import { useNotice } from '../hooks/useNotice'
 import { NURSING_DAYS, NURSING_TEAMS } from '../hooks/useDatabaseLists'
 import { loadAnchors, setAnchorForWeek, subscribeAssemblyDuty } from '../lib/assemblyDuty'
 import { dateKey as toDateKey } from '../utils/date'
+import { isInVacation } from '../utils/vacations'
 
 // 看護当番表を「左上から縦（班1→班4）に進み、下まで行ったら右の列（曜日）へ、
 // 一番右下の後は左上に戻る」順（＝列優先）で、手入力された名前のみを並べる。
@@ -76,7 +77,7 @@ const STAFF_MEETING_OPTIONS = ['14：35～', 'なし', '職会兼']
 // ダブルクリックで自由入力（input）に切り替わる（きらら時間割の CellEditor と同じ操作感）。
 // content(サーバー値)が空文字だと「未設定」と区別できず既定値に戻ってしまうため、
 // 一度でも編集を始めたら local を優先し、空にしても既定値へ戻さない。
-export function StaffMeetingRow({ dateKey }) {
+export function StaffMeetingRow({ dateKey, db = {} }) {
   const { content, handleChange } = useNotice(dateKey, 'staff_meeting')
   const dow = new Date(dateKey + 'T00:00:00').getDay()
   const [local, setLocal] = useState(null) // null = 未編集（content から表示値を導出）
@@ -84,6 +85,7 @@ export function StaffMeetingRow({ dateKey }) {
   const clickTimer = useRef(null)
   useEffect(() => { setLocal(null); setEditMode(null) }, [dateKey]) // 日付が変わったら未編集状態に戻す
   if (dow !== 3) return null
+  if (isInVacation(dateKey, db.vacations)) return null // 休み期間中は非表示
   const value = local != null ? local : (content || STAFF_MEETING_OPTIONS[0])
   // 入力のたびに保存（blur待ちにしない＝blurが効かない環境でも確実に保存される）
   function onInput(v) { setLocal(v); handleChange(v) }
@@ -134,10 +136,11 @@ export function StaffMeetingRow({ dateKey }) {
 // 曜日限定の「ラベル＋あり/なし＋場所」の2段階選択行（金：児童集会、月：全校朝会）。
 // 場所選択は「あり」を実際に選んだときだけ表示する（未編集時は出さない）。
 // 値は notice に "あり|運動場" のように保存。
-function DowPlaceRow({ dateKey, noticeType, label, places, targetDow, DutyField }) {
+function DowPlaceRow({ dateKey, noticeType, label, places, targetDow, DutyField, db = {} }) {
   const { content, handleChange } = useNotice(dateKey, noticeType)
   const dow = new Date(dateKey + 'T00:00:00').getDay()
   if (dow !== targetDow) return null
+  if (isInVacation(dateKey, db.vacations)) return null // 休み期間中は非表示
   const [savedHas, savedPlace] = (content || '').split('|')
   const has = savedHas || 'あり'
   const place = savedPlace || ''
@@ -161,8 +164,8 @@ function DowPlaceRow({ dateKey, noticeType, label, places, targetDow, DutyField 
   )
 }
 
-export function ChildAssemblyRow({ dateKey }) {
-  return <DowPlaceRow dateKey={dateKey} noticeType="child_assembly" label="児童集会" places={['運動場', '講堂']} targetDow={5} />
+export function ChildAssemblyRow({ dateKey, db = {} }) {
+  return <DowPlaceRow dateKey={dateKey} noticeType="child_assembly" label="児童集会" places={['運動場', '講堂']} targetDow={5} db={db} />
 }
 
 // 月曜「全校朝会」：右に担当者枠（看護当番表の名前を、手入力した週を起点に自動ローテーション）
@@ -205,5 +208,5 @@ export function AllSchoolMeetingRow({ dateKey, db = {} }) {
     />
   )
   return <DowPlaceRow dateKey={dateKey} noticeType="all_school_meeting" label="全校朝会"
-    places={['運動場', '講堂', 'meet']} targetDow={1} DutyField={dutyField} />
+    places={['運動場', '講堂', 'meet']} targetDow={1} DutyField={dutyField} db={db} />
 }

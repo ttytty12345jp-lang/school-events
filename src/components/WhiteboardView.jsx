@@ -6,6 +6,7 @@ import StickyNotes from './StickyNotes'
 import DriveWidget from './DriveWidget'
 import { DAYS_JA, dateKey as toDateKey, monthKey } from '../utils/date'
 import { isHolidayTitle } from '../utils/holidays'
+import { isInVacation } from '../utils/vacations'
 import { loadSpanEvents, getActiveSpans } from '../lib/spanEvents'
 import { subscribeSchoolNotices, markPending, onVisibilityReload } from '../lib/schoolNoticesRealtime'
 import { StaffMeetingRow, ChildAssemblyRow, AllSchoolMeetingRow } from './DowRows'
@@ -371,10 +372,7 @@ function ClearBtn({ onClick }) {
 }
 
 // selectedKeyの前後の登校日（土日・グレー日を飛ばす）を求めるhook
-// dateKey が長期休み期間（夏休み・冬休みなど）に含まれるか
-export function isInVacation(dateKey, vacations = []) {
-  return vacations.some(v => v.start && v.end && dateKey >= v.start && dateKey <= v.end)
-}
+export { isInVacation }
 
 // { prev: 前の登校日key, next: 次の登校日key } を返す
 // vacations: [{ start, end }] 長期休み期間。この期間中は土日・国民の祝日以外はグレーでもスキップしない
@@ -1037,11 +1035,11 @@ export default function WhiteboardView({ events, db = {} }) {
               <button className="wb-sync-btn" onClick={() => syncAgenda(selectedKey, setAgendaResetToday)} title="月中行事と同期">↺ 同期</button>
             </div>
             <AllSchoolMeetingRow dateKey={selectedKey} db={db} />
-            <ChildAssemblyRow dateKey={selectedKey} />
+            <ChildAssemblyRow dateKey={selectedKey} db={db} />
             <div className="wb-schedule-list">
               <MorningAgenda key={`today-${selectedKey}-${agendaResetToday}`} dateKey={selectedKey} calendarEvents={selEvents} rich defaultSize={24} />
             </div>
-            <StaffMeetingRow dateKey={selectedKey} />
+            <StaffMeetingRow dateKey={selectedKey} db={db} />
             <DriveWidget key={`dw-today-${selectedKey}`} storeId="wb" dateKey={selectedKey} />
             <StickyNotes storageKey={`wb_sticky_${selectedKey}`} tabTop="25%" label="今日" region="top" />
           </div>
@@ -1083,11 +1081,11 @@ export default function WhiteboardView({ events, db = {} }) {
               <button className="wb-sync-btn" onClick={() => syncAgenda(tomorrowKey, setAgendaResetTomorrow)} title="月中行事と同期">↺ 同期</button>
             </div>
             <AllSchoolMeetingRow dateKey={tomorrowKey} db={db} />
-            <ChildAssemblyRow dateKey={tomorrowKey} />
+            <ChildAssemblyRow dateKey={tomorrowKey} db={db} />
             <div className="wb-schedule-list">
               <MorningAgenda key={`tomorrow-${tomorrowKey}-${agendaResetTomorrow}`} dateKey={tomorrowKey} calendarEvents={nextEvents} rich defaultSize={24} />
             </div>
-            <StaffMeetingRow dateKey={tomorrowKey} />
+            <StaffMeetingRow dateKey={tomorrowKey} db={db} />
             <DriveWidget key={`dw-tomorrow-${tomorrowKey}`} storeId="wb" dateKey={tomorrowKey} />
             <StickyNotes storageKey={`wb_sticky_${tomorrowKey}`} tabTop="75%" label="明日" region="bottom" />
           </div>
