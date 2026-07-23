@@ -229,6 +229,7 @@ function formatShort(d) {
 // 幅に収まるよう font-size を自動縮小（テキスト入力用）
 const CELL_FONT_MAX = 20
 const CELL_FONT_MIN = 10
+const CELL_FONT_MIN_MULTI = 8
 function autoScaleWidth(el) {
   if (!el) return
   el.style.fontSize = ''
@@ -247,14 +248,48 @@ function autoScaleWidth(el) {
   if (!shrunk) el.style.fontSize = ''
 }
 
+// 複数行対応（textarea）：まず折り返しで対応し、それでもセル高さに収まらなければ
+// フォントを縮小して収める。textarea の高さは内容に合わせて調整し、flex ラッパーで縦中央寄せ。
+function autoScaleMultiline(el) {
+  if (!el) return
+  const wrap = el.parentElement
+  const maxH = (wrap?.clientHeight || 0) - 2
+  if (maxH <= 0) return
+  el.style.fontSize = '' // CSS（--wb-row-h に比例）を一旦の基準に戻す
+  el.style.height = 'auto'
+  let size = Math.min(parseFloat(getComputedStyle(el).fontSize) || CELL_FONT_MAX, CELL_FONT_MAX)
+  el.style.fontSize = size + 'px'
+  el.style.height = 'auto'
+  let shrunk = false
+  while (el.scrollHeight > maxH && size > CELL_FONT_MIN_MULTI) {
+    size -= 1
+    el.style.fontSize = size + 'px'
+    el.style.height = 'auto'
+    shrunk = true
+  }
+  // 縮小不要なら CSS 側（行高比例）に任せてインライン font を残さない
+  if (!shrunk) el.style.fontSize = ''
+  el.style.height = 'auto'
+  el.style.height = Math.min(el.scrollHeight, maxH) + 'px'
+}
+
 // ── Inline editable cell ───────────────────────────────────
-export function EditCell({ value, onChange, placeholder = '', className = '', align, listId, options, live = false, onNext, cellKey, tripKey, noTab = false }) {
+export function EditCell({ value, onChange, placeholder = '', className = '', align, listId, options, live = false, onNext, cellKey, tripKey, noTab = false, multiline = false }) {
   const [local, setLocal] = useState(value)
   const [dropPos, setDropPos] = useState(null) // { top, left, width } or null
   const ref = useRef(null)
   const dropRef = useRef(null)
   useEffect(() => { setLocal(value) }, [value])
-  useEffect(() => { autoScaleWidth(ref.current) }, [local])
+  useEffect(() => { multiline ? autoScaleMultiline(ref.current) : autoScaleWidth(ref.current) }, [local, multiline])
+  // 複数行セルは行高（--wb-row-h）が変わったら再フィット
+  useEffect(() => {
+    if (!multiline || !ref.current) return
+    const el = ref.current
+    const target = el.parentElement || el
+    const ro = new ResizeObserver(() => autoScaleMultiline(el))
+    ro.observe(target)
+    return () => ro.disconnect()
+  }, [multiline])
 
   const opts = options || []
   const hasOpts = opts.length > 0
@@ -294,28 +329,42 @@ export function EditCell({ value, onChange, placeholder = '', className = '', al
     setLocal(opt)
     onChange(opt)
     setDropPos(null)
-    autoScaleWidth(ref.current)
+    multiline ? autoScaleMultiline(ref.current) : autoScaleWidth(ref.current)
     if (onNext) setTimeout(onNext, 0)  // 再レンダー後に次セルへ
+  }
+
+  const commonProps = {
+    ref,
+    value: local,
+    onChange: handleChange,
+    onBlur: handleBlur,
+    onFocus: handleFocus,
+    onKeyDown: handleKeyDown,
+    placeholder,
+    autoComplete: 'off',
+    ...(noTab ? { tabIndex: -1 } : {}),
+    ...(cellKey ? { 'data-room-cell': cellKey } : {}),
+    ...(tripKey ? { 'data-trip-cell': tripKey } : {}),
   }
 
   return (
     <>
-      <input
-        ref={ref}
-        className={`wb-input ${className}`}
-        value={local}
-        onChange={handleChange}
-        onBlur={handleBlur}
-        onFocus={handleFocus}
-        onKeyDown={handleKeyDown}
-        placeholder={placeholder}
-        style={align ? { textAlign: align } : undefined}
-        list={hasOpts ? undefined : (listId || undefined)}
-        autoComplete="off"
-        {...(noTab ? { tabIndex: -1 } : {})}
-        {...(cellKey ? { 'data-room-cell': cellKey } : {})}
-        {...(tripKey ? { 'data-trip-cell': tripKey } : {})}
-      />
+      {multiline ? (
+        <div className="wb-multiline-wrap">
+          <textarea
+            {...commonProps}
+            rows={1}
+            className={`wb-input-multiline ${className}`}
+          />
+        </div>
+      ) : (
+        <input
+          {...commonProps}
+          className={`wb-input ${className}`}
+          style={align ? { textAlign: align } : undefined}
+          list={hasOpts ? undefined : (listId || undefined)}
+        />
+      )}
       {hasOpts && dropPos && (
         <ul ref={dropRef} className="wb-dropdown" style={{ position: 'fixed', top: dropPos.top, left: dropPos.left, width: dropPos.width, zIndex: 9999 }}>
           {opts.map(opt => (
@@ -917,11 +966,11 @@ export default function WhiteboardView({ events, db = {} }) {
                 </tr>
                 {data.trips.map((t, i) => {
                   const goTo = field => () =>
-                    document.querySelector(`input[data-trip-cell="${i}-${field}"]`)?.focus()
+                    document.querySelector(`[data-trip-cell="${i}-${field}"]`)?.focus()
                   return (
                   <tr key={i} className="wb-row">
                     <td className="wb-td">
-                      <EditCell value={t.name} onChange={v => updateTrip(i, 'name', v)} options={db.names || []} onNext={goTo('destination')} tripKey={`${i}-name`} />
+                      <EditCell value={t.name} onChange={v => updateTrip(i, 'name', v)} options={db.names || []} onNext={goTo('destination')} tripKey={`${i}-name`} multiline />
                     </td>
                     <td className="wb-td">
                       <EditCell value={t.destination} onChange={v => updateTrip(i, 'destination', v)} onNext={goTo('purpose')} tripKey={`${i}-destination`} />

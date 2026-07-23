@@ -1571,6 +1571,39 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .wb-input::-webkit-calendar-picker-indicator { display: none !important; }
 .wb-input::-webkit-list-button { display: none !important; }
 
+/* 複数行セル（出張の名前など）：折り返し＋自動縮小して収める。縦は flex で中央寄せ。 */
+.wb-multiline-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+.wb-input-multiline {
+  display: block;
+  width: 100%;
+  max-height: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  resize: none;
+  overflow: hidden;
+  margin: 0;
+  padding: 0 3px;
+  font-size: 12px;
+  line-height: 1.13;
+  text-align: center;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+.wb-input-multiline:focus { background: #eff6ff; }
+.wb-left .wb-section:nth-child(2) .wb-multiline-wrap { height: var(--wb-row-h, 34px); }
+.wb-left .wb-section:nth-child(2) .wb-input-multiline { font-size: calc(var(--wb-row-h, 34px) * 0.5); }
+
 /* Time range — flex row inside td */
 .wb-time-range {
   display: flex;
@@ -1915,6 +1948,9 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   .wb-left .wb-section:nth-child(2) .wb-input { font-size: 12px; height: 26px; line-height: 26px; padding-left: 2px; }
   .wb-left .wb-section:nth-child(1) .wb-row,
   .wb-left .wb-section:nth-child(2) .wb-row { height: 26px; }
+  /* 複数行セル（出張の名前）もスマホ用の行高・文字に合わせる */
+  .wb-left .wb-section:nth-child(2) .wb-multiline-wrap { height: 26px; }
+  .wb-left .wb-section:nth-child(2) .wb-input-multiline { font-size: 11px; }
   .wb-table { font-size: 10px; }
   .wb-th { font-size: 9px; padding: 2px 1px; }
   /* 休暇等の見出し（前半休・後半休など3文字）が狭い列からはみ出さないよう縮小 */
