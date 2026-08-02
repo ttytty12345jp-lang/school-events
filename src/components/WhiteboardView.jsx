@@ -380,10 +380,12 @@ export function EditCell({ value, onChange, placeholder = '', className = '', al
 function TimeInput({ val, onChange, cellKey, tripCellKey, onNext, inputClass = '', comboClass = '' }) {
   const [text, setText] = useState(val)
   const pickerRef = useRef(null)
+  const ref = useRef(null)
   useEffect(() => { setText(val) }, [val])
+  useEffect(() => { autoScaleWidth(ref.current) }, [text]) // 枠内に収まるよう文字を自動縮小
   return (
     <span className={`wb-time-combo${comboClass ? ' ' + comboClass : ''}`}>
-      <input type="text" className={`wb-time-input${inputClass ? ' ' + inputClass : ''}`} value={text}
+      <input ref={ref} type="text" className={`wb-time-input${inputClass ? ' ' + inputClass : ''}`} value={text}
         onChange={e => { setText(e.target.value); onChange(e.target.value) }}
         onKeyDown={e => { if (e.key === 'Enter') { e.currentTarget.blur(); if (onNext) setTimeout(onNext, 0) } }}
         onDoubleClick={() => pickerRef.current?.showPicker()}
