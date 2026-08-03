@@ -41,6 +41,9 @@ export function useDatabaseLists() {
   // excluded:true の日は「消した」日として表示・ローテーション対象から除外する（お盆など）。
   // manual:true の日は手入力で上書きされており、再生成時も上書きしない。
   const [holidayDuty, setHolidayDutyState] = useState([])
+  // 日番の最初の登校日（期間内の最初の対象日）に割り当てる名前。基本の順番のうちどこから
+  // ローテーションを始めるかを決める起点。
+  const [holidayDutyStartName, setHolidayDutyStartNameState] = useState('')
 
   const [currentTeam, setCurrentTeamState] = useState('')
 
@@ -51,6 +54,7 @@ export function useDatabaseLists() {
     load('vacations').then(d => { if (d) setVacationsState(d) })
     load('holidayDutyOrder').then(d => { if (d) setHolidayDutyOrderState(d) })
     load('holidayDuty').then(d => { if (d) setHolidayDutyState(d) })
+    load('holidayDutyStartName').then(d => { if (d) setHolidayDutyStartNameState(d) })
     load('team').then(d => { if (d) setCurrentTeamState(d) })
   }, [])
 
@@ -60,10 +64,11 @@ export function useDatabaseLists() {
   const saveVacations = useCallback((next) => { setVacationsState(next); save('vacations', next) }, [])
   const saveHolidayDutyOrder = useCallback((next) => { setHolidayDutyOrderState(next); save('holidayDutyOrder', next) }, [])
   const saveHolidayDuty = useCallback((next) => { setHolidayDutyState(next); save('holidayDuty', next) }, [])
+  const saveHolidayDutyStartName = useCallback((next) => { setHolidayDutyStartNameState(next); save('holidayDutyStartName', next) }, [])
   const saveCurrentTeam = useCallback((next) => { setCurrentTeamState(next); save('team', next) }, [])
 
   return {
-    rooms, names, nursing, vacations, holidayDutyOrder, holidayDuty, currentTeam,
-    saveRooms, saveNames, saveNursing, saveVacations, saveHolidayDutyOrder, saveHolidayDuty, saveCurrentTeam,
+    rooms, names, nursing, vacations, holidayDutyOrder, holidayDuty, holidayDutyStartName, currentTeam,
+    saveRooms, saveNames, saveNursing, saveVacations, saveHolidayDutyOrder, saveHolidayDuty, saveHolidayDutyStartName, saveCurrentTeam,
   }
 }

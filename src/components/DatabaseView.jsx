@@ -211,22 +211,32 @@ function HolidayDutyOrderEditor({ order, onSave }) {
   )
 }
 
+// 除外(excluded)されていない日だけを対象に、startName の位置から basicOrder を順番に割り当てる。
+// manual な日はその名前を維持したまま順番の1コマとして消費し、excluded な日は完全にスキップ
+// （順番も消費しない＝当番のない日を消すと後続が自動で1つずつ前に詰まる）。
+function computeHolidayAssignments(dates, order, existingList, startName) {
+  const byDate = Object.fromEntries(existingList.map(v => [v.date, v]))
+  let idx = order.length ? Math.max(0, order.indexOf(startName)) : 0
+  const next = []
+  for (const date of dates) {
+    const existing = byDate[date]
+    if (existing?.excluded) { next.push(existing); continue }
+    if (existing?.manual) { next.push(existing); idx++; continue }
+    if (order.length) next.push({ id: date, date, name: order[idx % order.length], manual: false, excluded: false })
+    idx++
+  }
+  return next
+}
+
 // 休み期間の日付ごとの日番表。基本の順番から自動生成し、手入力で個別上書き・その日を除外できる。
-function HolidayDutyTable({ vacations, order, holidayDuty, onSave }) {
-  async function regenerate() {
+function HolidayDutyTable({ vacations, order, holidayDuty, startName, onSaveStartName, onSave }) {
+  async function targetDates() {
     const holidays = await fetchHolidayDates(vacations)
-    const allDates = vacationWeekdays(vacations).filter(date => !holidays.has(date))
-    const byDate = Object.fromEntries(holidayDuty.map(v => [v.date, v]))
-    let idx = 0
-    const next = []
-    for (const date of allDates) {
-      const existing = byDate[date]
-      if (existing?.excluded) { next.push(existing); continue }
-      if (existing?.manual) { next.push(existing); idx++; continue }
-      if (order.length) next.push({ id: date, date, name: order[idx % order.length], manual: false, excluded: false })
-      idx++
-    }
-    onSave(next)
+    return vacationWeekdays(vacations).filter(date => !holidays.has(date))
+  }
+  async function regenerate() {
+    const dates = await targetDates()
+    onSave(computeHolidayAssignments(dates, order, holidayDuty, startName))
   }
   function updateName(date, name) {
     const exists = holidayDuty.some(v => v.date === date)
@@ -235,22 +245,35 @@ function HolidayDutyTable({ vacations, order, holidayDuty, onSave }) {
       : [...holidayDuty, { id: date, date, name, manual: true, excluded: false }]
     onSave(next)
   }
-  function excludeDate(date) {
+  // 当番のない日として消す。以後の日は自動でひとつずつ前に詰まる（順番がずれない）。
+  async function excludeDate(date) {
     const exists = holidayDuty.some(v => v.date === date)
-    const next = exists
-      ? holidayDuty.map(v => v.date === date ? { ...v, excluded: true, name: '' } : v)
+    const marked = exists
+      ? holidayDuty.map(v => v.date === date ? { ...v, excluded: true, name: '', manual: false } : v)
       : [...holidayDuty, { id: date, date, name: '', manual: false, excluded: true }]
-    onSave(next)
+    const dates = await targetDates()
+    onSave(computeHolidayAssignments(dates, order, marked, startName))
+  }
+  function changeStartName(name) {
+    onSaveStartName(name)
   }
   const visible = holidayDuty.filter(v => !v.excluded).sort((a, b) => a.date.localeCompare(b.date))
   return (
     <div className="db-section">
       <div className="db-section-title">日番表（休み期間）</div>
       <p className="db-section-note">
-        「順番を反映」で休み期間の平日に基本の順番を割り当てます。個別に名前を書き換えると以後その行は上書きされません。
-        お盆など当番が無い日は×で消せます（次に「順番を反映」しても復活しません）。
+        開始日の担当を選んでから「順番を反映」を押すと、休み期間の平日にその名前から順番を割り当てます。
+        個別に名前を書き換えると以後その行は上書きされません。
+        お盆など当番が無い日は×で消せます。消すとそれ以降の日が自動でひとつずつ前に詰まります。
       </p>
-      <button className="db-add-btn" onClick={regenerate}>順番を反映して生成・更新</button>
+      <div className="db-add-row">
+        <span className="db-inline-label">開始日の担当：</span>
+        <select className="db-add-input" value={order.includes(startName) ? startName : (order[0] || '')}
+          onChange={e => changeStartName(e.target.value)} disabled={!order.length}>
+          {order.map(name => <option key={name} value={name}>{name}</option>)}
+        </select>
+        <button className="db-add-btn" onClick={regenerate}>順番を反映して生成・更新</button>
+      </div>
       <table className="db-vacation-table">
         <thead>
           <tr>
@@ -279,8 +302,8 @@ function HolidayDutyTable({ vacations, order, holidayDuty, onSave }) {
 }
 
 export default function DatabaseView({
-  rooms, names, nursing, vacations = [], holidayDutyOrder = [], holidayDuty = [],
-  saveRooms, saveNames, saveNursing, saveVacations, saveHolidayDutyOrder, saveHolidayDuty,
+  rooms, names, nursing, vacations = [], holidayDutyOrder = [], holidayDuty = [], holidayDutyStartName = '',
+  saveRooms, saveNames, saveNursing, saveVacations, saveHolidayDutyOrder, saveHolidayDuty, saveHolidayDutyStartName,
 }) {
   const [tab, setTab] = useState('jiji')
 
@@ -305,7 +328,8 @@ export default function DatabaseView({
           <NursingTable nursing={nursing} onSave={saveNursing} />
           <VacationEditor vacations={vacations} onSave={saveVacations} />
           <HolidayDutyOrderEditor order={holidayDutyOrder} onSave={saveHolidayDutyOrder} />
-          <HolidayDutyTable vacations={vacations} order={holidayDutyOrder} holidayDuty={holidayDuty} onSave={saveHolidayDuty} />
+          <HolidayDutyTable vacations={vacations} order={holidayDutyOrder} holidayDuty={holidayDuty}
+            startName={holidayDutyStartName} onSaveStartName={saveHolidayDutyStartName} onSave={saveHolidayDuty} />
         </div>
       )}
 

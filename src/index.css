@@ -553,7 +553,8 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .db-tag-del { background: none; border: none; cursor: pointer; color: #6366f1; font-size: 14px; padding: 0 2px; line-height: 1; }
 .db-order-btn { background: none; border: none; cursor: pointer; color: #6366f1; font-size: 11px; padding: 0 1px; line-height: 1; }
 .db-order-btn:disabled { color: #c7d2fe; cursor: default; }
-.db-add-row { display: flex; gap: 8px; }
+.db-add-row { display: flex; gap: 8px; align-items: center; }
+.db-inline-label { font-size: 13px; color: var(--text-muted); white-space: nowrap; }
 .db-add-input { border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; font-size: 13px; width: 200px; outline: none; }
 .db-add-input:focus { border-color: var(--primary); }
 .db-add-btn { background: var(--primary); color: #fff; border: none; border-radius: 6px; padding: 4px 14px; font-size: 13px; cursor: pointer; }
