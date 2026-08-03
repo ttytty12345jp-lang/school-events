@@ -281,12 +281,14 @@ export function EditCell({ value, onChange, placeholder = '', className = '', al
   const dropRef = useRef(null)
   useEffect(() => { setLocal(value) }, [value])
   useEffect(() => { multiline ? autoScaleMultiline(ref.current) : autoScaleWidth(ref.current) }, [local, multiline])
-  // 複数行セルは行高（--wb-row-h）が変わったら再フィット
+  // 行高（--wb-row-h）が画面サイズ変化などで変わっても、セルの実際の幅に合わせて再フィットする。
+  // text 変化時だけだと、値を変えずに画面幅だけ変わった場合に古いフォントサイズのまま
+  // はみ出して残ってしまう。
   useEffect(() => {
-    if (!multiline || !ref.current) return
+    if (!ref.current) return
     const el = ref.current
     const target = el.parentElement || el
-    const ro = new ResizeObserver(() => autoScaleMultiline(el))
+    const ro = new ResizeObserver(() => (multiline ? autoScaleMultiline(el) : autoScaleWidth(el)))
     ro.observe(target)
     return () => ro.disconnect()
   }, [multiline])
@@ -383,6 +385,14 @@ function TimeInput({ val, onChange, cellKey, tripCellKey, onNext, inputClass = '
   const ref = useRef(null)
   useEffect(() => { setText(val) }, [val])
   useEffect(() => { autoScaleWidth(ref.current) }, [text]) // 枠内に収まるよう文字を自動縮小
+  // 画面幅の変化で列幅（--wb-row-h連動）が変わっても、値を変えずに再フィットできるように
+  useEffect(() => {
+    if (!ref.current) return
+    const el = ref.current
+    const ro = new ResizeObserver(() => autoScaleWidth(el))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
   return (
     <span className={`wb-time-combo${comboClass ? ' ' + comboClass : ''}`}>
       <input ref={ref} type="text" className={`wb-time-input${inputClass ? ' ' + inputClass : ''}`} value={text}
