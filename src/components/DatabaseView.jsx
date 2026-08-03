@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import SchoolJijiView from './SchoolJijiView'
 import LifeGoalsEditor from './LifeGoalsEditor'
 import WatchTemplateEditor from './WatchTemplateEditor'
@@ -228,15 +228,33 @@ function computeHolidayAssignments(dates, order, existingList, startName) {
   return next
 }
 
-// 休み期間の日付ごとの日番表。基本の順番から自動生成し、手入力で個別上書き・その日を除外できる。
+// 休み期間の日付ごとの日番表。基本の順番から自動生成し、手入力で個別上書き・その日を除外／追加できる。
 function HolidayDutyTable({ vacations, order, holidayDuty, startName, onSaveStartName, onSave }) {
-  async function targetDates() {
+  const fullRange = () => {
+    const dates = vacationWeekdays(vacations)
+    return { start: dates[0] || '', end: dates[dates.length - 1] || '' }
+  }
+  const [rangeStart, setRangeStart] = useState('')
+  const [rangeEnd, setRangeEnd] = useState('')
+  const [addValue, setAddValue] = useState('')
+  // 休み期間の設定が変わったら、範囲未設定時は期間全体に追従させる
+  useEffect(() => {
+    const f = fullRange()
+    setRangeStart(prev => prev || f.start)
+    setRangeEnd(prev => prev || f.end)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(vacations)])
+
+  async function allDates() {
     const holidays = await fetchHolidayDates(vacations)
     return vacationWeekdays(vacations).filter(date => !holidays.has(date))
   }
+  // 「順番を反映」は開始日～終了日の範囲だけを対象に上書きする。範囲外の既存設定はそのまま残る。
   async function regenerate() {
-    const dates = await targetDates()
-    onSave(computeHolidayAssignments(dates, order, holidayDuty, startName))
+    const dates = (await allDates()).filter(d => (!rangeStart || d >= rangeStart) && (!rangeEnd || d <= rangeEnd))
+    const computed = computeHolidayAssignments(dates, order, holidayDuty, startName)
+    const outside = holidayDuty.filter(v => !dates.includes(v.date))
+    onSave([...outside, ...computed])
   }
   function updateName(date, name) {
     const exists = holidayDuty.some(v => v.date === date)
@@ -251,8 +269,18 @@ function HolidayDutyTable({ vacations, order, holidayDuty, startName, onSaveStar
     const marked = exists
       ? holidayDuty.map(v => v.date === date ? { ...v, excluded: true, name: '', manual: false } : v)
       : [...holidayDuty, { id: date, date, name: '', manual: false, excluded: true }]
-    const dates = await targetDates()
+    const dates = await allDates()
     onSave(computeHolidayAssignments(dates, order, marked, startName))
+  }
+  // 消した日を復活、または休み期間の対象外だった日を新規に追加する。
+  function addDate() {
+    if (!addValue) return
+    const exists = holidayDuty.some(v => v.date === addValue)
+    const next = exists
+      ? holidayDuty.map(v => v.date === addValue ? { ...v, excluded: false } : v)
+      : [...holidayDuty, { id: addValue, date: addValue, name: '', manual: false, excluded: false }]
+    onSave(next)
+    setAddValue('')
   }
   function changeStartName(name) {
     onSaveStartName(name)
@@ -262,10 +290,17 @@ function HolidayDutyTable({ vacations, order, holidayDuty, startName, onSaveStar
     <div className="db-section">
       <div className="db-section-title">日番表（休み期間）</div>
       <p className="db-section-note">
-        開始日の担当を選んでから「順番を反映」を押すと、休み期間の平日にその名前から順番を割り当てます。
-        個別に名前を書き換えると以後その行は上書きされません。
-        お盆など当番が無い日は×で消せます。消すとそれ以降の日が自動でひとつずつ前に詰まります。
+        開始日〜終了日の範囲と開始日の担当を選んでから「順番を反映」を押すと、その範囲の平日にその名前から
+        順番を割り当てます（範囲外の設定はそのまま残ります）。個別に名前を書き換えると以後その行は
+        上書きされません。お盆など当番が無い日は×で消せます。消すとそれ以降の日が自動でひとつずつ前に詰まります。
+        消した日や対象外だった日は下の「日付を追加」から復活・追加できます。
       </p>
+      <div className="db-add-row">
+        <span className="db-inline-label">開始日：</span>
+        <input className="db-add-input" type="date" value={rangeStart} onChange={e => setRangeStart(e.target.value)} style={{ width: 140 }} />
+        <span className="db-inline-label">終了日：</span>
+        <input className="db-add-input" type="date" value={rangeEnd} onChange={e => setRangeEnd(e.target.value)} style={{ width: 140 }} />
+      </div>
       <div className="db-add-row">
         <span className="db-inline-label">開始日の担当：</span>
         <select className="db-add-input" value={order.includes(startName) ? startName : (order[0] || '')}
@@ -297,6 +332,11 @@ function HolidayDutyTable({ vacations, order, holidayDuty, startName, onSaveStar
           ))}
         </tbody>
       </table>
+      <div className="db-add-row">
+        <span className="db-inline-label">日付を追加：</span>
+        <input className="db-add-input" type="date" value={addValue} onChange={e => setAddValue(e.target.value)} style={{ width: 140 }} />
+        <button className="db-add-btn" onClick={addDate}>＋ 追加・復活</button>
+      </div>
     </div>
   )
 }
