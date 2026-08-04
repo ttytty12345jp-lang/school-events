@@ -336,15 +336,23 @@ export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY, tabTop =
   // こうすると「明日」領域（画面下半分）に置いた付箋は、その日付が「今日」に
   // なったとき今日領域（上半分）の同じ相対位置に自動で現れる（座標手術不要）。
   // ドラッグ等が渡してくる y は画面絶対座標なので、保存時に regionTopPx を引く。
+  // syncPos（位置も同期するパネル）は、端末ごとに画面サイズが違うと同じ絶対px値でも
+  // 見た目の位置がずれるため、画面幅・高さに対する割合（0〜1）で保存する。
   const update = useCallback((id, patch) => {
-    const p = ('y' in patch) ? { ...patch, y: patch.y - regionTopPx } : patch
+    let p = ('y' in patch) ? { ...patch, y: patch.y - regionTopPx } : { ...patch }
+    if (syncPos) {
+      const vw = window.innerWidth || 1, vh = window.innerHeight || 1
+      if ('x' in p) p.x = p.x / vw
+      if ('y' in p) p.y = p.y / vh
+    }
     return commit(ns => ns.map(n => n.id === id ? { ...n, ...p } : n))
-  }, [commit, regionTopPx])
+  }, [commit, regionTopPx, syncPos])
   const remove = useCallback((id) => commit(ns => ns.filter(n => n.id !== id)), [commit])
   const duplicate = useCallback((id) => commit(ns => {
     const src = ns.find(n => n.id === id); if (!src) return ns
-    return [...ns, { ...src, id: crypto.randomUUID(), x: src.x + 20, y: src.y + 20, inPanel: false }]
-  }), [commit])
+    const offset = syncPos ? 0.02 : 20
+    return [...ns, { ...src, id: crypto.randomUUID(), x: (src.x || 0) + offset, y: (src.y || 0) + offset, inPanel: false }]
+  }), [commit, syncPos])
 
   const onDrag = useDrag(update)
   const onResize = useResize(update)
@@ -460,14 +468,19 @@ export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY, tabTop =
       })()}
 
       {/* フリーアイテム（保存値は領域相対 y。描画時に regionTopPx を足して絶対座標に）。
-          別PC（狭い画面）では x/y が画面外になり見えないため、描画位置だけ画面内に収める。 */}
+          別PC（狭い画面）では x/y が画面外になり見えないため、描画位置だけ画面内に収める。
+          syncPos は割合(0〜1)で保存されているので、この端末の画面サイズに合わせて px に戻す。 */}
       {freeItems.map((item, idx) => {
         const vw = typeof window !== 'undefined' ? window.innerWidth : 1920
         const vh = typeof window !== 'undefined' ? window.innerHeight : 1080
         const w = item.width || (item.type === 'link' ? (item.width || 72) : 180)
+        // syncPos の値は割合(0〜1)想定だが、この機能追加前に絶対px値で保存された
+        // 既存データも残っているため、1を超える値はレガシーpxとしてそのまま扱う（自動移行）。
+        const rawX = item.x != null ? (syncPos && item.x <= 2 ? item.x * vw : item.x) : null
+        const rawY = item.y != null ? (syncPos && item.y <= 2 ? item.y * vh : item.y) : null
         // この端末に位置が無い（他端末で作成）付箋は、重ならないよう少しずつずらして初期表示
-        const baseX = item.x != null ? item.x : 60 + idx * 24
-        const baseY = item.y != null ? item.y : 60 + idx * 24
+        const baseX = rawX != null ? rawX : 60 + idx * 24
+        const baseY = rawY != null ? rawY : 60 + idx * 24
         const x = Math.max(4, Math.min(baseX, vw - Math.min(w, vw - 8) - 4))
         const y = Math.max(4, Math.min(baseY + regionTopPx, vh - 40))
         return (
