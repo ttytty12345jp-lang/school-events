@@ -10,8 +10,10 @@ const COLORS = ['#fef08a', '#bbf7d0', '#bfdbfe', '#fecaca', '#e9d5ff', '#fed7aa'
 const load = (key) => getCached(key)
 const save = (key, items) => saveSticky(key, items)
 
-function newNote(inPanel = true) {
-  return { id: crypto.randomUUID(), type: 'note', text: '', x: 200, y: 200, width: 180, height: 140, color: COLORS[0], fontSize: 14, inPanel }
+const TILE_COLOR = '#bbf7d0' // 緑の薄いタイル（日付に紐付かない付箋パネル用）
+
+function newNote(inPanel = true, tile = false) {
+  return { id: crypto.randomUUID(), type: 'note', text: '', x: 200, y: 200, width: 180, height: 140, color: tile ? TILE_COLOR : COLORS[0], fontSize: 14, inPanel, tile }
 }
 function newLink(inPanel = true) {
   return { id: crypto.randomUUID(), type: 'link', label: 'Google Drive', url: 'https://drive.google.com', x: 200, y: 200, width: 24, inPanel }
@@ -69,7 +71,7 @@ function NoteItem({ note, onUpdate, onDelete, onDuplicate, onDrag, onResize }) {
   const textRef = useRef(null)
 
   return (
-    <div className="sn-note" style={{ left: note.x, top: note.y, width: note.width, height: note.height, background: note.color, zIndex: note.inPanel ? 1001 : 1002 }}
+    <div className={`sn-note${note.tile ? ' sn-note-tile' : ''}`} style={{ left: note.x, top: note.y, width: note.width, height: note.height, background: note.color, zIndex: note.inPanel ? 1001 : 1002 }}
       onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
       onMouseDown={e => { if (!e.target.closest('.sn-resize') && !e.target.closest('.sn-toolbar')) onDrag(e, note) }}
       onDoubleClick={() => { setEditing(true); setTimeout(() => textRef.current?.focus(), 0) }}>
@@ -266,8 +268,11 @@ function AnyItem(props) {
 // label:       パネルタイトル（複数パネルを区別するため）
 // inheritFrom: このキーにデータがないとき、引き継ぎ元として参照するストレージキー
 // region:      ストックパネルの表示領域。'top'=画面上半分 / 'bottom'=下半分 / null=全画面
-export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY, tabTop = '50%', label = '', inheritFrom = null, region = null }) {
-  const defaultItems = () => Array.from({ length: 3 }, (_, i) => ({ ...newNote(true), color: COLORS[i] }))
+// tileMode:    true にすると、日付に紐付かない独立パネル用の見た目（緑のタブ・薄緑タイルの付箋）になる
+export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY, tabTop = '50%', label = '', inheritFrom = null, region = null, tileMode = false }) {
+  const defaultItems = () => tileMode
+    ? Array.from({ length: 3 }, () => newNote(true, true))
+    : Array.from({ length: 3 }, (_, i) => ({ ...newNote(true), color: COLORS[i] }))
   const [items, setItems] = useState(() => {
     const saved = load(storageKey)
     return saved.length > 0 ? saved : defaultItems()
@@ -405,7 +410,7 @@ export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY, tabTop =
   return createPortal(
     <>
       {/* タブボタン */}
-      <button className="sn-panel-tab no-print"
+      <button className={`sn-panel-tab no-print${tileMode ? ' sn-panel-tab-tile' : ''}`}
         style={{ right: panelOpen ? panelWidth - 6 : 0, top: tabTop, transform: 'translateY(-50%)' }}
         onClick={() => setPanelOpen(o => !o)}
         title={panelOpen ? 'パネルを閉じる' : 'パネルを開く'}>
@@ -418,7 +423,7 @@ export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY, tabTop =
           <div className="sn-panel-header">
             <span className="sn-panel-title">{label ? `ストック（${label}）` : 'ストック'}</span>
             <div className="sn-panel-add-btns">
-              <button className="sn-btn" title="付箋を追加" onClick={() => commit(ns => [...ns, newNote(true)])}>付箋</button>
+              <button className="sn-btn" title="付箋を追加" onClick={() => commit(ns => [...ns, newNote(true, tileMode)])}>付箋</button>
               <button className="sn-btn" title="リンクを追加" onClick={() => commit(ns => [...ns, newLink(true)])}>リンク</button>
               <button className="sn-btn" title="表を追加" onClick={() => commit(ns => [...ns, newTable(true)])}>表</button>
             </div>

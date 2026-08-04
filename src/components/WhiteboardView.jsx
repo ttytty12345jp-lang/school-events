@@ -1105,6 +1105,9 @@ export default function WhiteboardView({ events, db = {} }) {
             <StickyNotes storageKey={`wb_sticky_${selectedKey}`} tabTop="25%" label="今日" region="top" />
           </div>
 
+          {/* 日付に紐付かない独立付箋（今日／明日の中間に緑タブ） */}
+          <StickyNotes storageKey="wb_sticky_free" tabTop="50%" label="固定" tileMode />
+
           {/* 明日 */}
           <div className="wb-panel wb-tomorrow">
             <div className="wb-panel-title">

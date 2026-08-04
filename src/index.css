@@ -2035,6 +2035,12 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   overflow: visible;
 }
 .sn-note:active { cursor: grabbing; }
+/* 独立付箋パネルの「タイル」見た目：紙めくれ風の影・グラデーションをやめ、フラットな薄緑カードに */
+.sn-note-tile {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  background-image: none;
+  border: 1px solid rgba(21,128,61,0.25);
+}
 
 .sn-toolbar {
   /* 付箋の上に浮かせて本文領域を削らない（編集の邪魔をしない）。
@@ -2134,6 +2140,9 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
   -webkit-tap-highlight-color: transparent;
 }
 .sn-panel-tab:hover { background: #1d4ed8; }
+/* 日付に紐付かない独立付箋パネル（今日と明日の中間タブ）は緑で区別 */
+.sn-panel-tab-tile { background: #15803d; }
+.sn-panel-tab-tile:hover { background: #166534; }
 
 .sn-panel {
   position: fixed;
