@@ -27,16 +27,25 @@ export function subscribe(key, cb) {
 }
 function notify(key) { if (subs[key]) subs[key].forEach(cb => cb(cache[key])) }
 
-// 位置フィールドは端末ごとに独立させたいので Supabase には同期しない
+// 位置フィールドは基本、端末ごとに独立させたいので Supabase には同期しない
 // （x/y=PC, mx/my=スマホ）。内容だけ共有し、位置はローカル保存を各端末が持つ。
+// ただし setPosSync(key, true) されたキー（日付に紐付かない共有掲示板パネルなど）は
+// 位置も含めてそのまま同期し、全端末で同じ配置に揃える。
 const POS_FIELDS = ['x', 'y', 'mx', 'my']
-function stripPos(items) {
+const posSyncKeys = new Set()
+export function setPosSync(key, on) {
+  if (on) posSyncKeys.add(key); else posSyncKeys.delete(key)
+}
+function stripPos(key, items) {
+  if (posSyncKeys.has(key)) return items || []
   return (items || []).map(it => {
     const c = { ...it }; POS_FIELDS.forEach(f => delete c[f]); return c
   })
 }
-// リモート（位置なし）に、この端末のローカル位置を id 一致で反映する
-function applyLocalPos(remote, localItems) {
+// リモート（位置なし）に、この端末のローカル位置を id 一致で反映する。
+// 位置同期キーはリモートの位置をそのまま使う（マージしない）。
+function applyLocalPos(key, remote, localItems) {
+  if (posSyncKeys.has(key)) return remote || []
   const byId = {}
   ;(localItems || []).forEach(it => { byId[it.id] = it })
   return (remote || []).map(it => {
@@ -65,8 +74,8 @@ export async function resolveRemote(key, localItems, inheritKey) {
   const remote = await fetchFromRemote(key)
   fetched[key] = true
   if (remote && remote.length) {
-    // リモート内容 ＋ この端末のローカル位置
-    const merged = applyLocalPos(remote, lsLoad(key))
+    // リモート内容 ＋ この端末のローカル位置（位置同期キーはリモートの位置をそのまま使う）
+    const merged = applyLocalPos(key, remote, lsLoad(key))
     cache[key] = merged; lsSave(key, merged); return merged
   }
   if (localItems && localItems.length) { save(key, localItems); return null }
@@ -89,7 +98,7 @@ export function save(key, items) {
     // supabase-js は .then()/await で初めてリクエストが飛ぶ（遅延実行）。
     // 投げっぱなしだと送信されないため、必ず .then() で実行＆エラーを拾う。
     supabase.from('school_notices')
-      .upsert({ date: key, type: TYPE, content: JSON.stringify(stripPos(items)), updated_at: new Date().toISOString() },
+      .upsert({ date: key, type: TYPE, content: JSON.stringify(stripPos(key, items)), updated_at: new Date().toISOString() },
               { onConflict: 'date,type' })
       .then(({ error }) => { if (error) console.warn('[sticky] save failed', error) })
   }, 600)
@@ -107,7 +116,7 @@ export function initStickyRealtime() {
     if (!subs[key] && !fetched[key]) return
     const items = await fetchFromRemote(key)
     if (items) {
-      const merged = applyLocalPos(items, lsLoad(key))
+      const merged = applyLocalPos(key, items, lsLoad(key))
       cache[key] = merged; lsSave(key, merged); notify(key)
     }
   })

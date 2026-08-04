@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { getCached, subscribe, resolveRemote, save as saveSticky, initStickyRealtime } from '../lib/stickyStore'
+import { getCached, subscribe, resolveRemote, save as saveSticky, initStickyRealtime, setPosSync } from '../lib/stickyStore'
 
 const DEFAULT_STORAGE_KEY = 'sticky_notes'
 const COLORS = ['#fef08a', '#bbf7d0', '#bfdbfe', '#fecaca', '#e9d5ff', '#fed7aa', '#ffffff']
@@ -269,7 +269,8 @@ function AnyItem(props) {
 // inheritFrom: このキーにデータがないとき、引き継ぎ元として参照するストレージキー
 // region:      ストックパネルの表示領域。'top'=画面上半分 / 'bottom'=下半分 / null=全画面
 // tileMode:    true にすると、日付に紐付かない独立パネル用の見た目（緑のタブ・薄緑タイルの付箋）になる
-export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY, tabTop = '50%', label = '', inheritFrom = null, region = null, tileMode = false }) {
+// syncPos:     true にすると、位置（x/y）も全端末で同期する（既定は端末ごとにローカル）
+export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY, tabTop = '50%', label = '', inheritFrom = null, region = null, tileMode = false, syncPos = false }) {
   const defaultItems = () => tileMode
     ? Array.from({ length: 3 }, () => newNote(true, true))
     : Array.from({ length: 3 }, (_, i) => ({ ...newNote(true), color: COLORS[i] }))
@@ -292,6 +293,12 @@ export default function StickyNotes({ storageKey = DEFAULT_STORAGE_KEY, tabTop =
     setItems(saved.length > 0 ? saved : defaultItems())
     setPanelOpen(false)
   }, [storageKey])
+
+  // 位置同期キーの登録（このキーだけは x/y も全端末で共有する）
+  useEffect(() => {
+    setPosSync(storageKey, syncPos)
+    return () => setPosSync(storageKey, false)
+  }, [storageKey, syncPos])
 
   // Supabase 同期: リモート優先で解決（無ければ引き継ぎ）＋他端末変更を購読
   useEffect(() => {
