@@ -10,7 +10,7 @@ const COLORS = ['#fef08a', '#bbf7d0', '#bfdbfe', '#fecaca', '#e9d5ff', '#fed7aa'
 const load = (key) => getCached(key)
 const save = (key, items) => saveSticky(key, items)
 
-const TILE_COLOR = '#bbf7d0' // 緑の薄いタイル（日付に紐付かない付箋パネル用）
+const TILE_COLOR = '#00a651' // 鮮やかな緑タイル（日付に紐付かない付箋パネル用）
 
 function newNote(inPanel = true, tile = false) {
   return { id: crypto.randomUUID(), type: 'note', text: '', x: 200, y: 200, width: 180, height: 140, color: tile ? TILE_COLOR : COLORS[0], fontSize: 14, inPanel, tile }
