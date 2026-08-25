@@ -773,6 +773,9 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 
 /* rich モード（朝会記録簿）の行：フォーカス中だけツールバー位置を確保 */
 .agenda-rich .agenda-row { position: relative; }
+/* 月中行事から取り込んだ行（.agenda-row-calendar）だけが太字だと、手打ちで足した行と
+   見た目が食い違うため、rich モードでは全行を同じ太さに揃える（ホワイトボードと同じ）。 */
+.agenda-rich .agenda-title-input { font-weight: 600; }
 
 /* ── 行ごと書式ツールバー（行事予定・諸連絡・配付物 共通） ── */
 .fmt-toolbar {
