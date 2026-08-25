@@ -139,7 +139,7 @@ function TodaySection({ date, events, dateKey, spanEvents = [], db = {} }) {
       </div>
       <ChildAssemblyRow dateKey={dateKey} db={db} />
       <AllSchoolMeetingRow dateKey={dateKey} db={db} />
-      <MorningAgenda dateKey={dateKey} calendarEvents={events} rich />
+      <MorningAgenda dateKey={dateKey} calendarEvents={events} rich defaultSize={24} />
       <div className="ttv-bottom-row">
         <StaffMeetingRow dateKey={dateKey} db={db} />
         <DriveWidget key={`dw-ttv-${dateKey}`} storeId="ttv" dateKey={dateKey} />
