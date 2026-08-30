@@ -668,21 +668,23 @@ export default function WhiteboardView({ events, db = {} }) {
       if (!Array.isArray(merged.rooms) || merged.rooms.length < ROOM_COUNT)
         merged.rooms = [...(merged.rooms || []), ...Array.from({ length: ROOM_COUNT - (merged.rooms?.length || 0) }, emptyRoom)]
 
-      // 未保存の日は直近の班から自動推定
-      if (!saved) {
+      // 班が空の欄を直近の手入力（アンカー）から自動推定して補う。
+      // レコードの有無で判定すると、その日に別の欄（特別教室・出張・メモ等）を先に触った
+      // だけでレコードができてしまい、以後この推定が二度と走らず当番が空欄のままになる。
+      // そのため「レコードが無いとき」ではなく「その欄が空のとき」に補う。
+      // 明示的に空へ消した場合は teamManual フラグが立ち、inferTeam 側も空を返すため復活しない。
+      if (!merged.teamToday && !merged.teamManual) {
         const team = await inferTeam(selectedKey)
         if (team) {
           merged.teamToday = team
-          const key = `班${team}`
-          const dow = DAYS_JA[dateFromKey(selectedKey).getDay()]
-          merged.dutyToday = (db.nursing || {})[key]?.[dow] || ''
+          merged.dutyToday = nursingName(team, selectedKey)
         }
+      }
+      if (!merged.teamTomorrow) {
         const teamTom = await inferTeam(tomorrowKey)
         if (teamTom) {
           merged.teamTomorrow = teamTom
-          const key = `班${teamTom}`
-          const dow = DAYS_JA[dateFromKey(tomorrowKey).getDay()]
-          merged.dutyTomorrow = (db.nursing || {})[key]?.[dow] || ''
+          merged.dutyTomorrow = nursingName(teamTom, tomorrowKey)
         }
       }
 
