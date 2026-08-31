@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
+import { useState, useMemo, useRef, useEffect, useLayoutEffect, useCallback } from 'react'
 import { supabase, USE_SUPABASE } from '../lib/supabase'
 import { exportMonthlyExcel, downloadMonthlyTemplate, parseImportExcel } from '../utils/exportExcel'
 import { useHeaderControls } from '../HeaderControlsContext'
@@ -80,6 +80,18 @@ function CellPopover({ date, category, events, onAdd, onUpdate, onDelete, onClos
   const [newNote, setNewNote] = useState('')
   const [newColor, setNewColor] = useState('black')
   const [saving, setSaving] = useState(false)
+  // 一番右の列（その他）などで、ポップオーバーが表の右端からはみ出すと
+  // .monthly-table-wrap の overflow に切り取られて「追加」ボタンが押せなくなる。
+  // はみ出す場合はセルの右端を基準（right:0）にして左向きに開く。
+  const [flipLeft, setFlipLeft] = useState(false)
+
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const wrap = el.closest('.monthly-table-wrap')
+    const limit = wrap ? wrap.getBoundingClientRect().right : window.innerWidth
+    setFlipLeft(el.getBoundingClientRect().right > limit - 4)
+  }, [])
 
   useEffect(() => {
     function handler(e) {
@@ -124,7 +136,8 @@ function CellPopover({ date, category, events, onAdd, onUpdate, onDelete, onClos
   }
 
   return (
-    <div className="cell-popover" ref={ref} onClick={e => e.stopPropagation()}>
+    <div className="cell-popover" ref={ref} onClick={e => e.stopPropagation()}
+      style={flipLeft ? { left: 'auto', right: 0 } : undefined}>
       <div className="cell-popover-header">
         <span>{date.slice(5).replace('-', '/')} {category}</span>
         <button className="btn-close" onClick={onClose}>×</button>
