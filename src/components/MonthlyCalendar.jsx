@@ -80,17 +80,33 @@ function CellPopover({ date, category, events, onAdd, onUpdate, onDelete, onClos
   const [newNote, setNewNote] = useState('')
   const [newColor, setNewColor] = useState('black')
   const [saving, setSaving] = useState(false)
-  // 一番右の列（その他）などで、ポップオーバーが表の右端からはみ出すと
-  // .monthly-table-wrap の overflow に切り取られて「追加」ボタンが押せなくなる。
-  // はみ出す場合はセルの右端を基準（right:0）にして左向きに開く。
-  const [flipLeft, setFlipLeft] = useState(false)
+  // ポップオーバーはセル（td）基準の絶対配置で、.monthly-table-wrap の overflow に
+  // 切り取られるため、表からはみ出すと入力欄や「追加」ボタンが操作できなくなる。
+  // 位置はセルごとに変わるので、開いた時点で実測して収まる位置に補正する。
+  const [posStyle, setPosStyle] = useState(null)
 
   useLayoutEffect(() => {
     const el = ref.current
     if (!el) return
     const wrap = el.closest('.monthly-table-wrap')
-    const limit = wrap ? wrap.getBoundingClientRect().right : window.innerWidth
-    setFlipLeft(el.getBoundingClientRect().right > limit - 4)
+    if (!wrap) return
+    const wrapRect = wrap.getBoundingClientRect()
+    const cellRect = el.parentElement.getBoundingClientRect()
+    const w = el.offsetWidth
+
+    // スマホは列が細く、どの列でも幅(92vw)が収まらない。セル右端基準にすると
+    // 左の列が画面外へ出てしまうため、表の内側に収まる左位置を算出して指定する。
+    if (window.innerWidth <= 600) { // CSS の @media (max-width:600px) と揃える
+      const margin = 6
+      const minLeft = wrapRect.left + margin
+      const maxLeft = Math.max(minLeft, wrapRect.right - w - margin)
+      const left = Math.min(Math.max(cellRect.left, minLeft), maxLeft)
+      setPosStyle({ left: Math.round(left - cellRect.left), right: 'auto' })
+      return
+    }
+
+    // PC は従来どおり：右端をはみ出す列（その他）だけ右基準で左向きに開く
+    if (cellRect.left + w > wrapRect.right - 4) setPosStyle({ left: 'auto', right: 0 })
   }, [])
 
   useEffect(() => {
@@ -137,7 +153,7 @@ function CellPopover({ date, category, events, onAdd, onUpdate, onDelete, onClos
 
   return (
     <div className="cell-popover" ref={ref} onClick={e => e.stopPropagation()}
-      style={flipLeft ? { left: 'auto', right: 0 } : undefined}>
+      style={posStyle || undefined}>
       <div className="cell-popover-header">
         <span>{date.slice(5).replace('-', '/')} {category}</span>
         <button className="btn-close" onClick={onClose}>×</button>
