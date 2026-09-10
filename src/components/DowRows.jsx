@@ -4,6 +4,13 @@ import { NURSING_DAYS, NURSING_TEAMS } from '../hooks/useDatabaseLists'
 import { loadAnchors, setAnchorForWeek, subscribeAssemblyDuty } from '../lib/assemblyDuty'
 import { dateKey as toDateKey } from '../utils/date'
 import { isInVacation } from '../utils/vacations'
+import { isHolidayTitle } from '../utils/holidays'
+
+// 休み期間中、またはカレンダーに国民の祝日が登録されている日は曜日限定の行を出さない
+function isOffDay(dateKey, db, events) {
+  if (isInVacation(dateKey, db.vacations)) return true
+  return (events || []).some(e => (!e.date || e.date === dateKey) && isHolidayTitle(e.title))
+}
 
 // 看護当番表を「左上から縦（班1→班4）に進み、下まで行ったら右の列（曜日）へ、
 // 一番右下の後は左上に戻る」順（＝列優先）で、手入力された名前のみを並べる。
@@ -77,7 +84,7 @@ const STAFF_MEETING_OPTIONS = ['14：35～', 'なし', '職会兼']
 // ダブルクリックで自由入力（input）に切り替わる（きらら時間割の CellEditor と同じ操作感）。
 // content(サーバー値)が空文字だと「未設定」と区別できず既定値に戻ってしまうため、
 // 一度でも編集を始めたら local を優先し、空にしても既定値へ戻さない。
-export function StaffMeetingRow({ dateKey, db = {} }) {
+export function StaffMeetingRow({ dateKey, db = {}, events = [] }) {
   const { content, handleChange } = useNotice(dateKey, 'staff_meeting')
   const dow = new Date(dateKey + 'T00:00:00').getDay()
   const [local, setLocal] = useState(null) // null = 未編集（content から表示値を導出）
@@ -85,7 +92,7 @@ export function StaffMeetingRow({ dateKey, db = {} }) {
   const clickTimer = useRef(null)
   useEffect(() => { setLocal(null); setEditMode(null) }, [dateKey]) // 日付が変わったら未編集状態に戻す
   if (dow !== 3) return null
-  if (isInVacation(dateKey, db.vacations)) return null // 休み期間中は非表示
+  if (isOffDay(dateKey, db, events)) return null // 休み期間・祝日は非表示
   const value = local != null ? local : (content || STAFF_MEETING_OPTIONS[0])
   // 入力のたびに保存（blur待ちにしない＝blurが効かない環境でも確実に保存される）
   function onInput(v) { setLocal(v); handleChange(v) }
@@ -136,11 +143,11 @@ export function StaffMeetingRow({ dateKey, db = {} }) {
 // 曜日限定の「ラベル＋あり/なし＋場所」の2段階選択行（金：児童集会、月：全校朝会）。
 // 場所選択は「あり」を実際に選んだときだけ表示する（未編集時は出さない）。
 // 値は notice に "あり|運動場" のように保存。
-function DowPlaceRow({ dateKey, noticeType, label, places, targetDow, DutyField, db = {}, defaultPlace = '' }) {
+function DowPlaceRow({ dateKey, noticeType, label, places, targetDow, DutyField, db = {}, events = [], defaultPlace = '' }) {
   const { content, handleChange } = useNotice(dateKey, noticeType)
   const dow = new Date(dateKey + 'T00:00:00').getDay()
   if (dow !== targetDow) return null
-  if (isInVacation(dateKey, db.vacations)) return null // 休み期間中は非表示
+  if (isOffDay(dateKey, db, events)) return null // 休み期間・祝日は非表示
   const [savedHas, savedPlace] = (content || '').split('|')
   const has = savedHas || 'あり'
   // 未設定（何も保存されていない）日だけ既定の場所を使う。一度でも選べばその値が優先。
@@ -165,8 +172,8 @@ function DowPlaceRow({ dateKey, noticeType, label, places, targetDow, DutyField,
   )
 }
 
-export function ChildAssemblyRow({ dateKey, db = {} }) {
-  return <DowPlaceRow dateKey={dateKey} noticeType="child_assembly" label="児童集会" places={['運動場', '講堂']} targetDow={5} db={db} />
+export function ChildAssemblyRow({ dateKey, db = {}, events = [] }) {
+  return <DowPlaceRow dateKey={dateKey} noticeType="child_assembly" label="児童集会" places={['運動場', '講堂']} targetDow={5} db={db} events={events} />
 }
 
 // 6月〜11月は全校朝会を meet で行うのが既定（未設定日の初期値のみ。個別に変更可能）
@@ -176,7 +183,7 @@ function isMeetSeason(dateKey) {
 }
 
 // 月曜「全校朝会」：右に担当者枠（看護当番表の名前を、手入力した週を起点に自動ローテーション）
-export function AllSchoolMeetingRow({ dateKey, db = {} }) {
+export function AllSchoolMeetingRow({ dateKey, db = {}, events = [] }) {
   const dow = new Date(dateKey + 'T00:00:00').getDay()
   const [anchors, setAnchors] = useState([])
   const [local, setLocal] = useState(null) // null = 未編集（computed値を表示）
@@ -215,6 +222,6 @@ export function AllSchoolMeetingRow({ dateKey, db = {} }) {
     />
   )
   return <DowPlaceRow dateKey={dateKey} noticeType="all_school_meeting" label="全校朝会"
-    places={['運動場', '講堂', 'meet']} targetDow={1} DutyField={dutyField} db={db}
+    places={['運動場', '講堂', 'meet']} targetDow={1} DutyField={dutyField} db={db} events={events}
     defaultPlace={isMeetSeason(dateKey) ? 'meet' : ''} />
 }

@@ -1097,12 +1097,12 @@ export default function WhiteboardView({ events, db = {} }) {
                 placeholder="" className="wb-week-input" />
               <button className="wb-sync-btn" onClick={() => syncAgenda(selectedKey, setAgendaResetToday)} title="月中行事と同期">↺ 同期</button>
             </div>
-            <AllSchoolMeetingRow dateKey={selectedKey} db={db} />
-            <ChildAssemblyRow dateKey={selectedKey} db={db} />
+            <AllSchoolMeetingRow dateKey={selectedKey} db={db} events={selEvents} />
+            <ChildAssemblyRow dateKey={selectedKey} db={db} events={selEvents} />
             <div className="wb-schedule-list">
               <MorningAgenda key={`today-${selectedKey}-${agendaResetToday}`} dateKey={selectedKey} calendarEvents={selEvents} rich defaultSize={24} />
             </div>
-            <StaffMeetingRow dateKey={selectedKey} db={db} />
+            <StaffMeetingRow dateKey={selectedKey} db={db} events={selEvents} />
             <DriveWidget key={`dw-today-${selectedKey}`} storeId="wb" dateKey={selectedKey} />
             <StickyNotes storageKey={`wb_sticky_${selectedKey}`} tabTop="25%" label="今日" region="top" />
           </div>
@@ -1146,12 +1146,12 @@ export default function WhiteboardView({ events, db = {} }) {
                 placeholder="" className="wb-week-input" />
               <button className="wb-sync-btn" onClick={() => syncAgenda(tomorrowKey, setAgendaResetTomorrow)} title="月中行事と同期">↺ 同期</button>
             </div>
-            <AllSchoolMeetingRow dateKey={tomorrowKey} db={db} />
-            <ChildAssemblyRow dateKey={tomorrowKey} db={db} />
+            <AllSchoolMeetingRow dateKey={tomorrowKey} db={db} events={nextEvents} />
+            <ChildAssemblyRow dateKey={tomorrowKey} db={db} events={nextEvents} />
             <div className="wb-schedule-list">
               <MorningAgenda key={`tomorrow-${tomorrowKey}-${agendaResetTomorrow}`} dateKey={tomorrowKey} calendarEvents={nextEvents} rich defaultSize={24} />
             </div>
-            <StaffMeetingRow dateKey={tomorrowKey} db={db} />
+            <StaffMeetingRow dateKey={tomorrowKey} db={db} events={nextEvents} />
             <DriveWidget key={`dw-tomorrow-${tomorrowKey}`} storeId="wb" dateKey={tomorrowKey} />
             <StickyNotes storageKey={`wb_sticky_${tomorrowKey}`} tabTop="75%" label="明日" region="bottom" />
           </div>
