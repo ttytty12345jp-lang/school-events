@@ -136,15 +136,16 @@ export function StaffMeetingRow({ dateKey, db = {} }) {
 // 曜日限定の「ラベル＋あり/なし＋場所」の2段階選択行（金：児童集会、月：全校朝会）。
 // 場所選択は「あり」を実際に選んだときだけ表示する（未編集時は出さない）。
 // 値は notice に "あり|運動場" のように保存。
-function DowPlaceRow({ dateKey, noticeType, label, places, targetDow, DutyField, db = {} }) {
+function DowPlaceRow({ dateKey, noticeType, label, places, targetDow, DutyField, db = {}, defaultPlace = '' }) {
   const { content, handleChange } = useNotice(dateKey, noticeType)
   const dow = new Date(dateKey + 'T00:00:00').getDay()
   if (dow !== targetDow) return null
   if (isInVacation(dateKey, db.vacations)) return null // 休み期間中は非表示
   const [savedHas, savedPlace] = (content || '').split('|')
   const has = savedHas || 'あり'
-  const place = savedPlace || ''
-  function changeHas(v) { handleChange(v === 'あり' ? (savedPlace ? `${v}|${savedPlace}` : v) : v) }
+  // 未設定（何も保存されていない）日だけ既定の場所を使う。一度でも選べばその値が優先。
+  const place = savedPlace || (content ? '' : defaultPlace)
+  function changeHas(v) { handleChange(v === 'あり' ? (place ? `${v}|${place}` : v) : v) }
   function changePlace(v) { handleChange(`${has}|${v}`) }
   return (
     <div className="ttv-staff-meeting">
@@ -166,6 +167,12 @@ function DowPlaceRow({ dateKey, noticeType, label, places, targetDow, DutyField,
 
 export function ChildAssemblyRow({ dateKey, db = {} }) {
   return <DowPlaceRow dateKey={dateKey} noticeType="child_assembly" label="児童集会" places={['運動場', '講堂']} targetDow={5} db={db} />
+}
+
+// 6月〜11月は全校朝会を meet で行うのが既定（未設定日の初期値のみ。個別に変更可能）
+function isMeetSeason(dateKey) {
+  const m = Number(dateKey.slice(5, 7))
+  return m >= 6 && m <= 11
 }
 
 // 月曜「全校朝会」：右に担当者枠（看護当番表の名前を、手入力した週を起点に自動ローテーション）
@@ -208,5 +215,6 @@ export function AllSchoolMeetingRow({ dateKey, db = {} }) {
     />
   )
   return <DowPlaceRow dateKey={dateKey} noticeType="all_school_meeting" label="全校朝会"
-    places={['運動場', '講堂', 'meet']} targetDow={1} DutyField={dutyField} db={db} />
+    places={['運動場', '講堂', 'meet']} targetDow={1} DutyField={dutyField} db={db}
+    defaultPlace={isMeetSeason(dateKey) ? 'meet' : ''} />
 }
