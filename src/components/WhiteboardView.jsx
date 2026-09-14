@@ -1097,7 +1097,7 @@ export default function WhiteboardView({ events, db = {} }) {
                 placeholder="" className="wb-week-input" />
               <button className="wb-sync-btn" onClick={() => syncAgenda(selectedKey, setAgendaResetToday)} title="月中行事と同期">↺ 同期</button>
             </div>
-            <AllSchoolMeetingRow dateKey={selectedKey} db={db} events={selEvents} />
+            <AllSchoolMeetingRow dateKey={selectedKey} db={db} events={selEvents} allEvents={events} />
             <ChildAssemblyRow dateKey={selectedKey} db={db} events={selEvents} />
             <div className="wb-schedule-list">
               <MorningAgenda key={`today-${selectedKey}-${agendaResetToday}`} dateKey={selectedKey} calendarEvents={selEvents} rich defaultSize={24} />
@@ -1146,7 +1146,7 @@ export default function WhiteboardView({ events, db = {} }) {
                 placeholder="" className="wb-week-input" />
               <button className="wb-sync-btn" onClick={() => syncAgenda(tomorrowKey, setAgendaResetTomorrow)} title="月中行事と同期">↺ 同期</button>
             </div>
-            <AllSchoolMeetingRow dateKey={tomorrowKey} db={db} events={nextEvents} />
+            <AllSchoolMeetingRow dateKey={tomorrowKey} db={db} events={nextEvents} allEvents={events} />
             <ChildAssemblyRow dateKey={tomorrowKey} db={db} events={nextEvents} />
             <div className="wb-schedule-list">
               <MorningAgenda key={`tomorrow-${tomorrowKey}-${agendaResetTomorrow}`} dateKey={tomorrowKey} calendarEvents={nextEvents} rich defaultSize={24} />

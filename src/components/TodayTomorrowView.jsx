@@ -117,7 +117,7 @@ function formatDateLong(d) {
 // 曜日限定の行（職員打ち合わせ／児童集会／全校朝会）は DowRows.jsx に切り出し、
 // ホワイトボードとも共有する。
 
-function TodaySection({ date, events, dateKey, spanEvents = [], db = {} }) {
+function TodaySection({ date, events, allEvents = [], dateKey, spanEvents = [], db = {} }) {
   const { content: weekEvent, handleChange: setWeekEvent } = useNotice(dateKey, 'week_event')
   const activeSpans = getActiveSpans(spanEvents, dateKey)
   return (
@@ -138,7 +138,7 @@ function TodaySection({ date, events, dateKey, spanEvents = [], db = {} }) {
         />
       </div>
       <ChildAssemblyRow dateKey={dateKey} db={db} events={events} />
-      <AllSchoolMeetingRow dateKey={dateKey} db={db} events={events} />
+      <AllSchoolMeetingRow dateKey={dateKey} db={db} events={events} allEvents={allEvents} />
       <MorningAgenda dateKey={dateKey} calendarEvents={events} rich defaultSize={24} />
       <div className="ttv-bottom-row">
         <StaffMeetingRow dateKey={dateKey} db={db} events={events} />
@@ -731,7 +731,7 @@ export default function TodayTomorrowView({ events, db = {} }) {
         <div className="ttv-layout">
           {/* 左2/3 */}
           <div className="ttv-left">
-            <TodaySection date={selectedDate} events={selectedEvents} dateKey={selectedKey} spanEvents={spanEvents} db={db} />
+            <TodaySection date={selectedDate} events={selectedEvents} allEvents={events} dateKey={selectedKey} spanEvents={spanEvents} db={db} />
             <NoticeSection date={selectedKey} />
             <LifeGoalSection date={selectedKey} />
           </div>

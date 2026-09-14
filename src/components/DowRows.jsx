@@ -42,7 +42,19 @@ function weeksBetween(fromMonday, toMonday) {
 // 手入力された週（アンカー）を起点に、それ以降だけ看護当番表の並び順で自動ローテーションする。
 // 手入力が一つも無い（対象週より前にアンカーが無い）場合は空文字＝非表示。
 // その週ちょうどにアンカーがあれば、その手入力値をそのまま優先表示する。
-function computeDutyName(nursing, anchors, dateKey) {
+// fromMonday の翌週〜toMonday のうち、朝会がある（休みでない）月曜の数。
+// 祝日・休み期間で朝会が無い週は当番を消費せず、次の週へ持ち越す。
+function activeMondaysBetween(fromMonday, toMonday, isOff) {
+  let n = 0
+  const d = new Date(fromMonday + 'T00:00:00')
+  d.setDate(d.getDate() + 7)
+  for (let k = toDateKey(d); k <= toMonday; d.setDate(d.getDate() + 7), k = toDateKey(d)) {
+    if (!isOff(k)) n++
+  }
+  return n
+}
+
+function computeDutyName(nursing, anchors, dateKey, isOff = () => false) {
   const targetWeek = mondayKeyOf(dateKey)
   const exact = anchors.find(a => a.week === targetWeek)
   if (exact) return exact.name
@@ -54,7 +66,7 @@ function computeDutyName(nursing, anchors, dateKey) {
   const roster = nursingRoster(nursing)
   const idx = roster.indexOf(best.name)
   if (idx === -1 || roster.length === 0) return best.name // ローテーション不能時は直前の値を維持
-  const wb = weeksBetween(best.week, targetWeek)
+  const wb = activeMondaysBetween(best.week, targetWeek, isOff)
   const newIdx = ((idx + wb) % roster.length + roster.length) % roster.length
   return roster[newIdx]
 }
@@ -183,7 +195,7 @@ function isMeetSeason(dateKey) {
 }
 
 // 月曜「全校朝会」：右に担当者枠（看護当番表の名前を、手入力した週を起点に自動ローテーション）
-export function AllSchoolMeetingRow({ dateKey, db = {}, events = [] }) {
+export function AllSchoolMeetingRow({ dateKey, db = {}, events = [], allEvents = [] }) {
   const dow = new Date(dateKey + 'T00:00:00').getDay()
   const [anchors, setAnchors] = useState([])
   const [local, setLocal] = useState(null) // null = 未編集（computed値を表示）
@@ -200,7 +212,9 @@ export function AllSchoolMeetingRow({ dateKey, db = {}, events = [] }) {
   useEffect(() => { setLocal(null) }, [dateKey]) // 日付が変わったら未編集状態に戻す
 
   if (dow !== 1) return null
-  const computed = computeDutyName(db.nursing, anchors, dateKey)
+  const holidaySet = new Set(allEvents.filter(e => isHolidayTitle(e.title)).map(e => e.date))
+  const isOffMonday = k => isInVacation(k, db.vacations) || holidaySet.has(k)
+  const computed = computeDutyName(db.nursing, anchors, dateKey, isOffMonday)
   const value = local != null ? local : computed
 
   // 入力のたびにデバウンス保存（他の入力欄と同様。blur待ちにしない）
