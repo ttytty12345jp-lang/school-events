@@ -222,6 +222,24 @@ async function saveWhiteboard(dateKey, data) {
 }
 
 
+// 3方向マージ：base（最後に読んだサーバー値）から自分が変えた箇所だけを theirs（最新のサーバー値）に
+// 上書きする。配列（出張・特別教室の行）は行ごと・項目ごとに比較する。
+// これが無いと、古い状態を持った端末が保存したとき、他端末が入力した出張などを丸ごと消してしまう。
+function isPlainObj(v) { return v && typeof v === 'object' && !Array.isArray(v) }
+function mergeChanges(base, mine, theirs) {
+  if (JSON.stringify(mine) === JSON.stringify(base)) return theirs
+  if (Array.isArray(mine) && Array.isArray(base) && Array.isArray(theirs)) {
+    const len = Math.max(mine.length, theirs.length)
+    return Array.from({ length: len }, (_, i) => mergeChanges(base[i], mine[i], theirs[i]))
+  }
+  if (isPlainObj(mine) && isPlainObj(base) && isPlainObj(theirs)) {
+    const out = { ...theirs }
+    for (const k of new Set([...Object.keys(mine), ...Object.keys(base)])) out[k] = mergeChanges(base[k], mine[k], theirs[k])
+    return out
+  }
+  return mine
+}
+
 function formatShort(d) {
   return `${d.getMonth() + 1}月${d.getDate()}日（${DAYS_JA[d.getDay()]}）`
 }
@@ -577,7 +595,7 @@ export default function WhiteboardView({ events, db = {} }) {
   useEffect(() => {
     return subscribeSchoolNotices(row => {
       if (row.type === 'whiteboard' && row.date === selectedKeyRef.current) {
-        try { setData(normalizeData(JSON.parse(row.content))) } catch {}
+        try { const d = normalizeData(JSON.parse(row.content)); baselineRef.current = d; setData(d) } catch {}
       } else if (row.type === ROOM_RES_TYPE) {
         loadRoomReservations().then(setRoomReservations)
       } else if (row.type === LONG_LEAVE_TYPE) {
@@ -590,7 +608,7 @@ export default function WhiteboardView({ events, db = {} }) {
   useEffect(() => {
     return onVisibilityReload(() => {
       loadWhiteboard(selectedKeyRef.current).then(saved => {
-        if (saved) setData(normalizeData(saved))
+        if (saved) { const d = normalizeData(saved); baselineRef.current = d; setData(d) }
       })
       loadRoomReservations().then(setRoomReservations)
       loadLongLeave().then(setLongLeave)
@@ -615,6 +633,7 @@ export default function WhiteboardView({ events, db = {} }) {
     await saveLongLeave(next)
   }
   const debounceRef = useRef(null)
+  const baselineRef = useRef(null) // 最後にサーバーから読んだ（または保存した）その日のレコード
   const { setControls } = useHeaderControls()
 
   // 左カラム（特別教室・出張）の行高を、画面高に合わせて縮めて全段を1画面に収める。
@@ -688,6 +707,7 @@ export default function WhiteboardView({ events, db = {} }) {
         }
       }
 
+      baselineRef.current = normalizeData(saved)
       setData(merged)
     })
   }, [selectedKey])
@@ -696,11 +716,18 @@ export default function WhiteboardView({ events, db = {} }) {
     setData(next)
     markPending(selectedKey, 'whiteboard')
     if (debounceRef.current) clearTimeout(debounceRef.current)
+    const key = selectedKey
     debounceRef.current = setTimeout(async () => {
       setSaving(true)
-      await saveWhiteboard(selectedKey, next)
+      // 保存直前に最新のサーバー値を取り直し、この端末で変えた項目だけを重ねて保存する
+      const server = normalizeData(await loadWhiteboard(key))
+      const merged = mergeChanges(baselineRef.current || server, next, server)
+      await saveWhiteboard(key, merged)
+      baselineRef.current = merged
       setSaving(false)
       debounceRef.current = null // 保存完了 → ポーリングを再開できるように戻す
+      // 他端末の入力を取り込んだ結果を画面にも反映（その後の新しい編集が無いときだけ）
+      setData(prev => (prev === next ? merged : prev))
     }, 800)
   }, [selectedKey])
 
@@ -717,6 +744,7 @@ export default function WhiteboardView({ events, db = {} }) {
       loadWhiteboard(selectedKeyRef.current).then(saved => {
         if (!saved) return
         const next = normalizeData(saved)
+        baselineRef.current = next
         setData(prev => JSON.stringify(prev) === JSON.stringify(next) ? prev : next)
       })
       // 特別教室（roomReservations）と長期欠席も Realtime 取りこぼしに備えて補う
