@@ -297,7 +297,20 @@ export function EditCell({ value, onChange, placeholder = '', className = '', al
   const [dropPos, setDropPos] = useState(null) // { top, left, width } or null
   const ref = useRef(null)
   const dropRef = useRef(null)
-  useEffect(() => { setLocal(value) }, [value])
+  // 入力中（フォーカス中）はサーバー側の値で書き戻さない（途中保存した値で打鍵中の文字が消えるのを防ぐ）
+  useEffect(() => { if (document.activeElement !== ref.current) setLocal(value) }, [value])
+  // 欄を離れる（blur）まで保存しない作りだと、スマホで入力後そのまま画面を閉じた・
+  // 別アプリへ切り替えた等で blur が来ず、入力が消えたように見える。打鍵が止まったら途中保存する。
+  const onChangeRef = useRef(onChange)
+  onChangeRef.current = onChange
+  const commitTimer = useRef(null)
+  const pendingRef = useRef(null)
+  function flushPending() {
+    clearTimeout(commitTimer.current)
+    commitTimer.current = null
+    if (pendingRef.current !== null) { const v = pendingRef.current; pendingRef.current = null; onChangeRef.current(v) }
+  }
+  useEffect(() => () => flushPending(), []) // 画面切替などでアンマウントされる時も取りこぼさない
   useEffect(() => { multiline ? autoScaleMultiline(ref.current) : autoScaleWidth(ref.current) }, [local, multiline])
   // 行高（--wb-row-h）が画面サイズ変化などで変わっても、セルの実際の幅に合わせて再フィットする。
   // text 変化時だけだと、値を変えずに画面幅だけ変わった場合に古いフォントサイズのまま
@@ -326,10 +339,15 @@ export function EditCell({ value, onChange, placeholder = '', className = '', al
   }, [dropPos])
 
   function handleChange(e) {
-    setLocal(e.target.value)
-    if (live) onChange(e.target.value)
+    const v = e.target.value
+    setLocal(v)
+    if (live) { onChange(v); return }
+    pendingRef.current = v
+    clearTimeout(commitTimer.current)
+    commitTimer.current = setTimeout(flushPending, 700)
   }
   function handleBlur() {
+    if (pendingRef.current !== null) { flushPending(); return }
     if (!live && local !== value) onChange(local)
   }
   function handleKeyDown(e) {
@@ -346,6 +364,8 @@ export function EditCell({ value, onChange, placeholder = '', className = '', al
     if (rect) setDropPos({ top: rect.bottom + window.scrollY, left: rect.left + window.scrollX, width: Math.max(rect.width, 120) })
   }
   function handleSelect(opt) {
+    clearTimeout(commitTimer.current)
+    pendingRef.current = null
     setLocal(opt)
     onChange(opt)
     setDropPos(null)
