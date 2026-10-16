@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { supabase, USE_SUPABASE } from '../lib/supabase'
 import { useNotice } from '../hooks/useNotice'
 import { NURSING_DAYS, NURSING_TEAMS } from '../hooks/useDatabaseLists'
 import { loadAnchors, setAnchorForWeek, subscribeAssemblyDuty } from '../lib/assemblyDuty'
@@ -188,6 +189,19 @@ export function ChildAssemblyRow({ dateKey, db = {}, events = [] }) {
   return <DowPlaceRow dateKey={dateKey} noticeType="child_assembly" label="児童集会" places={['運動場', '講堂']} targetDow={5} db={db} events={events} />
 }
 
+// 月中行事でグレー（休み）に設定された日付の集合。type='row_highlights' は1か月1行。
+async function loadGrayDates() {
+  const gray = new Set()
+  if (!USE_SUPABASE) return gray
+  const { data } = await supabase.from('school_notices').select('date, content').eq('type', 'row_highlights')
+  for (const row of data || []) {
+    try {
+      Object.entries(JSON.parse(row.content)).forEach(([d, v]) => { if (v === 'gray') gray.add(d) })
+    } catch {}
+  }
+  return gray
+}
+
 // 6月〜11月は全校朝会を meet で行うのが既定（未設定日の初期値のみ。個別に変更可能）
 function isMeetSeason(dateKey) {
   const m = Number(dateKey.slice(5, 7))
@@ -198,6 +212,7 @@ function isMeetSeason(dateKey) {
 export function AllSchoolMeetingRow({ dateKey, db = {}, events = [], allEvents = [] }) {
   const dow = new Date(dateKey + 'T00:00:00').getDay()
   const [anchors, setAnchors] = useState([])
+  const [grayDates, setGrayDates] = useState(() => new Set())
   const [local, setLocal] = useState(null) // null = 未編集（computed値を表示）
   const debounceRef = useRef(null)
 
@@ -209,11 +224,20 @@ export function AllSchoolMeetingRow({ dateKey, db = {}, events = [], allEvents =
     return () => { cancel = true; unsub() }
   }, [dow])
 
+  // 月中行事でグレー（休み）にした月曜も朝会なしとして当番を持ち越すため、
+  // 月ごとの塗りつぶし設定を読み込む（1か月1行なので全件でも十分小さい）
+  useEffect(() => {
+    if (dow !== 1) return
+    let cancel = false
+    loadGrayDates().then(s => { if (!cancel) setGrayDates(s) })
+    return () => { cancel = true }
+  }, [dow, dateKey])
+
   useEffect(() => { setLocal(null) }, [dateKey]) // 日付が変わったら未編集状態に戻す
 
   if (dow !== 1) return null
   const holidaySet = new Set(allEvents.filter(e => isHolidayTitle(e.title)).map(e => e.date))
-  const isOffMonday = k => isInVacation(k, db.vacations) || holidaySet.has(k)
+  const isOffMonday = k => isInVacation(k, db.vacations) || holidaySet.has(k) || grayDates.has(k)
   const computed = computeDutyName(db.nursing, anchors, dateKey, isOffMonday)
   const value = local != null ? local : computed
 
