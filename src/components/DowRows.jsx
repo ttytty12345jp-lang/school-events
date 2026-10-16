@@ -6,11 +6,36 @@ import { loadAnchors, setAnchorForWeek, subscribeAssemblyDuty } from '../lib/ass
 import { dateKey as toDateKey } from '../utils/date'
 import { isInVacation } from '../utils/vacations'
 import { isHolidayTitle } from '../utils/holidays'
+import { subscribeSchoolNotices } from '../lib/schoolNoticesRealtime'
 
-// 休み期間中、またはカレンダーに国民の祝日が登録されている日は曜日限定の行を出さない
-function isOffDay(dateKey, db, events) {
+// 休み期間中、国民の祝日、月中行事でグレー（休み）にした日は曜日限定の行を出さない
+function isOffDay(dateKey, db, events, grayDates) {
   if (isInVacation(dateKey, db.vacations)) return true
+  if (grayDates && grayDates.has(dateKey)) return true
   return (events || []).some(e => (!e.date || e.date === dateKey) && isHolidayTitle(e.title))
+}
+
+// グレー設定はアプリ全体で共通なので、1度だけ読み込んで使い回す
+// （行は今日・明日ぶん複数あるため、各行が個別に取得しないようキャッシュする）
+let grayPromise = null
+function loadGrayDatesCached(force) {
+  if (force || !grayPromise) grayPromise = loadGrayDates()
+  return grayPromise
+}
+function useGrayDates(enabled) {
+  const [gray, setGray] = useState(() => new Set())
+  useEffect(() => {
+    if (!enabled) return
+    let cancel = false
+    const apply = s => { if (!cancel) setGray(s) }
+    loadGrayDatesCached().then(apply)
+    // 月中行事で塗りつぶしを変えたら取り直す
+    const unsub = subscribeSchoolNotices(row => {
+      if (row.type === 'row_highlights') loadGrayDatesCached(true).then(apply)
+    })
+    return () => { cancel = true; unsub() }
+  }, [enabled])
+  return gray
 }
 
 // 看護当番表を「左上から縦（班1→班4）に進み、下まで行ったら右の列（曜日）へ、
@@ -103,9 +128,10 @@ export function StaffMeetingRow({ dateKey, db = {}, events = [] }) {
   const [local, setLocal] = useState(null) // null = 未編集（content から表示値を導出）
   const [editMode, setEditMode] = useState(null) // null | 'select' | 'input'
   const clickTimer = useRef(null)
+  const grayDates = useGrayDates(dow === 3)
   useEffect(() => { setLocal(null); setEditMode(null) }, [dateKey]) // 日付が変わったら未編集状態に戻す
   if (dow !== 3) return null
-  if (isOffDay(dateKey, db, events)) return null // 休み期間・祝日は非表示
+  if (isOffDay(dateKey, db, events, grayDates)) return null // 休み期間・祝日・グレーの日は非表示
   const value = local != null ? local : (content || STAFF_MEETING_OPTIONS[0])
   // 入力のたびに保存（blur待ちにしない＝blurが効かない環境でも確実に保存される）
   function onInput(v) { setLocal(v); handleChange(v) }
@@ -159,8 +185,9 @@ export function StaffMeetingRow({ dateKey, db = {}, events = [] }) {
 function DowPlaceRow({ dateKey, noticeType, label, places, targetDow, DutyField, db = {}, events = [], defaultPlace = '' }) {
   const { content, handleChange } = useNotice(dateKey, noticeType)
   const dow = new Date(dateKey + 'T00:00:00').getDay()
+  const grayDates = useGrayDates(dow === targetDow)
   if (dow !== targetDow) return null
-  if (isOffDay(dateKey, db, events)) return null // 休み期間・祝日は非表示
+  if (isOffDay(dateKey, db, events, grayDates)) return null // 休み期間・祝日・グレーの日は非表示
   const [savedHas, savedPlace] = (content || '').split('|')
   const has = savedHas || 'あり'
   // 未設定（何も保存されていない）日だけ既定の場所を使う。一度でも選べばその値が優先。
@@ -212,7 +239,7 @@ function isMeetSeason(dateKey) {
 export function AllSchoolMeetingRow({ dateKey, db = {}, events = [], allEvents = [] }) {
   const dow = new Date(dateKey + 'T00:00:00').getDay()
   const [anchors, setAnchors] = useState([])
-  const [grayDates, setGrayDates] = useState(() => new Set())
+  const grayDates = useGrayDates(dow === 1)
   const [local, setLocal] = useState(null) // null = 未編集（computed値を表示）
   const debounceRef = useRef(null)
 
@@ -223,15 +250,6 @@ export function AllSchoolMeetingRow({ dateKey, db = {}, events = [], allEvents =
     const unsub = subscribeAssemblyDuty(a => { if (!cancel) setAnchors(a) })
     return () => { cancel = true; unsub() }
   }, [dow])
-
-  // 月中行事でグレー（休み）にした月曜も朝会なしとして当番を持ち越すため、
-  // 月ごとの塗りつぶし設定を読み込む（1か月1行なので全件でも十分小さい）
-  useEffect(() => {
-    if (dow !== 1) return
-    let cancel = false
-    loadGrayDates().then(s => { if (!cancel) setGrayDates(s) })
-    return () => { cancel = true }
-  }, [dow, dateKey])
 
   useEffect(() => { setLocal(null) }, [dateKey]) // 日付が変わったら未編集状態に戻す
 
