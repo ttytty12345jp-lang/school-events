@@ -516,11 +516,13 @@ export function useAdjacentSchoolDays(selectedKey, vacations = [], events = []) 
       const d = dateFromKey(key)
       const dow = d.getDay()
       const isWeekend = dow === 0 || dow === 6
-      if (isWeekend) return false
-      if (holidayDates.has(key)) return false // 国民の祝日は休み期間中でも常にスキップ
       const mk = monthKey(d.getFullYear(), d.getMonth() + 1)
       const override = (overrides[mk] || {})[key]
+      // 月中行事で白（none）にした日は、土日・祝日でも登校日として扱う
+      // （運動会など土曜授業日のため。曜日より手動設定を優先する）
       if (override === 'none') return true
+      if (isWeekend) return false
+      if (holidayDates.has(key)) return false // 国民の祝日は休み期間中でも常にスキップ
       if (override === 'gray') return inVacation(key) // 休み期間中の平日はグレーでも登校日扱い（祝日は上で除外済み）
       return true
     }
