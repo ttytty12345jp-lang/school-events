@@ -117,6 +117,9 @@ function DowOptionRow({ dateKey, noticeType, label, options, targetDow, classNam
 }
 
 const STAFF_MEETING_OPTIONS = ['14：35～', 'なし', '職会兼']
+// 選択肢から自由入力へ切り替えるための番兵。タッチ端末ではダブルクリックが
+// 効かないことがあるため、プルダウンからも1タップで自由入力に入れるようにする。
+const STAFF_MEETING_FREE = '__free__'
 
 // 職員打ち合わせ：普段はラベル表示。クリックで候補から選ぶ（select）、
 // ダブルクリックで自由入力（input）に切り替わる（きらら時間割の CellEditor と同じ操作感）。
@@ -152,10 +155,15 @@ export function StaffMeetingRow({ dateKey, db = {}, events = [] }) {
       <div className="ttv-staff-meeting">
         <span className="ttv-staff-meeting-label">職員打ち合わせ</span>
         <select className="ttv-staff-meeting-select" autoFocus value={value}
-          onChange={e => { onInput(e.target.value); setEditMode(null) }} onBlur={() => setEditMode(null)}
+          onChange={e => {
+            if (e.target.value === STAFF_MEETING_FREE) { setEditMode('input'); return }
+            onInput(e.target.value); setEditMode(null)
+          }}
+          onBlur={() => setEditMode(null)}
           onKeyDown={e => { if (e.key === 'Escape') setEditMode(null) }}>
           {!STAFF_MEETING_OPTIONS.includes(value) && <option value={value}>{value || '（空欄）'}</option>}
           {STAFF_MEETING_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+          <option value={STAFF_MEETING_FREE}>その他（自由入力）…</option>
         </select>
       </div>
     )
